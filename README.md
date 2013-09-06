@@ -1,25 +1,23 @@
 ADS1298-breakout
 ================
 
-An ADS1298 breakout board. The ADS1298 is an 8 channel ADC chip with SPI interface, meant for ECG and EEG.
+This is an ADS1298 breakout board. The ADS1298 is an 8 channel ADC chip with SPI interface, meant for ECG and EEG.
 
-This provides clean analog and digital power, along with minimal support circuitry.
+http://www.ti.com/product/ads1298
 
-Most pins are available on 2 20-pin headers.
+The breakout board needs +5v input, and provides clean analog and digital power, along with some minimal support circuitry.
 
-This board is meant for basic software debugging - electrode input for EEG or ECG is not provided, just access to
-differential input pins.
+Most of the ADS1298's pins are available on the two 20-pin headers.
+ 
+This board is meant for basic system debugging - electrode circuitry for EEG or ECG is not provided, just access to
+the chip's differential input pins.
 
 If you have questions, comments, or improvements, I would love to know them!
 
-cheers
-
-adam
-
-Adam Feuer
-
-Seattle, WA, USA
-
-adam@adamfeuer.com
+cheers<br>
+adam<br>
+Adam Feuer<br>
+Seattle, WA, USA<br>
+adam@adamfeuer.com<br>
 
 
