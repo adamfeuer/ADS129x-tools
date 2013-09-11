@@ -1560,70 +1560,6 @@ Basic schematic elements and footprints for 0603, 1206, and PTH resistors.</desc
 <smd name="64" x="-3.75" y="5.85" dx="1.5" dy="0.285" layer="1" rot="R270"/>
 <text x="-1.27" y="0" size="0.6096" layer="25">&gt;NAME</text>
 <text x="-1.27" y="-1.27" size="0.6096" layer="27">&gt;VALUE</text>
-<rectangle x1="-5.61" y1="3.25" x2="-5.39" y2="4.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="2.75" x2="-5.39" y2="3.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="2.25" x2="-5.39" y2="3.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="1.75" x2="-5.39" y2="2.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="1.25" x2="-5.39" y2="2.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="0.75" x2="-5.39" y2="1.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="0.25" x2="-5.39" y2="1.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-0.25" x2="-5.39" y2="0.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-0.75" x2="-5.39" y2="0.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-1.25" x2="-5.39" y2="-0.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-1.75" x2="-5.39" y2="-0.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-2.25" x2="-5.39" y2="-1.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-2.75" x2="-5.39" y2="-1.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-3.25" x2="-5.39" y2="-2.25" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-3.75" x2="-5.39" y2="-2.75" layer="21" rot="R90"/>
-<rectangle x1="-5.61" y1="-4.25" x2="-5.39" y2="-3.25" layer="21" rot="R90"/>
-<rectangle x1="-3.86" y1="-6" x2="-3.64" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-3.36" y1="-6" x2="-3.14" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-2.86" y1="-6" x2="-2.64" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-2.36" y1="-6" x2="-2.14" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-1.86" y1="-6" x2="-1.64" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-1.36" y1="-6" x2="-1.14" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-0.86" y1="-6" x2="-0.64" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="-0.36" y1="-6" x2="-0.14" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="0.14" y1="-6" x2="0.36" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="0.64" y1="-6" x2="0.86" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="1.14" y1="-6" x2="1.36" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="1.64" y1="-6" x2="1.86" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="2.14" y1="-6" x2="2.36" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="2.64" y1="-6" x2="2.86" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="3.14" y1="-6" x2="3.36" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="3.64" y1="-6" x2="3.86" y2="-5" layer="21" rot="R180"/>
-<rectangle x1="5.39" y1="-4.25" x2="5.61" y2="-3.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-3.75" x2="5.61" y2="-2.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-3.25" x2="5.61" y2="-2.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-2.75" x2="5.61" y2="-1.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-2.25" x2="5.61" y2="-1.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-1.75" x2="5.61" y2="-0.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-1.25" x2="5.61" y2="-0.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-0.75" x2="5.61" y2="0.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="-0.25" x2="5.61" y2="0.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="0.25" x2="5.61" y2="1.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="0.75" x2="5.61" y2="1.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="1.25" x2="5.61" y2="2.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="1.75" x2="5.61" y2="2.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="2.25" x2="5.61" y2="3.25" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="2.75" x2="5.61" y2="3.75" layer="21" rot="R270"/>
-<rectangle x1="5.39" y1="3.25" x2="5.61" y2="4.25" layer="21" rot="R270"/>
-<rectangle x1="3.64" y1="5" x2="3.86" y2="6" layer="21"/>
-<rectangle x1="3.14" y1="5" x2="3.36" y2="6" layer="21"/>
-<rectangle x1="2.64" y1="5" x2="2.86" y2="6" layer="21"/>
-<rectangle x1="2.14" y1="5" x2="2.36" y2="6" layer="21"/>
-<rectangle x1="1.64" y1="5" x2="1.86" y2="6" layer="21"/>
-<rectangle x1="1.14" y1="5" x2="1.36" y2="6" layer="21"/>
-<rectangle x1="0.64" y1="5" x2="0.86" y2="6" layer="21"/>
-<rectangle x1="0.14" y1="5" x2="0.36" y2="6" layer="21"/>
-<rectangle x1="-0.36" y1="5" x2="-0.14" y2="6" layer="21"/>
-<rectangle x1="-0.86" y1="5" x2="-0.64" y2="6" layer="21"/>
-<rectangle x1="-1.36" y1="5" x2="-1.14" y2="6" layer="21"/>
-<rectangle x1="-1.86" y1="5" x2="-1.64" y2="6" layer="21"/>
-<rectangle x1="-2.36" y1="5" x2="-2.14" y2="6" layer="21"/>
-<rectangle x1="-2.86" y1="5" x2="-2.64" y2="6" layer="21"/>
-<rectangle x1="-3.36" y1="5" x2="-3.14" y2="6" layer="21"/>
-<rectangle x1="-3.86" y1="5" x2="-3.64" y2="6" layer="21"/>
 </package>
 <package name="ZXG(S-PBGA-N64)">
 <description>&lt;b&gt;ZXG (S-PBGA-N64)&lt;/b&gt;&lt;p&gt;
@@ -2088,30 +2024,30 @@ We've spent an enormous amount of time creating and checking these footprints an
 <wire x1="32.385" y1="-1.27" x2="31.115" y2="-1.27" width="0.2032" layer="21"/>
 <wire x1="30.48" y1="-0.635" x2="31.115" y2="-1.27" width="0.2032" layer="21"/>
 <wire x1="-27.94" y1="0.635" x2="-27.94" y2="-0.635" width="0.2032" layer="21"/>
-<pad name="2" x="-26.67" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="3" x="-24.13" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="4" x="-21.59" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="5" x="-19.05" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="6" x="-16.51" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="7" x="-13.97" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="8" x="-11.43" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="9" x="-8.89" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="10" x="-6.35" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="11" x="-3.81" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="12" x="-1.27" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="13" x="1.27" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="14" x="3.81" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="15" x="6.35" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="16" x="8.89" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="17" x="11.43" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="18" x="13.97" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="19" x="16.51" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="20" x="19.05" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="21" x="21.59" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="22" x="24.13" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="23" x="26.67" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="24" x="29.21" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
-<pad name="25" x="31.75" y="0" drill="1.016" diameter="1.8796" rot="R90"/>
+<pad name="2" x="-26.67" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="3" x="-24.13" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="4" x="-21.59" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="5" x="-19.05" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="6" x="-16.51" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="7" x="-13.97" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="8" x="-11.43" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="9" x="-8.89" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="10" x="-6.35" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="11" x="-3.81" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="12" x="-1.27" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="13" x="1.27" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="14" x="3.81" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="15" x="6.35" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="16" x="8.89" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="17" x="11.43" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="18" x="13.97" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="19" x="16.51" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="20" x="19.05" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="21" x="21.59" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="22" x="24.13" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="23" x="26.67" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="24" x="29.21" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
+<pad name="25" x="31.75" y="0" drill="0.9652" diameter="1.8796" rot="R90"/>
 <text x="-28.0162" y="1.8288" size="1.27" layer="25" ratio="10">&gt;NAME</text>
 <text x="-27.94" y="-3.175" size="1.27" layer="27">&gt;VALUE</text>
 <rectangle x1="-14.224" y1="-0.254" x2="-13.716" y2="0.254" layer="51"/>
@@ -2396,7 +2332,7 @@ In this library the device names are the same as the pin names of the symbols, t
 <part name="C21" library="SparkFun-Passives" deviceset="CAP" device="0603-CAP" value="1uF"/>
 <part name="C22" library="SparkFun-Passives" deviceset="CAP" device="0603-CAP" value="1uF"/>
 <part name="C23" library="SparkFun-Passives" deviceset="CAP" device="0603-CAP" value="1uF"/>
-<part name="U$1" library="burr-brown-5a" deviceset="ADS1298" device="*PAG*"/>
+<part name="IC1" library="burr-brown-5a" deviceset="ADS1298" device="*PAG*"/>
 <part name="C25" library="SparkFun-Passives" deviceset="CAP" device="0603-CAP" value="1.5nF"/>
 <part name="R1" library="SparkFun-Passives" deviceset="RESISTOR" device="0603-RES" value="1M"/>
 <part name="C24" library="SparkFun-Passives" deviceset="CAP" device="0603-CAP" value="100pF"/>
@@ -2478,7 +2414,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <instance part="C21" gate="G$1" x="236.22" y="82.804"/>
 <instance part="C22" gate="G$1" x="226.568" y="248.92" rot="R90"/>
 <instance part="C23" gate="G$1" x="226.568" y="240.538" rot="R90"/>
-<instance part="U$1" gate="G$1" x="215.9" y="187.96"/>
+<instance part="IC1" gate="G$1" x="215.9" y="187.96"/>
 <instance part="C25" gate="G$1" x="205.486" y="105.918" smashed="yes" rot="R90">
 <attribute name="NAME" x="206.375" y="110.49" size="1.778" layer="95" rot="R180"/>
 <attribute name="VALUE" x="208.153" y="103.378" size="1.778" layer="96" rot="R180"/>
@@ -2628,12 +2564,12 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="212.598" y1="228.092" x2="212.598" y2="232.918" width="0.1524" layer="91"/>
 <wire x1="215.138" y1="228.092" x2="215.138" y2="232.918" width="0.1524" layer="91"/>
 <wire x1="215.138" y1="232.918" x2="212.598" y2="232.918" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="AVDD_1"/>
-<pinref part="U$1" gate="G$1" pin="AVDD1"/>
-<pinref part="U$1" gate="G$1" pin="AVDD_2"/>
-<pinref part="U$1" gate="G$1" pin="AVDD_3"/>
-<pinref part="U$1" gate="G$1" pin="AVDD_4"/>
-<pinref part="U$1" gate="G$1" pin="AVDD_5"/>
+<pinref part="IC1" gate="G$1" pin="AVDD_1"/>
+<pinref part="IC1" gate="G$1" pin="AVDD1"/>
+<pinref part="IC1" gate="G$1" pin="AVDD_2"/>
+<pinref part="IC1" gate="G$1" pin="AVDD_3"/>
+<pinref part="IC1" gate="G$1" pin="AVDD_4"/>
+<pinref part="IC1" gate="G$1" pin="AVDD_5"/>
 <junction x="207.518" y="232.918"/>
 <junction x="204.978" y="232.918"/>
 <junction x="210.058" y="232.918"/>
@@ -2698,12 +2634,12 @@ By-Attribution Share-Alike 3.0 license</text>
 <label x="306.324" y="218.694" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="DVDD_1"/>
+<pinref part="IC1" gate="G$1" pin="DVDD_1"/>
 <wire x1="256.794" y1="217.932" x2="269.748" y2="217.932" width="0.1524" layer="91"/>
 <wire x1="253.238" y1="220.472" x2="256.794" y2="220.472" width="0.1524" layer="91"/>
 <wire x1="256.794" y1="220.472" x2="256.794" y2="217.932" width="0.1524" layer="91"/>
 <label x="262.89" y="218.694" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="DVDD_2"/>
+<pinref part="IC1" gate="G$1" pin="DVDD_2"/>
 <wire x1="253.238" y1="217.932" x2="256.794" y2="217.932" width="0.1524" layer="91"/>
 <junction x="256.794" y="217.932"/>
 </segment>
@@ -2715,7 +2651,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="215.138" y1="92.71" x2="186.69" y2="92.71" width="0.1524" layer="91"/>
 <wire x1="186.69" y1="86.868" x2="186.69" y2="92.71" width="0.1524" layer="91"/>
 <pinref part="C17" gate="G$1" pin="1"/>
-<pinref part="U$1" gate="G$1" pin="VCAP1"/>
+<pinref part="IC1" gate="G$1" pin="VCAP1"/>
 </segment>
 </net>
 <net name="N$4" class="0">
@@ -2724,13 +2660,13 @@ By-Attribution Share-Alike 3.0 license</text>
 <pinref part="C18" gate="G$1" pin="1"/>
 <wire x1="217.678" y1="90.932" x2="203.2" y2="90.932" width="0.1524" layer="91"/>
 <wire x1="203.2" y1="90.932" x2="203.2" y2="87.122" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="VCAP2"/>
+<pinref part="IC1" gate="G$1" pin="VCAP2"/>
 </segment>
 </net>
 <net name="N$5" class="0">
 <segment>
 <wire x1="220.218" y1="146.812" x2="220.218" y2="74.422" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="VCAP3"/>
+<pinref part="IC1" gate="G$1" pin="VCAP3"/>
 <wire x1="214.63" y1="72.136" x2="214.63" y2="72.39" width="0.1524" layer="91"/>
 <wire x1="214.63" y1="72.39" x2="214.63" y2="74.422" width="0.1524" layer="91"/>
 <wire x1="214.63" y1="74.422" x2="220.218" y2="74.422" width="0.1524" layer="91"/>
@@ -2748,7 +2684,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="236.22" y1="93.472" x2="236.22" y2="87.884" width="0.1524" layer="91"/>
 <pinref part="C21" gate="G$1" pin="1"/>
 <wire x1="236.22" y1="87.884" x2="236.22" y2="87.376" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="VCAP4"/>
+<pinref part="IC1" gate="G$1" pin="VCAP4"/>
 </segment>
 </net>
 <net name="VREFP" class="0">
@@ -2763,7 +2699,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="221.488" y1="240.538" x2="220.98" y2="240.538" width="0.1524" layer="91"/>
 <wire x1="220.98" y1="248.92" x2="220.98" y2="262.382" width="0.1524" layer="91"/>
 <label x="217.678" y="262.89" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="VREFP"/>
+<pinref part="IC1" gate="G$1" pin="VREFP"/>
 <pinref part="C23" gate="G$1" pin="1"/>
 <junction x="220.98" y="240.538"/>
 <junction x="220.98" y="248.92"/>
@@ -2777,7 +2713,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="GPIO2" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="GPIO2"/>
+<pinref part="IC1" gate="G$1" pin="GPIO2"/>
 <wire x1="253.238" y1="185.42" x2="270.002" y2="185.42" width="0.1524" layer="91"/>
 <label x="256.032" y="185.674" size="1.778" layer="95"/>
 </segment>
@@ -2790,7 +2726,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="GPIO3" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="GPIO3"/>
+<pinref part="IC1" gate="G$1" pin="GPIO3"/>
 <wire x1="253.238" y1="182.88" x2="270.002" y2="182.88" width="0.1524" layer="91"/>
 <label x="256.032" y="183.134" size="1.778" layer="95"/>
 </segment>
@@ -2803,7 +2739,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="GPIO4" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="GPIO4"/>
+<pinref part="IC1" gate="G$1" pin="GPIO4"/>
 <wire x1="253.238" y1="180.34" x2="270.002" y2="180.34" width="0.1524" layer="91"/>
 <label x="256.032" y="180.594" size="1.778" layer="95"/>
 </segment>
@@ -2816,7 +2752,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="GPIO1" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="GPIO1"/>
+<pinref part="IC1" gate="G$1" pin="GPIO1"/>
 <wire x1="253.238" y1="187.96" x2="270.002" y2="187.96" width="0.1524" layer="91"/>
 <label x="256.286" y="188.214" size="1.778" layer="95"/>
 </segment>
@@ -2829,7 +2765,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="CLKSEL" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="CLKSEL"/>
+<pinref part="IC1" gate="G$1" pin="CLKSEL"/>
 <wire x1="253.238" y1="195.58" x2="269.24" y2="195.58" width="0.1524" layer="91"/>
 <wire x1="269.748" y1="195.58" x2="269.24" y2="195.58" width="0.1524" layer="91"/>
 <label x="256.286" y="195.834" size="1.778" layer="95"/>
@@ -2845,7 +2781,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="197.358" y1="146.812" x2="197.358" y2="138.938" width="0.1524" layer="91"/>
 <label x="196.596" y="134.62" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="RLD_IN"/>
+<pinref part="IC1" gate="G$1" pin="RLD_IN"/>
 </segment>
 <segment>
 <label x="110.998" y="213.614" size="1.778" layer="95"/>
@@ -2857,7 +2793,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="199.898" y1="147.066" x2="199.898" y2="146.812" width="0.1524" layer="91"/>
 <label x="199.644" y="134.366" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="RLD_REF"/>
+<pinref part="IC1" gate="G$1" pin="RLD_REF"/>
 <wire x1="199.898" y1="146.812" x2="199.898" y2="138.938" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -2875,7 +2811,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <pinref part="C25" gate="G$1" pin="1"/>
 <pinref part="R1" gate="G$1" pin="1"/>
 <wire x1="202.438" y1="147.066" x2="202.438" y2="146.812" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="RLD_OUT"/>
+<pinref part="IC1" gate="G$1" pin="RLD_OUT"/>
 <wire x1="202.438" y1="146.812" x2="202.438" y2="126.238" width="0.1524" layer="91"/>
 <wire x1="202.438" y1="126.238" x2="199.644" y2="126.238" width="0.1524" layer="91"/>
 <junction x="199.644" y="116.332"/>
@@ -2888,7 +2824,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="209.804" y1="105.918" x2="208.026" y2="105.918" width="0.1524" layer="91"/>
 <pinref part="R1" gate="G$1" pin="2"/>
 <wire x1="204.978" y1="147.066" x2="204.978" y2="146.812" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="RLD_INV"/>
+<pinref part="IC1" gate="G$1" pin="RLD_INV"/>
 <wire x1="204.978" y1="146.812" x2="204.978" y2="126.238" width="0.1524" layer="91"/>
 <wire x1="204.978" y1="126.238" x2="209.804" y2="126.238" width="0.1524" layer="91"/>
 <wire x1="209.804" y1="126.238" x2="209.804" y2="116.332" width="0.1524" layer="91"/>
@@ -2896,7 +2832,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="CLK" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="CLK"/>
+<pinref part="IC1" gate="G$1" pin="CLK"/>
 <wire x1="253.238" y1="193.04" x2="269.748" y2="193.04" width="0.1524" layer="91"/>
 <label x="256.286" y="193.294" size="1.778" layer="95"/>
 </segment>
@@ -2915,7 +2851,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="320.04" y1="180.34" x2="306.324" y2="180.34" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="DAISY_IN"/>
+<pinref part="IC1" gate="G$1" pin="DAISY_IN"/>
 <wire x1="253.238" y1="167.132" x2="269.24" y2="167.132" width="0.1524" layer="91"/>
 <label x="255.27" y="167.386" size="1.778" layer="95"/>
 </segment>
@@ -2923,7 +2859,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <net name="PACEOUT2" class="0">
 <segment>
 <label x="229.87" y="131.826" size="1.778" layer="95" rot="R90"/>
-<pinref part="U$1" gate="G$1" pin="PACE_OUT2"/>
+<pinref part="IC1" gate="G$1" pin="PACE_OUT2"/>
 <wire x1="230.378" y1="146.812" x2="230.378" y2="138.684" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -2937,7 +2873,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="232.918" y1="146.812" x2="232.918" y2="138.684" width="0.1524" layer="91"/>
 <label x="230.886" y="144.78" size="1.778" layer="95" rot="R270"/>
-<pinref part="U$1" gate="G$1" pin="PACE_OUT1"/>
+<pinref part="IC1" gate="G$1" pin="PACE_OUT1"/>
 </segment>
 <segment>
 <wire x1="320.548" y1="175.26" x2="320.04" y2="175.26" width="0.1524" layer="91"/>
@@ -2948,7 +2884,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="SPI_START" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="START"/>
+<pinref part="IC1" gate="G$1" pin="START"/>
 <wire x1="253.238" y1="169.672" x2="269.24" y2="169.672" width="0.1524" layer="91"/>
 <label x="255.27" y="169.926" size="1.778" layer="95"/>
 </segment>
@@ -2961,7 +2897,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="SPI_CS" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="!CS"/>
+<pinref part="IC1" gate="G$1" pin="!CS"/>
 <wire x1="253.238" y1="207.772" x2="269.748" y2="207.772" width="0.1524" layer="91"/>
 <label x="256.794" y="208.28" size="1.778" layer="95"/>
 </segment>
@@ -2976,7 +2912,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="254" y1="212.852" x2="254.254" y2="212.852" width="0.1524" layer="91"/>
 <label x="256.54" y="213.36" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="!DRDY"/>
+<pinref part="IC1" gate="G$1" pin="!DRDY"/>
 <wire x1="254.254" y1="212.852" x2="269.748" y2="212.852" width="0.1524" layer="91"/>
 <wire x1="253.238" y1="212.852" x2="254" y2="212.852" width="0.1524" layer="91"/>
 </segment>
@@ -2989,7 +2925,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="SPI_CLK" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="SCLK"/>
+<pinref part="IC1" gate="G$1" pin="SCLK"/>
 <wire x1="253.238" y1="205.232" x2="269.748" y2="205.232" width="0.1524" layer="91"/>
 <label x="256.54" y="205.486" size="1.778" layer="95"/>
 </segment>
@@ -3002,7 +2938,7 @@ By-Attribution Share-Alike 3.0 license</text>
 </net>
 <net name="SPI_IN" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="DIN"/>
+<pinref part="IC1" gate="G$1" pin="DIN"/>
 <wire x1="253.238" y1="202.692" x2="269.748" y2="202.692" width="0.1524" layer="91"/>
 <label x="256.54" y="202.946" size="1.778" layer="95"/>
 </segment>
@@ -3017,7 +2953,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="254.254" y1="200.152" x2="254.508" y2="200.152" width="0.1524" layer="91"/>
 <label x="256.54" y="200.406" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="DOUT"/>
+<pinref part="IC1" gate="G$1" pin="DOUT"/>
 <wire x1="254.508" y1="200.152" x2="269.748" y2="200.152" width="0.1524" layer="91"/>
 <wire x1="253.238" y1="200.152" x2="254.254" y2="200.152" width="0.1524" layer="91"/>
 </segment>
@@ -3038,14 +2974,14 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="177.292" y1="177.292" x2="177.038" y2="177.292" width="0.1524" layer="91"/>
 <label x="164.846" y="177.546" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="IN8N"/>
+<pinref part="IC1" gate="G$1" pin="IN8N"/>
 <wire x1="177.038" y1="177.292" x2="164.846" y2="177.292" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="IN8P" class="0">
 <segment>
 <label x="164.846" y="180.086" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="IN8P"/>
+<pinref part="IC1" gate="G$1" pin="IN8P"/>
 <wire x1="177.546" y1="179.832" x2="177.038" y2="179.832" width="0.1524" layer="91"/>
 <wire x1="177.038" y1="179.832" x2="164.846" y2="179.832" width="0.1524" layer="91"/>
 </segment>
@@ -3060,7 +2996,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="177.292" y1="182.372" x2="177.038" y2="182.372" width="0.1524" layer="91"/>
 <label x="164.846" y="182.626" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="IN7N"/>
+<pinref part="IC1" gate="G$1" pin="IN7N"/>
 <wire x1="177.038" y1="182.372" x2="164.846" y2="182.372" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -3078,7 +3014,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="177.8" x2="116.332" y2="177.8" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN7P"/>
+<pinref part="IC1" gate="G$1" pin="IN7P"/>
 <wire x1="177.038" y1="184.912" x2="164.846" y2="184.912" width="0.1524" layer="91"/>
 <label x="164.846" y="185.166" size="1.778" layer="95"/>
 </segment>
@@ -3087,7 +3023,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="178.054" y1="187.452" x2="177.038" y2="187.452" width="0.1524" layer="91"/>
 <label x="164.846" y="187.706" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="IN6N"/>
+<pinref part="IC1" gate="G$1" pin="IN6N"/>
 <wire x1="177.038" y1="187.452" x2="164.846" y2="187.452" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -3105,7 +3041,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="182.88" x2="116.332" y2="182.88" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN6P"/>
+<pinref part="IC1" gate="G$1" pin="IN6P"/>
 <wire x1="177.038" y1="189.992" x2="164.846" y2="189.992" width="0.1524" layer="91"/>
 <label x="164.846" y="190.246" size="1.778" layer="95"/>
 </segment>
@@ -3118,7 +3054,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="190.5" x2="116.332" y2="190.5" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN4N"/>
+<pinref part="IC1" gate="G$1" pin="IN4N"/>
 <wire x1="177.038" y1="197.612" x2="164.846" y2="197.612" width="0.1524" layer="91"/>
 <label x="164.846" y="197.866" size="1.778" layer="95"/>
 </segment>
@@ -3131,14 +3067,14 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="193.04" x2="116.332" y2="193.04" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN4P"/>
+<pinref part="IC1" gate="G$1" pin="IN4P"/>
 <wire x1="177.038" y1="200.152" x2="164.846" y2="200.152" width="0.1524" layer="91"/>
 <label x="165.1" y="200.406" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="IN3N" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN3N"/>
+<pinref part="IC1" gate="G$1" pin="IN3N"/>
 <wire x1="177.038" y1="202.692" x2="165.1" y2="202.692" width="0.1524" layer="91"/>
 <label x="165.1" y="202.946" size="1.778" layer="95"/>
 </segment>
@@ -3157,7 +3093,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="198.12" x2="116.332" y2="198.12" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN3P"/>
+<pinref part="IC1" gate="G$1" pin="IN3P"/>
 <wire x1="177.038" y1="205.232" x2="165.1" y2="205.232" width="0.1524" layer="91"/>
 <label x="165.1" y="205.486" size="1.778" layer="95"/>
 </segment>
@@ -3170,7 +3106,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="200.66" x2="116.332" y2="200.66" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN2N"/>
+<pinref part="IC1" gate="G$1" pin="IN2N"/>
 <wire x1="177.038" y1="207.772" x2="165.1" y2="207.772" width="0.1524" layer="91"/>
 <label x="165.1" y="208.026" size="1.778" layer="95"/>
 </segment>
@@ -3183,7 +3119,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="203.2" x2="116.332" y2="203.2" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN2P"/>
+<pinref part="IC1" gate="G$1" pin="IN2P"/>
 <wire x1="177.038" y1="210.312" x2="165.1" y2="210.312" width="0.1524" layer="91"/>
 <label x="165.1" y="210.566" size="1.778" layer="95"/>
 </segment>
@@ -3196,7 +3132,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="205.74" x2="116.332" y2="205.74" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN1N"/>
+<pinref part="IC1" gate="G$1" pin="IN1N"/>
 <wire x1="177.038" y1="212.852" x2="165.1" y2="212.852" width="0.1524" layer="91"/>
 <label x="165.1" y="213.106" size="1.778" layer="95"/>
 </segment>
@@ -3209,14 +3145,14 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="208.28" x2="116.332" y2="208.28" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN1P"/>
+<pinref part="IC1" gate="G$1" pin="IN1P"/>
 <wire x1="177.038" y1="215.392" x2="165.1" y2="215.392" width="0.1524" layer="91"/>
 <label x="165.1" y="215.646" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="IN5P" class="0">
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN5P"/>
+<pinref part="IC1" gate="G$1" pin="IN5P"/>
 <wire x1="177.038" y1="195.072" x2="164.846" y2="195.072" width="0.1524" layer="91"/>
 <label x="164.846" y="195.326" size="1.778" layer="95"/>
 </segment>
@@ -3235,7 +3171,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="104.14" y1="185.42" x2="116.332" y2="185.42" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="IN5N"/>
+<pinref part="IC1" gate="G$1" pin="IN5N"/>
 <wire x1="177.038" y1="192.532" x2="164.846" y2="192.532" width="0.1524" layer="91"/>
 <label x="164.846" y="192.786" size="1.778" layer="95"/>
 </segment>
@@ -3244,7 +3180,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="146.05" y1="172.212" x2="146.05" y2="168.402" width="0.1524" layer="91"/>
 <pinref part="C24" gate="G$1" pin="1"/>
-<pinref part="U$1" gate="G$1" pin="WCT"/>
+<pinref part="IC1" gate="G$1" pin="WCT"/>
 <wire x1="177.038" y1="172.212" x2="146.05" y2="172.212" width="0.1524" layer="91"/>
 </segment>
 </net>
@@ -3269,14 +3205,14 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="252.73" y1="159.512" x2="253.238" y2="159.512" width="0.1524" layer="91"/>
 <wire x1="253.238" y1="159.512" x2="260.858" y2="159.512" width="0.1524" layer="91"/>
 <wire x1="252.476" y1="156.972" x2="253.238" y2="156.972" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="DGND_2"/>
-<pinref part="U$1" gate="G$1" pin="DGND_1"/>
-<pinref part="U$1" gate="G$1" pin="DGND_3"/>
+<pinref part="IC1" gate="G$1" pin="DGND_2"/>
+<pinref part="IC1" gate="G$1" pin="DGND_1"/>
+<pinref part="IC1" gate="G$1" pin="DGND_3"/>
 <wire x1="253.238" y1="156.972" x2="260.858" y2="156.972" width="0.1524" layer="91"/>
 <wire x1="260.858" y1="164.592" x2="260.858" y2="162.052" width="0.1524" layer="91"/>
 <junction x="260.858" y="159.512"/>
 <junction x="260.858" y="162.052"/>
-<pinref part="U$1" gate="G$1" pin="RESV1"/>
+<pinref part="IC1" gate="G$1" pin="RESV1"/>
 <wire x1="253.238" y1="164.592" x2="260.858" y2="164.592" width="0.1524" layer="91"/>
 <wire x1="260.858" y1="136.144" x2="260.858" y2="156.972" width="0.1524" layer="91"/>
 <junction x="260.858" y="156.972"/>
@@ -3389,12 +3325,12 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="177.038" y1="156.972" x2="162.56" y2="156.972" width="0.1524" layer="91"/>
 <wire x1="177.292" y1="154.432" x2="177.038" y2="154.432" width="0.1524" layer="91"/>
 <wire x1="177.038" y1="154.432" x2="162.56" y2="154.432" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="AVSS_3"/>
-<pinref part="U$1" gate="G$1" pin="AVSS1"/>
-<pinref part="U$1" gate="G$1" pin="AVSS_4"/>
-<pinref part="U$1" gate="G$1" pin="AVSS_5"/>
-<pinref part="U$1" gate="G$1" pin="AVSS_2"/>
-<pinref part="U$1" gate="G$1" pin="AVSS_1"/>
+<pinref part="IC1" gate="G$1" pin="AVSS_3"/>
+<pinref part="IC1" gate="G$1" pin="AVSS1"/>
+<pinref part="IC1" gate="G$1" pin="AVSS_4"/>
+<pinref part="IC1" gate="G$1" pin="AVSS_5"/>
+<pinref part="IC1" gate="G$1" pin="AVSS_2"/>
+<pinref part="IC1" gate="G$1" pin="AVSS_1"/>
 <wire x1="162.56" y1="111.76" x2="162.56" y2="154.432" width="0.1524" layer="91"/>
 <junction x="162.56" y="156.972"/>
 <junction x="162.56" y="159.512"/>
@@ -3454,7 +3390,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="229.616" y1="236.982" x2="229.616" y2="240.538" width="0.1524" layer="91"/>
 <wire x1="229.616" y1="240.538" x2="229.616" y2="248.92" width="0.1524" layer="91"/>
 <wire x1="229.616" y1="248.92" x2="229.616" y2="256.032" width="0.1524" layer="91"/>
-<pinref part="U$1" gate="G$1" pin="VREFN"/>
+<pinref part="IC1" gate="G$1" pin="VREFN"/>
 <junction x="229.616" y="248.92"/>
 <pinref part="C23" gate="G$1" pin="2"/>
 <wire x1="229.108" y1="240.538" x2="229.616" y2="240.538" width="0.1524" layer="91"/>
@@ -3492,7 +3428,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <segment>
 <wire x1="253.238" y1="174.752" x2="269.24" y2="174.752" width="0.1524" layer="91"/>
 <label x="255.27" y="175.006" size="1.778" layer="95"/>
-<pinref part="U$1" gate="G$1" pin="!PWDN"/>
+<pinref part="IC1" gate="G$1" pin="!PWDN"/>
 </segment>
 </net>
 <net name="!RESET" class="0">
@@ -3503,7 +3439,7 @@ By-Attribution Share-Alike 3.0 license</text>
 <wire x1="320.04" y1="185.42" x2="306.324" y2="185.42" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="U$1" gate="G$1" pin="!RESET"/>
+<pinref part="IC1" gate="G$1" pin="!RESET"/>
 <wire x1="253.238" y1="172.212" x2="269.24" y2="172.212" width="0.1524" layer="91"/>
 <label x="255.27" y="172.466" size="1.778" layer="95"/>
 </segment>
