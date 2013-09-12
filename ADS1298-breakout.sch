@@ -2367,6 +2367,7 @@ In this library the device names are the same as the pin names of the symbols, t
 <text x="329.184" y="26.416" size="2.54" layer="95">Released under a Creative Commons 
 By-Attribution Share-Alike 3.0 license</text>
 <text x="328.676" y="37.592" size="2.54" layer="95">Copyright 2013 Adam Feuer</text>
+<text x="416.306" y="7.112" size="2.54" layer="95">v0.1</text>
 </plain>
 <instances>
 <instance part="FRAME1" gate="G$1" x="0" y="0"/>
@@ -3448,23 +3449,23 @@ By-Attribution Share-Alike 3.0 license</text>
 </sheet>
 </sheets>
 <errors>
-<approved hash="104,1,177.038,162.052,U$1,AVSS_3,AGND,,,"/>
-<approved hash="104,1,177.038,154.432,U$1,AVSS1,AGND,,,"/>
-<approved hash="104,1,253.238,159.512,U$1,DGND_2,AGND,,,"/>
-<approved hash="104,1,253.238,220.472,U$1,DVDD_1,DVDD,,,"/>
-<approved hash="104,1,202.438,228.092,U$1,AVDD_1,AVDD,,,"/>
-<approved hash="104,1,215.138,228.092,U$1,AVDD1,AVDD,,,"/>
-<approved hash="104,1,177.038,159.512,U$1,AVSS_4,AGND,,,"/>
-<approved hash="104,1,204.978,228.092,U$1,AVDD_2,AVDD,,,"/>
-<approved hash="104,1,207.518,228.092,U$1,AVDD_3,AVDD,,,"/>
-<approved hash="104,1,210.058,228.092,U$1,AVDD_4,AVDD,,,"/>
-<approved hash="104,1,212.598,228.092,U$1,AVDD_5,AVDD,,,"/>
-<approved hash="104,1,177.038,156.972,U$1,AVSS_5,AGND,,,"/>
-<approved hash="104,1,177.038,164.592,U$1,AVSS_2,AGND,,,"/>
-<approved hash="104,1,177.038,167.132,U$1,AVSS_1,AGND,,,"/>
-<approved hash="104,1,253.238,162.052,U$1,DGND_1,AGND,,,"/>
-<approved hash="104,1,253.238,217.932,U$1,DVDD_2,DVDD,,,"/>
-<approved hash="104,1,253.238,156.972,U$1,DGND_3,AGND,,,"/>
+<approved hash="104,1,177.038,162.052,IC1,AVSS_3,AGND,,,"/>
+<approved hash="104,1,177.038,154.432,IC1,AVSS1,AGND,,,"/>
+<approved hash="104,1,253.238,159.512,IC1,DGND_2,AGND,,,"/>
+<approved hash="104,1,253.238,220.472,IC1,DVDD_1,DVDD,,,"/>
+<approved hash="104,1,202.438,228.092,IC1,AVDD_1,AVDD,,,"/>
+<approved hash="104,1,215.138,228.092,IC1,AVDD1,AVDD,,,"/>
+<approved hash="104,1,177.038,159.512,IC1,AVSS_4,AGND,,,"/>
+<approved hash="104,1,204.978,228.092,IC1,AVDD_2,AVDD,,,"/>
+<approved hash="104,1,207.518,228.092,IC1,AVDD_3,AVDD,,,"/>
+<approved hash="104,1,210.058,228.092,IC1,AVDD_4,AVDD,,,"/>
+<approved hash="104,1,212.598,228.092,IC1,AVDD_5,AVDD,,,"/>
+<approved hash="104,1,177.038,156.972,IC1,AVSS_5,AGND,,,"/>
+<approved hash="104,1,177.038,164.592,IC1,AVSS_2,AGND,,,"/>
+<approved hash="104,1,177.038,167.132,IC1,AVSS_1,AGND,,,"/>
+<approved hash="104,1,253.238,162.052,IC1,DGND_1,AGND,,,"/>
+<approved hash="104,1,253.238,217.932,IC1,DVDD_2,DVDD,,,"/>
+<approved hash="104,1,253.238,156.972,IC1,DGND_3,AGND,,,"/>
 <approved hash="108,1,86.614,77.724,N$2,,,,,"/>
 <approved hash="108,1,210.058,228.092,AVDD,,,,,"/>
 <approved hash="108,1,202.438,228.092,AVDD,,,,,"/>
@@ -3516,12 +3517,12 @@ By-Attribution Share-Alike 3.0 license</text>
 <approved hash="108,1,104.14,208.28,IN1P,,,,,"/>
 <approved hash="108,1,104.14,187.96,IN5P,,,,,"/>
 <approved hash="108,1,104.14,185.42,IN5N,,,,,"/>
-<approved hash="108,1,253.238,159.512,AGND,,,,,"/>
-<approved hash="108,1,104.14,215.9,AGND,,,,,"/>
-<approved hash="108,1,253.238,162.052,AGND,,,,,"/>
 <approved hash="108,1,320.04,170.18,AGND,,,,,"/>
+<approved hash="108,1,253.238,162.052,AGND,,,,,"/>
 <approved hash="108,1,253.238,156.972,AGND,,,,,"/>
 <approved hash="108,1,177.038,154.432,AGND,,,,,"/>
+<approved hash="108,1,253.238,159.512,AGND,,,,,"/>
+<approved hash="108,1,104.14,215.9,AGND,,,,,"/>
 <approved hash="108,1,118.11,157.734,AGND,,,,,"/>
 <approved hash="108,1,320.04,182.88,!PWDN,,,,,"/>
 <approved hash="108,1,320.04,185.42,!RESET,,,,,"/>
