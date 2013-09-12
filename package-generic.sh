@@ -2,7 +2,7 @@
 
 DATE=`date +'%Y-%m-%d-%H%M'`
 BOARD="ADS1298-breakout"
-DIR="$BOARD-advanced-circuit-files"
+DIR="$BOARD-cam-files"
 mkdir -p $DIR 
 cp $BOARD.toplayer.ger $DIR
 cp $BOARD.bottomlayer.ger $DIR
