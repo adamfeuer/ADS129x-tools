@@ -14,8 +14,10 @@ Most of the ADS1298's pins are available on the two 20-pin headers.
 This board is meant for basic system debugging - electrode circuitry for EEG or ECG is not provided, just access to
 the chip's differential input pins.
 
+v0.1 of the board has been made and is in testing; v0.2 of the board has not been made yet, and is development.
+
 Connecting the Board to an Arduino Due
-=====================i================
+======================================
 
 There is an Arduino Due pinout diagram in docs/arduino_pinout_diagram.png. Refer to that when making the wiring
 connections. There are also a couple of photos.
