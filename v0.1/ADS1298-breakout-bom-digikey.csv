@@ -1,0 +1,13 @@
+Reference,Mfg Part Num,Quantity,Description,Digikey part number,size,Digikey URL
+"C1,C4",,2,Capacitor - 2.2uF,1276-1085-1-ND,0603,http://www.digikey.com/product-detail/en/CL10A225KP8NNNC/1276-1085-1-ND/3889171
+C17,,1,Capacitor - 22uF,445-9077-1-ND,0603,http://www.digikey.com/product-detail/en/C1608X5R1A226M080AC/445-9077-1-ND/3661620
+"C2, C3,C5, C6",,2,Capacitor - 10 uF,445-6853-1-ND,0603,http://www.digikey.com/product-detail/en/C1608X5R1A106M080AC/445-6853-1-ND/2619215
+C24,,1,Capacitor - 100pF,1276-1008-1-ND,0603,http://www.digikey.com/product-detail/en/CL10C101JB8NNNC/1276-1008-1-ND/3889094
+C25,,1,Capacitor - 1.5nF,399-9011-1-ND,0603,http://www.digikey.com/product-detail/en/C0603C152J8RACTU/399-9011-1-ND/3522528
+"C7,C9,C11,C13,C18,C19,C21,C22,C23",,9,Capacitor - 1uF,399-3118-1-ND,0603,http://www.digikey.com/product-detail/en/C0603C105K8PACTU/399-3118-1-ND/551623
+"C8,C10,C12,C14,C20",,5,Capacitor - 0.1uF,399-1095-1-ND,0603,http://www.digikey.com/product-detail/en/C0603C104K8RACTU/399-1095-1-ND/411370
+IC2,,1,"Cap-Free, NMOS, 250mA Low Dropout Regulator - TPS73250DBVT",296-15813-1-ND,SOT23-5,http://www.digikey.com/product-detail/en/TPS73250DBVT/296-15813-1-ND/604353
+IC3,,1,"Cap-Free, NMOS, 250mA Low Dropout Regulator - TPS73233DBVT",296-15812-1-ND,SOT23-5,http://www.digikey.com/product-detail/en/TPS73233DBVT/296-15812-1-ND/604357
+"JP1,JP2",,2,"1x24 .1"" header",952-1901-ND,SIL,http://www.digikey.com/product-search/en?WT.z_header=search_go&lang=en&site=us&keywords=952-1901-ND&x=-1336&y=-51&formaction=on
+"L1,L2",,2,Inductors - 3.3 uH,445-1019-1-ND,0603,http://www.digikey.com/product-detail/en/MLF1608A3R3K/445-1019-1-ND/504417
+R1,,1,Resistor - 1M,P1.00MHCT-ND,0603,http://www.digikey.com/product-detail/en/ERJ-3EKF1004V/P1.00MHCT-ND/198072

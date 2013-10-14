@@ -12,7 +12,32 @@ Most of the ADS1298's pins are available on the two 20-pin headers.
 This board is meant for basic system debugging - electrode circuitry for EEG or ECG is not provided, just access to
 the chip's differential input pins.
 
-NOTE: This board is untested. I will update this file when I have tested it.
+Connecting the Board to an Arduino Due
+=====================i================
+
+There is an Arduino Due pinout diagram in docs/arduino_pinout_diagram.png. Refer to that when making the wiring
+connections. There are also a couple of photos.
+
+    ADS1298-breakout pin - Arduino Due (SAM3X8E pin)
+    SPI OUT (MISO)       - SPI Header 1 (108)
+    SPI IN (MOSI)        - SPI Header 4 (109)
+    SCK                  - SPI Header 3 (11)
+    GND                  - SPI Header 6
+    5V                   - SPI Header 2
+    DRDY                 - D45 (100)
+    CLK                  - A7 (85)
+    CLKSEL               - D49 (96)
+    RESET                - D48 (97)
+    PWDN                 - D47 (98)
+    START                - D46 (99)
+    CS                   - D53 (140)
+
+Testing
+=======
+
+software/ads1298_hello_world has a basic test sketch that can establish if the ADS1298 board is connected correctly
+and working.
+
 
 If you have questions, comments, or improvements, I would love to know them!
 
