@@ -38,8 +38,9 @@ Testing
 =======
 
 software/ads1298_hello_world has a basic test sketch that can establish if the ADS1298 board is connected correctly
-and working.
+and working. This sketch is based on code from this page:
 
+http://www.mccauslandcenter.sc.edu/CRNL/tools/ads1298
 
 If you have questions, comments, or improvements, I would love to know them!
 
