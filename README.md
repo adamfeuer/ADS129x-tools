@@ -1,7 +1,9 @@
 ADS1298-breakout
 ================
 
-This is an ADS1298 breakout board. The ADS1298 is an 8 channel ADC chip with SPI interface, meant for ECG and EEG:
+This is an ADS1298 breakout board. It can also be used with the ADS1294 and ADS1296. 
+
+The ADS1298 is an 8 channel ADC chip with SPI interface, meant for ECG and EEG:
 
 http://www.ti.com/product/ads1298
 
@@ -18,7 +20,7 @@ Connecting the Board to an Arduino Due
 There is an Arduino Due pinout diagram in docs/arduino_pinout_diagram.png. Refer to that when making the wiring
 connections. There are also a couple of photos.
 
-    ADS1298-breakout pin - Arduino Due (SAM3X8E pin)
+    ADS1298-breakout pin - Arduino Due pin (SAM3X8E pin)
     SPI OUT (MISO)       - SPI Header 1 (108)
     SPI IN (MOSI)        - SPI Header 4 (109)
     SCK                  - SPI Header 3 (11)
