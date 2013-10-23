@@ -33,17 +33,20 @@ SerialCommand serialCommand;
 void setup() {  
   pinMode(arduinoLed,OUTPUT);      // Configure the onboard LED for output
   digitalWrite(arduinoLed,LOW);    // default to LED off
+  arduinoSetup();
+  adsSetup();
 
   SerialUSB.begin(115200); 
   SerialUSB.println("Ready"); 
 
   // Setup callbacks for SerialCommand commands 
-  serialCommand.addCommand("LEDON",ledOn);         // Turns LED on
-  serialCommand.addCommand("LEDOFF", ledOff);      // Turns LED off
-  serialCommand.addCommand("VERSION",version);     // Echos the string argument back
-  serialCommand.addCommand("RREG", readRegister);  // Read register, argument in hex, print contents in hex
-  serialCommand.addCommand("WREG", writeRegister); // Write register, arguments in hex
-  serialCommand.addCommand("P", processCommand);   // Converts two arguments to integers and echos them back 
+  serialCommand.addCommand("version",version);     // Echos the driver version number
+  serialCommand.addCommand("ledon",ledOn);         // Turns Due onboad LED on
+  serialCommand.addCommand("ledoff", ledOff);      // Turns Due onboard LED off
+  serialCommand.addCommand("rreg", readRegister);  // Read ADS129x register, argument in hex, print contents in hex
+  serialCommand.addCommand("wreg", writeRegister); // Write ADS129x register, arguments in hex
+  serialCommand.addCommand("rdatac", rdatac);      // Enter read data continuous mode
+  serialCommand.addCommand("sdatac", sdatac);      // Stop read data continuous mode
   serialCommand.setDefaultHandler(unrecognized);   // Handler for command that isn't matched 
 
 }
@@ -55,6 +58,7 @@ void loop() {
 }
 
 void ledOn() {
+  SerialUSB.println("200 Ok");
   SerialUSB.println("LED on"); 
   digitalWrite(arduinoLed,HIGH);  
 }
@@ -73,18 +77,26 @@ void version() {
 }
 
 void readRegister() {
-  char *arg;  
-  arg = serialCommand.next();    
-  if (arg != NULL) {   
-    long regNum = hexToLong(arg);
-    if (regNum >= 0) {
-      SerialUSB.println("200 Ok"); 
-      SerialUSB.println(regNum); 
-    } else {
-       SerialUSB.println("402 Error: expected hexidecimal digits."); 
-    }
+  using namespace ADS1298; 
+  char *arg1; 
+  arg1 = serialCommand.next();   
+  if (arg1 != NULL) {
+      long registerNumber = hexToLong(arg1);
+      if (registerNumber >= 0) {
+        SerialUSB.print("200 Ok");
+        SerialUSB.print(" (Read Register "); 
+        SerialUSB.print(registerNumber); 
+        SerialUSB.print(" )"); 
+        SerialUSB.println();
+               
+        int result = adc_rreg(registerNumber);
+        SerialUSB.println(result, HEX);      
+
+      } else {
+         SerialUSB.println("402 Error: expected hexidecimal digits."); 
+      }
   } else {
-    SerialUSB.println("401 Error: register argument missing."); 
+    SerialUSB.println("403 Error: register argument missing."); 
   }
 }
 
@@ -112,29 +124,20 @@ void writeRegister() {
   }
 }
 
-void processCommand() {
-  int aNumber;  
-  char *arg; 
+void rdatac() {
+  using namespace ADS1298; 
+  SerialUSB.println("200 Ok");
+  SerialUSB.println("RDATAC mode on."); 
+  isRDATAC = true;
+  adc_send_command(RDATAC);
+}
 
-  SerialUSB.println("We're in process_command"); 
-  arg = serialCommand.next(); 
-  if (arg != NULL) {
-    aNumber=atoi(arg);    // Converts a char string to an integer
-    SerialUSB.print("First argument was: "); 
-    SerialUSB.println(aNumber); 
-  } else {
-    SerialUSB.println("No arguments"); 
-  }
-
-  arg = serialCommand.next(); 
-  if (arg != NULL) {
-    aNumber=atol(arg); 
-    SerialUSB.print("Second argument was: "); 
-    SerialUSB.println(aNumber); 
-  } else {
-    SerialUSB.println("No second argument"); 
-  }
-
+void sdatac() {
+  using namespace ADS1298; 
+  SerialUSB.println("200 Ok");
+  SerialUSB.println("RDATAC mode off."); 
+  isRDATAC= false;
+  adc_send_command(SDATAC);
 }
 
 // This gets set as the default handler, and gets called when no other command matches. 
@@ -183,7 +186,7 @@ void checkSerialNum(int serialNum) { //handle commands to ADS device
   //Serial.println("Checking WiredSerial...");
   if (Serialavailable(serialNum) < 1) return;
   //Serial.println("Found characters.");
-  blinkLed();
+  //blinkLed();
   activeSerialPort = serialNum;
   unsigned char  val = Serialread(serialNum);      
   using namespace ADS1298; 
@@ -197,7 +200,7 @@ void checkSerialNum(int serialNum) { //handle commands to ADS device
         }
         if (val == SDATAC) isRDATAC = false;
         if (val == RDATA) isRDATAC = false;
-        blinkLed();
+        //blinkLed();
         adc_send_command(val);
         return;
   }

@@ -4,7 +4,7 @@
  * send and receive commands from TI ADS129x chips. 
  */
 #include "Arduino.h"   // use: Wprogram.h for Arduino versions prior to 1.0
-#include "adsCMD.h"
+#include "adsCommand.h"
 #include "ads1298.h"
 #include <SPI.h>  // include the SPI library:
 

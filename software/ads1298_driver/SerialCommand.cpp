@@ -76,7 +76,8 @@ void SerialCommand::readSerial() {
     #ifdef SERIALCOMMAND_DEBUG
       SerialUSB.print(inChar);   // Echo back to serial stream
     #endif
-
+    
+    inChar = tolower(inChar);
     if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
       #ifdef SERIALCOMMAND_DEBUG
         SerialUSB.print("Received: ");
