@@ -7,53 +7,110 @@
 // Steven Cogswell and Stefan Rado (SerialCommand).
 //
 
+#include <stdlib.h>
+#include <SPI.h> 
 #include "SerialCommand.h"
+#include "ads1298.h"
+#include "adsCommand.h"
 
-#define arduinoLED 13   // Arduino LED on board
+#define arduinoLed 13   // Arduino LED on board
+
+#define BAUD_RATE  115200 // SerialUSB ignores this and uses the maximum rate
+#define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
+#define WiredSerial SerialUSB //use Due's Native port
+
+#define VERSION "0.1"
+
+int gMaxChan = 0;
+int gNumActiveChan = 0;
+int activeSerialPort = 0; //data will be sent to serial port that last sent commands. E.G. bluetooth or USB port
+boolean gActiveChan [9]; // reports whether channels 1..9 are active
+const int kPIN_LED = 13;//pin with light - typically 13. Only flashes if error status. n.b. on Teensy3, pin 13 is ALSO spi clock!
+boolean isRDATAC = false;
 
 SerialCommand serialCommand;  
 
 void setup() {  
-  pinMode(arduinoLED,OUTPUT);      // Configure the onboard LED for output
-  digitalWrite(arduinoLED,LOW);    // default to LED off
+  pinMode(arduinoLed,OUTPUT);      // Configure the onboard LED for output
+  digitalWrite(arduinoLed,LOW);    // default to LED off
 
   SerialUSB.begin(115200); 
   SerialUSB.println("Ready"); 
 
   // Setup callbacks for SerialCommand commands 
-  serialCommand.addCommand("ON",ledOn);       // Turns LED on
-  serialCommand.addCommand("OFF", ledOff);        // Turns LED off
-  serialCommand.addCommand("HELLO",sayHello);     // Echos the string argument back
-  serialCommand.addCommand("P", processCommand);  // Converts two arguments to integers and echos them back 
-  serialCommand.setDefaultHandler(unrecognized);  // Handler for command that isn't matched  (says "What?") 
+  serialCommand.addCommand("LEDON",ledOn);         // Turns LED on
+  serialCommand.addCommand("LEDOFF", ledOff);      // Turns LED off
+  serialCommand.addCommand("VERSION",version);     // Echos the string argument back
+  serialCommand.addCommand("RREG", readRegister);  // Read register, argument in hex, print contents in hex
+  serialCommand.addCommand("WREG", writeRegister); // Write register, arguments in hex
+  serialCommand.addCommand("P", processCommand);   // Converts two arguments to integers and echos them back 
+  serialCommand.setDefaultHandler(unrecognized);   // Handler for command that isn't matched 
 
 }
 
 void loop() {  
-  serialCommand.readSerial();
+   serialCommand.readSerial();
+   //checkSerialNum(0); //wired
+   //sendOsc(); //see if there are any new samples to send
 }
 
 void ledOn() {
   SerialUSB.println("LED on"); 
-  digitalWrite(arduinoLED,HIGH);  
+  digitalWrite(arduinoLed,HIGH);  
 }
 
 void ledOff() {
+  SerialUSB.println("200 Ok");
   SerialUSB.println("LED off"); 
-  digitalWrite(arduinoLED,LOW);
+  digitalWrite(arduinoLed,LOW);
 }
 
-void sayHello() {
+void version() {
+  SerialUSB.println("200 Ok");
+  SerialUSB.print("Version "); 
+  SerialUSB.println(VERSION);
+  digitalWrite(arduinoLed,LOW);
+}
+
+void readRegister() {
   char *arg;  
-  arg = serialCommand.next();    // Get the next argument from the SerialCommand object buffer
-  if (arg != NULL) {     // As long as it existed, take it
-    SerialUSB.print("Hello "); 
-    SerialUSB.println(arg); 
+  arg = serialCommand.next();    
+  if (arg != NULL) {   
+    long regNum = hexToLong(arg);
+    if (regNum >= 0) {
+      SerialUSB.println("200 Ok"); 
+      SerialUSB.println(regNum); 
+    } else {
+       SerialUSB.println("402 Error: expected hexidecimal digits."); 
+    }
   } else {
-    SerialUSB.println("Hello, whoever you are"); 
+    SerialUSB.println("401 Error: register argument missing."); 
   }
 }
 
+void writeRegister() {
+  char *arg1, *arg2; 
+  arg1 = serialCommand.next();   
+  arg2 = serialCommand.next();  
+  if (arg1 != NULL) {
+    if (arg2 != NULL) { 
+      long regNum = hexToLong(arg1);
+      long regValue = hexToLong(arg2);
+      if (regNum >= 0 && regValue > 0) {
+        SerialUSB.println("200 Ok"); 
+        SerialUSB.print(regNum); 
+        SerialUSB.print(" "); 
+        SerialUSB.print(regValue); 
+      } else {
+         SerialUSB.println("402 Error: expected hexidecimal digits."); 
+      }
+    } else {
+      SerialUSB.println("404 Error: value argument missing."); 
+    }
+  } else {
+    SerialUSB.println("403 Error: register argument missing."); 
+  }
+}
 
 void processCommand() {
   int aNumber;  
@@ -84,22 +141,6 @@ void processCommand() {
 void unrecognized(const char *command) {
   SerialUSB.println("Unrecognized command."); 
 }
-
-/*
-
-#define BAUD_RATE  115200 // SerialUSB ignores this and uses the maximum rate
-#define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
-#define WiredSerial SerialUSB //use Due's Native port
-
-#include "ads1298.h"
-#include "adsCommand.h"
-#include <SPI.h>  // include the SPI library:
-int gMaxChan = 0;
-int gNumActiveChan = 0;
-int activeSerialPort = 0; //data will be sent to serial port that last sent commands. E.G. bluetooth or USB port
-boolean gActiveChan [9]; // reports whether channels 1..9 are active
-const int kPIN_LED = 13;//pin with light - typically 13. Only flashes if error status. n.b. on Teensy3, pin 13 is ALSO spi clock!
-boolean isRDATAC = false;
 
 
 void detectActiveChannels() {  //set device into RDATAC (continous) mode -it will stream data
@@ -315,7 +356,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 	digitalWrite(PIN_START, HIGH);  
 }
 
-void setup(){
+void arduinoSetup(){
   Serial.begin(BAUD_RATE); // for debugging
   pinMode(kPIN_LED, OUTPUT);
   using namespace ADS1298;
@@ -333,9 +374,6 @@ void setup(){
   //start Serial Peripheral Interface
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
-  #ifndef isDUE
-  SPI.setClockDivider(SPI_CLOCK_DIV4); //http://forum.pjrc.com/threads/1156-Teensy-3-SPI-Basic-Clock-Questions
-  #endif
   SPI.setDataMode(SPI_MODE1);
   //Start ADS1298
   delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
@@ -401,11 +439,17 @@ void blinkLed() {
       delay(100);
 }
 
+using namespace std;
+long hexToLong(char *digits) {
+    char *error;
+    long n = strtol(digits, &error, 16);
+    if ( *error != 0 ) { 
+       return -1; // error
+    }
+    else {
+       return n;
+    }
+}
 
-void loop()
-{
-    checkSerialNum(0); //wired
-    sendOsc(); //see if there are any new samples to report
-} //loop()
 
-*/
+
