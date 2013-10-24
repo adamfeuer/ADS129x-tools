@@ -53,8 +53,18 @@ void setup() {
 
 void loop() {  
    serialCommand.readSerial();
-   //checkSerialNum(0); //wired
-   //sendOsc(); //see if there are any new samples to send
+   sendSamples();
+}
+
+long hexToLong(char *digits) {
+   using namespace std;
+   char *error;
+   long n = strtol(digits, &error, 16);
+   if ( *error != 0 ) { 
+      return -1; // error
+   } else {
+      return n;
+   }
 }
 
 void outputHexByte(int value) {
@@ -140,8 +150,11 @@ void rdatac() {
   using namespace ADS1298; 
   SerialUSB.println("200 Ok");
   SerialUSB.println("RDATAC mode on."); 
-  isRDATAC = true;
-  adc_send_command(RDATAC);
+  detectActiveChannels();
+  if (gNumActiveChan > 0) { 
+      isRDATAC = true;
+      adc_send_command(RDATAC);
+  }
 }
 
 void sdatac() {
@@ -160,7 +173,7 @@ void unrecognized(const char *command) {
 
 void detectActiveChannels() {  //set device into RDATAC (continous) mode -it will stream data
   if ((isRDATAC) ||  (gMaxChan < 1)) return; //we can not read registers when in RDATAC mode
-  Serial.println("Detect active channels: ");
+  //Serial.println("Detect active channels: ");
   using namespace ADS1298; 
   gNumActiveChan = 0;
   for (int i = 1; i <= gMaxChan; i++) {
@@ -168,9 +181,8 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
      int chSet = adc_rreg(CHnSET + i);
      gActiveChan[i] = ((chSet & 7) != SHORTED);
      if ( (chSet & 7) != SHORTED) gNumActiveChan ++;   
-     Serial.print("Active channels: ");
-     Serial.println(gNumActiveChan);
-     delay(500);
+     SerialUSB.print("Active channels: ");
+     SerialUSB.println(gNumActiveChan);
   }
   
 }
@@ -237,7 +249,6 @@ void checkSerialNum(int serialNum) { //handle commands to ADS device
           Serial1.flush();
           break;
         default: 
-            blinkLed();
             WiredSerial.write(serialBytes, numSerialBytes);
             WiredSerial.flush();
       }
@@ -271,6 +282,25 @@ void checkSerialNum(int serialNum) { //handle commands to ADS device
   int testPeriod = 100;
   byte testMSB, testLSB; 
 #endif 
+
+
+void sendSamples(void) { 
+    if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
+    if (digitalRead(IPIN_DRDY) == HIGH) return; 
+    digitalWrite(IPIN_CS, LOW);
+    int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
+    unsigned char serialBytes[numSerialBytes];
+    for (int i = 0; i < numSerialBytes; i++) 
+      serialBytes[i] =SPI.transfer(0);
+    delayMicroseconds(1); 
+    digitalWrite(IPIN_CS, HIGH);
+    for (int i=0; i<numSerialBytes; i++) {
+      outputHexByte(serialBytes[i]);
+    }
+    SerialUSB.println();
+}
+
+
 
 void sendOsc(void) { 
     //Serial.print("Send Osc: ");
@@ -361,7 +391,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 	// adc_wreg(RLD_SENSP, 0x01);	// only use channel IN1P and IN1N
 	// adc_wreg(RLD_SENSN, 0x01);	// for the RLD Measurement
         adc_wreg(CONFIG1,HIGH_RES_1k_SPS);
-        adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
+        //adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
 	// Set the first two channels to input signal
 	for (int i = 1; i <= 8; ++i) {
 		adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
@@ -400,19 +430,7 @@ void arduinoSetup(){
   // Send SDATAC Command (Stop Read Data Continuously mode)
   delay(100); //pause to provide ads129n enough time to boot up...
   adc_send_command(SDATAC);
-  int val = adc_rreg(CONFIG1) ; 
-  Serial.print("config1: ");
-  Serial.println(val, HEX);
-  val = adc_rreg(CONFIG2) ; 
-  Serial.print("config2: ");
-  Serial.println(val, HEX);
-  val = adc_rreg(CONFIG3) ; 
-  Serial.print("config3: ");
-  Serial.println(val, HEX);
-  val = adc_rreg(ID) ; 
-  Serial.print("ID: ");
-  Serial.println(val, HEX);
-  delay(500);
+  int val = adc_rreg(ID) ; 
   switch (val & B00011111 ) { //least significant bits reports channels
           case  B10000: //16
             gMaxChan = 4; //ads1294
@@ -429,13 +447,9 @@ void arduinoSetup(){
           default: 
             gMaxChan = 0;
   }
-  //start serial port
-  //Serial1.begin(BAUD_RATE);
-  //Serial1.flush(); //flush all previous received and transmitted data
   WiredSerial.begin(BAUD_RATE); // use native port on Due
   while (WiredSerial.read() >= 0) {} //http://forum.arduino.cc/index.php?topic=134847.0
   delay(200);  // Catch Due reset problem
-  //while (!WiredSerial) ; //required by Leonardo http://arduino.cc/en/Serial/IfSerial (ads129n requires 3.3v signals, Leonardo is 5v)
   if (gMaxChan == 0) { //error mode
     while(1) { //loop forever 
       digitalWrite(kPIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
@@ -447,24 +461,6 @@ void arduinoSetup(){
   adsSetup(); //optional - sets up device - the PC can do this as well       
 } //setup()
 
-void blinkLed() {
-      digitalWrite(kPIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-      delay(100);               // wait for a second
-      digitalWrite(kPIN_LED, LOW);    // turn the LED off by making the voltage LOW
-      delay(100);
-}
-
-using namespace std;
-long hexToLong(char *digits) {
-    char *error;
-    long n = strtol(digits, &error, 16);
-    if ( *error != 0 ) { 
-       return -1; // error
-    }
-    else {
-       return n;
-    }
-}
 
 
 
