@@ -57,6 +57,13 @@ void loop() {
    //sendOsc(); //see if there are any new samples to send
 }
 
+void outputHexByte(int value) {
+  int clipped = value & 0xff;
+  char charValue[3];
+  sprintf(charValue, "%02X", clipped);
+  SerialUSB.print(charValue);
+}
+
 void ledOn() {
   SerialUSB.println("200 Ok");
   SerialUSB.println("LED on"); 
@@ -83,14 +90,14 @@ void readRegister() {
   if (arg1 != NULL) {
       long registerNumber = hexToLong(arg1);
       if (registerNumber >= 0) {
+        int result = adc_rreg(registerNumber);
         SerialUSB.print("200 Ok");
         SerialUSB.print(" (Read Register "); 
         SerialUSB.print(registerNumber); 
-        SerialUSB.print(" )"); 
-        SerialUSB.println();
-               
-        int result = adc_rreg(registerNumber);
-        SerialUSB.println(result, HEX);      
+        SerialUSB.print(") "); 
+        SerialUSB.println();               
+        outputHexByte(result);      
+        SerialUSB.println();      
 
       } else {
          SerialUSB.println("402 Error: expected hexidecimal digits."); 
@@ -106,13 +113,18 @@ void writeRegister() {
   arg2 = serialCommand.next();  
   if (arg1 != NULL) {
     if (arg2 != NULL) { 
-      long regNum = hexToLong(arg1);
-      long regValue = hexToLong(arg2);
-      if (regNum >= 0 && regValue > 0) {
-        SerialUSB.println("200 Ok"); 
-        SerialUSB.print(regNum); 
+      long registerNumber = hexToLong(arg1);
+      long registerValue = hexToLong(arg2);
+      if (registerNumber >= 0 && registerValue > 0) {
+        adc_wreg(registerNumber, registerValue);        
+        SerialUSB.print("200 Ok"); 
+        SerialUSB.print(" (Write Register "); 
+        SerialUSB.print(registerNumber); 
         SerialUSB.print(" "); 
-        SerialUSB.print(regValue); 
+        SerialUSB.print(registerValue); 
+        SerialUSB.print(") "); 
+        SerialUSB.println();
+                
       } else {
          SerialUSB.println("402 Error: expected hexidecimal digits."); 
       }
