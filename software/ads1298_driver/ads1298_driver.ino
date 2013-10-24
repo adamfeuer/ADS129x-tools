@@ -19,7 +19,7 @@
 #define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB //use Due's Native port
 
-#define VERSION "0.1"
+#define VERSION "ADS1298 driver v0.1"
 
 int gMaxChan = 0;
 int gNumActiveChan = 0;
@@ -45,6 +45,7 @@ void setup() {
   serialCommand.addCommand("ledoff", ledOff);      // Turns Due onboard LED off
   serialCommand.addCommand("rreg", readRegister);  // Read ADS129x register, argument in hex, print contents in hex
   serialCommand.addCommand("wreg", writeRegister); // Write ADS129x register, arguments in hex
+  serialCommand.addCommand("rdata", rdata);        // Read one sample of data from each channel
   serialCommand.addCommand("rdatac", rdatac);      // Enter read data continuous mode
   serialCommand.addCommand("sdatac", sdatac);      // Stop read data continuous mode
   serialCommand.setDefaultHandler(unrecognized);   // Handler for command that isn't matched 
@@ -88,7 +89,6 @@ void ledOff() {
 
 void version() {
   SerialUSB.println("200 Ok");
-  SerialUSB.print("Version "); 
   SerialUSB.println(VERSION);
   digitalWrite(arduinoLed,LOW);
 }
@@ -146,6 +146,14 @@ void writeRegister() {
   }
 }
 
+void rdata() {
+  using namespace ADS1298; 
+  SerialUSB.println("200 Ok ");
+  adc_send_command(RDATA);
+  while (digitalRead(IPIN_DRDY) == HIGH);
+  sendSample();
+}
+
 void rdatac() {
   using namespace ADS1298; 
   SerialUSB.println("200 Ok");
@@ -196,86 +204,6 @@ int Serialavailable(int serialNum) { //handle commands to ADS device
   }
 }
 
-int Serialread(int serialNum) { //handle commands to ADS device
-  return WiredSerial.read() ;
-  //switch (serialNum) {
-    //case 1:
-    //  return Serial1.read() ;
-    //default: 
-    //  return WiredSerial.read() ;
-  //}
-}
-
-void checkSerialNum(int serialNum) { //handle commands to ADS device
-  //Serial.println("Checking WiredSerial...");
-  if (Serialavailable(serialNum) < 1) return;
-  //Serial.println("Found characters.");
-  //blinkLed();
-  activeSerialPort = serialNum;
-  unsigned char  val = Serialread(serialNum);      
-  using namespace ADS1298; 
-  if ((val >= 0x02) && (val <= 0x12)) { //single byte command
-        //Serial.print("Single byte command: ");
-        //Serial.println(val, HEX);
-        //delay(50);
-        if (val == RDATAC) {
-          detectActiveChannels(); //start streaming data
-          if (gNumActiveChan > 0) isRDATAC = true;
-        }
-        if (val == SDATAC) isRDATAC = false;
-        if (val == RDATA) isRDATAC = false;
-        //blinkLed();
-        adc_send_command(val);
-        return;
-  }
-  if ((val >= 0x20) && (val <= 0x3F)) { //RREG (Read register) command  
-      //Serial.print("Read register command: ");
-      //Serial.println(val, HEX);
-      //delay(50);
-      for (int i = 0; i < 10; ++i) if (Serialavailable(serialNum) < 1) delay(1); 
-      if(Serialavailable(serialNum) < 1) return;
-      unsigned char  numSerialBytes = Serialread(serialNum)+1;
-      digitalWrite(IPIN_CS, LOW);
-      SPI.transfer(val);
-      SPI.transfer(numSerialBytes-1);	// number of registers to be read – 1
-      unsigned char serialBytes[numSerialBytes];
-      for (int i = 0; i < numSerialBytes; ++i) 
-        serialBytes[i] =SPI.transfer(0);
-      delayMicroseconds(1);     
-      digitalWrite(IPIN_CS, HIGH);
-      switch (serialNum) {
-        case 1:
-          Serial1.write(serialBytes, numSerialBytes);
-          Serial1.flush();
-          break;
-        default: 
-            WiredSerial.write(serialBytes, numSerialBytes);
-            WiredSerial.flush();
-      }
-      return;
-  }
-  if ((val >= 0x40) && (val <= 0x5F)) { //WREG (Write Register) command
-      //Serial.print("Write register command: ");
-      //Serial.println(val, HEX);
-      //delay(50);
-      for (int i = 0; i < 5; ++i) if (Serialavailable(serialNum) < 1) delay(1); 
-      if(Serialavailable(serialNum) < 1) return;
-      unsigned char  numSerialBytes = Serialread(serialNum)+1;
-      for (int i = 0; i < 5; ++i) if (Serialavailable(serialNum) < numSerialBytes) delay(1); 
-      if(Serialavailable(serialNum) < numSerialBytes) return;
-      unsigned char serialBytes[numSerialBytes];
-      for (int i = 0; i < numSerialBytes; ++i) serialBytes[i] = Serialread(serialNum); 
-      digitalWrite(IPIN_CS, LOW);
-      SPI.transfer(val);
-      SPI.transfer(numSerialBytes-1);	// number of registers to be written – 1
-      for (int i = 0; i < numSerialBytes; ++i) {
-        SPI.transfer(serialBytes[i]);
-        delayMicroseconds(1);      
-      }
-      digitalWrite(IPIN_CS, HIGH);
-  }//if WREG
-}
-
 //#define testSignal //use this to determine if your software is accurately measuring full range 24-bit signed data -8388608..8388607
 #ifdef testSignal
   int testInc = 1;
@@ -283,10 +211,13 @@ void checkSerialNum(int serialNum) { //handle commands to ADS device
   byte testMSB, testLSB; 
 #endif 
 
-
 void sendSamples(void) { 
     if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
     if (digitalRead(IPIN_DRDY) == HIGH) return; 
+    sendSample();
+}
+
+void sendSample(void) { 
     digitalWrite(IPIN_CS, LOW);
     int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
     unsigned char serialBytes[numSerialBytes];
@@ -300,86 +231,6 @@ void sendSamples(void) {
     SerialUSB.println();
 }
 
-
-
-void sendOsc(void) { 
-    //Serial.print("Send Osc: ");
-    //Serial.print(isRDATAC);
-    //Serial.print(" ");
-    //Serial.print(gNumActiveChan);
-    //Serial.println();
-    //delay(50);
-    if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
-    //Serial.println("Send Osc - isRDATAC and gNumActiveChan");
-    if (digitalRead(IPIN_DRDY) == HIGH) return; 
-    //Serial.println("Send Osc - DRDY - about to write bytes ");
-    //delay(50);
-    digitalWrite(IPIN_CS, LOW);
-    #ifdef txActiveChannelsOnly
-      int numSerialBytes = 1 + (3 * gNumActiveChan); //8-bits header plus 24-bits per ACTIVE channel
-      unsigned char serialBytes[numSerialBytes];
-      int i = 0;
-      unsigned char status = SPI.transfer(0); //get 1st byte of header
-      //Serial.print("Send Osc - DRDY - status: ");
-      //Serial.println(status, HEX);
-      //delay(50);
-      digitalWrite(IPIN_CS, LOW);
-      serialBytes[i++] = status; //get 1st byte of header
-      SPI.transfer(0); //skip 2nd byte of header
-      SPI.transfer(0); //skip 3rd byte of header
-      for (int ch = 1; ch <= gMaxChan; ch++) {
-        if (gActiveChan[ch]) {
-           #ifdef testSignal
-            //positive full-scale input produces  7FFFFFh, negative full-scale input produces 800000h, neutroal produces 000000h 
-            testInc++;
-            if (testInc >= testPeriod) {
-              testInc = 1;
-              if (testMSB == 0x7F) { //send minimum value -8388608;
-                testMSB = 0x80;
-                testLSB = 0x00;
-              } else if (testMSB == 0x80) { //send zero
-                testMSB = 0x00;
-                testLSB = 0x00;             
-              } else { //send maximum value +8388607
-                testMSB = 0x7F;
-                testLSB = 0xFF;
-              } 
-            }
-            serialBytes[i++] = testMSB;
-            serialBytes[i++] = testLSB;
-            serialBytes[i++] = testLSB;
-            SPI.transfer(0); SPI.transfer(0); SPI.transfer(0);
-          #else //if testSignal otherwise report real data
-            serialBytes[i++] =SPI.transfer(0);
-            serialBytes[i++] =SPI.transfer(0);
-            serialBytes[i++] =SPI.transfer(0); 
-          #endif
-        } else {
-          SPI.transfer(0); SPI.transfer(0); SPI.transfer(0); //skip these 24 bytes
-        }  
-      }
-      //for (int i = 0; i < numSerialBytes; ++i) 
-      //  serialBytes[i] =SPI.transfer(0);
-    #else
-      int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
-      unsigned char serialBytes[numSerialBytes];
-      for (int i = 0; i < numSerialBytes; ++i) 
-        serialBytes[i] =SPI.transfer(0);
-     #endif 
-     delayMicroseconds(1); 
-     digitalWrite(IPIN_CS, HIGH);
-     //Serial.print("Sending bytes: ");
-     //Serial.println(numSerialBytes);
-     WiredSerial.write(serialBytes, numSerialBytes);
-     //switch (activeSerialPort) {
-     //   case 1:
-     //     Serial1.write(serialBytes, numSerialBytes);
-     //     break;
-     //   default: 
-     //       WiredSerial.write(serialBytes, numSerialBytes);;
-     //}
-}
-
 void adsSetup() { //default settings for ADS1298 and compatible chips
         using namespace ADS1298;
         // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
@@ -391,12 +242,19 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 	// adc_wreg(RLD_SENSP, 0x01);	// only use channel IN1P and IN1N
 	// adc_wreg(RLD_SENSN, 0x01);	// for the RLD Measurement
         adc_wreg(CONFIG1,HIGH_RES_1k_SPS);
-        //adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
+        adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
 	// Set the first two channels to input signal
-	for (int i = 1; i <= 8; ++i) {
-		adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
+	for (int i = 1; i <= 1; ++i) {
+		adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
+		//adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
 		//adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
                 //adc_wreg(CHnSET + i,SHORTED); //disable this channel
+	}
+	for (int i = 2; i <= 2; ++i) {
+		adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
+	}
+	for (int i = 3; i <= 8; ++i) {
+                adc_wreg(CHnSET + i,SHORTED); //disable this channel
 	}
 	digitalWrite(PIN_START, HIGH);  
 }
