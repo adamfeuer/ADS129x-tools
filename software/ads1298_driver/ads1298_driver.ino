@@ -13,13 +13,12 @@
 #include "ads1298.h"
 #include "adsCommand.h"
 
-#define arduinoLed 13   // Arduino LED on board
+#define VERSION "ADS1298 driver v0.1"
 
-#define BAUD_RATE  115200 // SerialUSB ignores this and uses the maximum rate
+#define arduinoLed 13   // Arduino LED on board
+#define BAUD_RATE  115200 // WiredSerial ignores this and uses the maximum rate
 #define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB //use Due's Native port
-
-#define VERSION "ADS1298 driver v0.1"
 
 int gMaxChan = 0;
 int gNumActiveChan = 0;
@@ -27,6 +26,10 @@ int activeSerialPort = 0; //data will be sent to serial port that last sent comm
 boolean gActiveChan [9]; // reports whether channels 1..9 are active
 const int kPIN_LED = 13;//pin with light - typically 13. Only flashes if error status. n.b. on Teensy3, pin 13 is ALSO spi clock!
 boolean isRDATAC = false;
+
+char hexDigits[] = "0123456789ABCDEF";
+unsigned char serialBytes[200];
+char sampleDigits[400];
 
 SerialCommand serialCommand;  
 
@@ -36,8 +39,8 @@ void setup() {
   arduinoSetup();
   adsSetup();
 
-  SerialUSB.begin(115200); 
-  SerialUSB.println("Ready"); 
+  WiredSerial.begin(115200); 
+  WiredSerial.println("Ready"); 
 
   // Setup callbacks for SerialCommand commands 
   serialCommand.addCommand("version",version);     // Echos the driver version number
@@ -72,24 +75,24 @@ void outputHexByte(int value) {
   int clipped = value & 0xff;
   char charValue[3];
   sprintf(charValue, "%02X", clipped);
-  SerialUSB.print(charValue);
+  WiredSerial.print(charValue);
 }
 
 void ledOn() {
-  SerialUSB.println("200 Ok");
-  SerialUSB.println("LED on"); 
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("LED on"); 
   digitalWrite(arduinoLed,HIGH);  
 }
 
 void ledOff() {
-  SerialUSB.println("200 Ok");
-  SerialUSB.println("LED off"); 
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("LED off"); 
   digitalWrite(arduinoLed,LOW);
 }
 
 void version() {
-  SerialUSB.println("200 Ok");
-  SerialUSB.println(VERSION);
+  WiredSerial.println("200 Ok");
+  WiredSerial.println(VERSION);
   digitalWrite(arduinoLed,LOW);
 }
 
@@ -101,19 +104,19 @@ void readRegister() {
       long registerNumber = hexToLong(arg1);
       if (registerNumber >= 0) {
         int result = adc_rreg(registerNumber);
-        SerialUSB.print("200 Ok");
-        SerialUSB.print(" (Read Register "); 
-        SerialUSB.print(registerNumber); 
-        SerialUSB.print(") "); 
-        SerialUSB.println();               
+        WiredSerial.print("200 Ok");
+        WiredSerial.print(" (Read Register "); 
+        WiredSerial.print(registerNumber); 
+        WiredSerial.print(") "); 
+        WiredSerial.println();               
         outputHexByte(result);      
-        SerialUSB.println();      
+        WiredSerial.println();      
 
       } else {
-         SerialUSB.println("402 Error: expected hexidecimal digits."); 
+         WiredSerial.println("402 Error: expected hexidecimal digits."); 
       }
   } else {
-    SerialUSB.println("403 Error: register argument missing."); 
+    WiredSerial.println("403 Error: register argument missing."); 
   }
 }
 
@@ -127,28 +130,28 @@ void writeRegister() {
       long registerValue = hexToLong(arg2);
       if (registerNumber >= 0 && registerValue > 0) {
         adc_wreg(registerNumber, registerValue);        
-        SerialUSB.print("200 Ok"); 
-        SerialUSB.print(" (Write Register "); 
-        SerialUSB.print(registerNumber); 
-        SerialUSB.print(" "); 
-        SerialUSB.print(registerValue); 
-        SerialUSB.print(") "); 
-        SerialUSB.println();
+        WiredSerial.print("200 Ok"); 
+        WiredSerial.print(" (Write Register "); 
+        WiredSerial.print(registerNumber); 
+        WiredSerial.print(" "); 
+        WiredSerial.print(registerValue); 
+        WiredSerial.print(") "); 
+        WiredSerial.println();
                 
       } else {
-         SerialUSB.println("402 Error: expected hexidecimal digits."); 
+         WiredSerial.println("402 Error: expected hexidecimal digits."); 
       }
     } else {
-      SerialUSB.println("404 Error: value argument missing."); 
+      WiredSerial.println("404 Error: value argument missing."); 
     }
   } else {
-    SerialUSB.println("403 Error: register argument missing."); 
+    WiredSerial.println("403 Error: register argument missing."); 
   }
 }
 
 void rdata() {
   using namespace ADS1298; 
-  SerialUSB.println("200 Ok ");
+  WiredSerial.println("200 Ok ");
   adc_send_command(RDATA);
   while (digitalRead(IPIN_DRDY) == HIGH);
   sendSample();
@@ -156,8 +159,8 @@ void rdata() {
 
 void rdatac() {
   using namespace ADS1298; 
-  SerialUSB.println("200 Ok");
-  SerialUSB.println("RDATAC mode on."); 
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("RDATAC mode on."); 
   detectActiveChannels();
   if (gNumActiveChan > 0) { 
       isRDATAC = true;
@@ -167,15 +170,15 @@ void rdatac() {
 
 void sdatac() {
   using namespace ADS1298; 
-  SerialUSB.println("200 Ok");
-  SerialUSB.println("RDATAC mode off."); 
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("RDATAC mode off."); 
   isRDATAC= false;
   adc_send_command(SDATAC);
 }
 
 // This gets set as the default handler, and gets called when no other command matches. 
 void unrecognized(const char *command) {
-  SerialUSB.println("Unrecognized command."); 
+  WiredSerial.println("Unrecognized command."); 
 }
 
 
@@ -189,19 +192,10 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
      int chSet = adc_rreg(CHnSET + i);
      gActiveChan[i] = ((chSet & 7) != SHORTED);
      if ( (chSet & 7) != SHORTED) gNumActiveChan ++;   
-     SerialUSB.print("Active channels: ");
-     SerialUSB.println(gNumActiveChan);
+     //WiredSerial.print("Active channels: ");
+     //WiredSerial.println(gNumActiveChan);
   }
   
-}
-
-int Serialavailable(int serialNum) { //handle commands to ADS device
-  switch (serialNum) {
-    case 1:
-      return Serial1.available() ;
-    default: 
-      return WiredSerial.available() ;
-  }
 }
 
 //#define testSignal //use this to determine if your software is accurately measuring full range 24-bit signed data -8388608..8388607
@@ -219,16 +213,19 @@ void sendSamples(void) {
 
 void sendSample(void) { 
     digitalWrite(IPIN_CS, LOW);
-    int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
-    unsigned char serialBytes[numSerialBytes];
-    for (int i = 0; i < numSerialBytes; i++) 
-      serialBytes[i] =SPI.transfer(0);
+    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
+    register unsigned int count = 0;
+    for (register unsigned int i = 0; i < numSerialBytes; i++) { 
+      serialBytes[i] =SPI.transfer(0); 
+      register unsigned char lowNybble = serialBytes[i] & 0x0f;
+      register unsigned char highNybble = (serialBytes[i] >> 4) & 0x0f;
+      sampleDigits[count++]=hexDigits[lowNybble];
+      sampleDigits[count++]=hexDigits[highNybble];
+    }
     delayMicroseconds(1); 
     digitalWrite(IPIN_CS, HIGH);
-    for (int i=0; i<numSerialBytes; i++) {
-      outputHexByte(serialBytes[i]);
-    }
-    SerialUSB.println();
+    sampleDigits[count]=0;
+    WiredSerial.println(sampleDigits);
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips

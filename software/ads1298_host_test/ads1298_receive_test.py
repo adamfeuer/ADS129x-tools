@@ -468,7 +468,8 @@ ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
 print("using device: %s" % ser.portstr)
 
 config1 = CONFIG1
-sampleMode = HIGH_RES_16k_SPS
+#sampleMode = HIGH_RES_16k_SPS
+sampleMode = HIGH_RES_4k_SPS
 sampleModeCommand = "wreg %x %x" % (config1 , sampleMode)
 send(ser, sampleModeCommand)
 print(ser.readline())
