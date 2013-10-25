@@ -12,6 +12,7 @@
 #include "SerialCommand.h"
 #include "ads1298.h"
 #include "adsCommand.h"
+#include "Base64.h"
 
 #define VERSION "ADS1298 driver v0.1"
 
@@ -27,10 +28,9 @@ boolean isRDATAC = false;
 
 
 char hexDigits[] = "0123456789ABCDEF";
-unsigned char serialBytes[200];
+char serialBytes[200];
 //char sampleDigits[400];
-#define BUF_SAMPLES 100
-byte sampleDigits[((27*2)+1)*(BUF_SAMPLES+1)];
+char sampleBuffer[1000];
 
 SerialCommand serialCommand;  
 
@@ -59,7 +59,6 @@ void setup() {
 void loop() {  
    serialCommand.readSerial();
    sendSamples();
-   /*
    sendSamples();
    sendSamples();
    sendSamples();
@@ -69,7 +68,6 @@ void loop() {
    sendSamples();
    sendSamples();
    sendSamples();
-   */
 }
 
 long hexToLong(char *digits) {
@@ -217,13 +215,23 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
   byte testMSB, testLSB; 
 #endif 
 
-void sendSamples(void) { 
+void sendSamples1(void) { 
     if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
     if (digitalRead(IPIN_DRDY) == HIGH) return; 
     sendSample();
 }
 
+
+inline void sendSamples(void) { 
+    if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
+    if (digitalRead(IPIN_DRDY) == HIGH) return; 
+    sendSample();
+}
+
+
+
 // about 2000 SPS
+/*
 void sendSample(void) { 
     digitalWrite(PIN_CS, LOW);
     register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
@@ -246,6 +254,26 @@ void sendSample(void) {
     digitalWrite(PIN_CS, LOW);
     digitalWrite(PIN_CS, HIGH);    
 }
+*/
+
+inline void sendSample(void) { 
+    digitalWrite(PIN_CS, LOW);
+    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
+    register unsigned int i = 0;
+    register byte lowNybble;
+    register byte highNybble;
+    for (i = 0; i < numSerialBytes; i++) { 
+      serialBytes[i] =SPI.transfer(0); 
+    }
+    digitalWrite(PIN_CS, HIGH);
+    register unsigned int count = 0;
+    base64_encode(sampleBuffer, serialBytes, numSerialBytes);
+    WiredSerial.println(sampleBuffer);
+    //digitalWrite(PIN_CS, LOW);
+    //  digitalWrite(PIN_CS, HIGH);    
+}
+
+
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
    using namespace ADS1298;
@@ -322,7 +350,7 @@ void arduinoSetup(){
    SPI.begin();
    SPI.setBitOrder(MSBFIRST);
    SPI.setDataMode(SPI_MODE1);
-   SPI.setClockDivider(5);
+   SPI.setClockDivider(4);
    //Start ADS1298
    delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
    digitalWrite(PIN_CLKSEL, HIGH);// *optional

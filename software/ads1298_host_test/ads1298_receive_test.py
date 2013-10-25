@@ -3,7 +3,7 @@
 
 import sys, time, datetime
 import serial
-NUMBER_OF_SAMPLES = 10000
+NUMBER_OF_SAMPLES = 100000
 
 # ADS1298 constants
 
@@ -452,44 +452,52 @@ WCTC_CH4P = (WCTC2 | WCTC1)
 WCTC_CH4N = (WCTC2 | WCTC1 | WCTC0)
 
 def send(ser, command):
-   ser.write(bytes(command +'\n', 'utf-8'))
+   #ser.write(bytes(command +'\n', 'utf-8'))
+   ser.write(bytes(command +'\n'))
 
 
-argsLen = len(sys.argv)
-if argsLen < 2 or argsLen > 3:
-   print("Usage: send_test [serial device name] [baudrate]")
-   sys.exit
-PORT = sys.argv[1]
-BAUDRATE = sys.argv[2]
+def main():
+   argsLen = len(sys.argv)
+   if argsLen < 2 or argsLen > 3:
+      print("Usage: send_test [serial device name] [baudrate]")
+      sys.exit
+   PORT = sys.argv[1]
+   BAUDRATE = sys.argv[2]
 
-chars = ""
-ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
+   chars = ""
+   ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
 
-print("using device: %s" % ser.portstr)
+   print("using device: %s" % ser.portstr)
 
-#sampleMode = HIGH_RES_16k_SPS
-sampleMode = HIGH_RES_2k_SPS
-sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
-print(sampleModeCommand)
-send(ser, sampleModeCommand)
-time.sleep(0.1)
-print(ser.readline())
-send(ser, "rdatac")
-line = ""
-lines = []
-count = 0
-start = datetime.datetime.today()
-for outer in range(0, NUMBER_OF_SAMPLES):
-   line = ser.readline()
-   lines.append(line)
-   count += 1
-end = datetime.datetime.today()
-send(ser, "sdatac")
-delta = end - start
-deltaSeconds = delta.total_seconds()
-samplesPerSecond = count / deltaSeconds 
-print("%d samples received in %f seconds." % (count, deltaSeconds))
-print("samples per second: %f" % samplesPerSecond)
-print(lines[0:30])
-ser.close()
+   #sampleMode = HIGH_RES_16k_SPS
+   sampleMode = HIGH_RES_16k_SPS
+   sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
+   print(sampleModeCommand)
+   send(ser, sampleModeCommand)
+   time.sleep(0.1)
+   print(ser.readline())
+   send(ser, "rdatac")
+   line = ""
+   lines = []
+   count = 0
+   start = datetime.datetime.today()
+   #for outer in range(0, NUMBER_OF_SAMPLES):
+   #   line = ser.readline()
+      #lines.append(line)
+   #   count += 1
+   #[lines.append(ser.readline()) for i in range(0, NUMBER_OF_SAMPLES)]
+   buf = ser.read(NUMBER_OF_SAMPLES*27)
+   lines = buf.decode().split('\n')
+   count = len(lines)
+   end = datetime.datetime.today()
+   send(ser, "sdatac")
+   delta = end - start
+   deltaSeconds = delta.total_seconds()
+   samplesPerSecond = count / deltaSeconds 
+   print("%d samples received in %f seconds." % (count, deltaSeconds))
+   print("samples per second: %f" % samplesPerSecond)
+   print(lines[0:30])
+   ser.close()
 
+if __name__ == "__main__":
+   main()
