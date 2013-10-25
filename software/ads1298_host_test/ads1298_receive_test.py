@@ -467,11 +467,12 @@ ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
 
 print("using device: %s" % ser.portstr)
 
-config1 = CONFIG1
 #sampleMode = HIGH_RES_16k_SPS
-sampleMode = HIGH_RES_4k_SPS
-sampleModeCommand = "wreg %x %x" % (config1 , sampleMode)
+sampleMode = HIGH_RES_2k_SPS
+sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
+print(sampleModeCommand)
 send(ser, sampleModeCommand)
+time.sleep(0.1)
 print(ser.readline())
 send(ser, "rdatac")
 line = ""

@@ -15,7 +15,6 @@
 
 #define VERSION "ADS1298 driver v0.1"
 
-#define arduinoLed 13   // Arduino LED on board
 #define BAUD_RATE  115200 // WiredSerial ignores this and uses the maximum rate
 #define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB //use Due's Native port
@@ -23,23 +22,25 @@
 int gMaxChan = 0;
 int gNumActiveChan = 0;
 int activeSerialPort = 0; //data will be sent to serial port that last sent commands. E.G. bluetooth or USB port
-boolean gActiveChan [9]; // reports whether channels 1..9 are active
-const int kPIN_LED = 13;//pin with light - typically 13. Only flashes if error status. n.b. on Teensy3, pin 13 is ALSO spi clock!
+boolean gActiveChan[9]; // reports whether channels 1..9 are active
 boolean isRDATAC = false;
+
 
 char hexDigits[] = "0123456789ABCDEF";
 unsigned char serialBytes[200];
-char sampleDigits[400];
+//char sampleDigits[400];
+#define BUF_SAMPLES 100
+byte sampleDigits[((27*2)+1)*(BUF_SAMPLES+1)];
 
 SerialCommand serialCommand;  
 
 void setup() {  
-  pinMode(arduinoLed,OUTPUT);      // Configure the onboard LED for output
-  digitalWrite(arduinoLed,LOW);    // default to LED off
+  WiredSerial.begin(115200); 
+  pinMode(PIN_LED,OUTPUT);      // Configure the onboard LED for output
+  digitalWrite(PIN_LED,LOW);    // default to LED off
   arduinoSetup();
   adsSetup();
 
-  WiredSerial.begin(115200); 
   WiredSerial.println("Ready"); 
 
   // Setup callbacks for SerialCommand commands 
@@ -58,6 +59,17 @@ void setup() {
 void loop() {  
    serialCommand.readSerial();
    sendSamples();
+   /*
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   sendSamples();
+   */
 }
 
 long hexToLong(char *digits) {
@@ -81,19 +93,19 @@ void outputHexByte(int value) {
 void ledOn() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("LED on"); 
-  digitalWrite(arduinoLed,HIGH);  
+  digitalWrite(PIN_LED,HIGH);  
 }
 
 void ledOff() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("LED off"); 
-  digitalWrite(arduinoLed,LOW);
+  digitalWrite(PIN_LED,LOW);
 }
 
 void version() {
   WiredSerial.println("200 Ok");
   WiredSerial.println(VERSION);
-  digitalWrite(arduinoLed,LOW);
+  digitalWrite(PIN_LED,LOW);
 }
 
 void readRegister() {
@@ -211,109 +223,113 @@ void sendSamples(void) {
     sendSample();
 }
 
+// about 2000 SPS
 void sendSample(void) { 
-    digitalWrite(IPIN_CS, LOW);
+    digitalWrite(PIN_CS, LOW);
     register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
-    register unsigned int count = 0;
-    for (register unsigned int i = 0; i < numSerialBytes; i++) { 
+    register unsigned int i = 0;
+    register byte lowNybble;
+    register byte highNybble;
+    for (i = 0; i < numSerialBytes; i++) { 
       serialBytes[i] =SPI.transfer(0); 
-      register unsigned char lowNybble = serialBytes[i] & 0x0f;
-      register unsigned char highNybble = (serialBytes[i] >> 4) & 0x0f;
+    }
+    digitalWrite(PIN_CS, HIGH);
+    register unsigned int count = 0;
+    for (i = 0; i < numSerialBytes; i++) { 
+      lowNybble = serialBytes[i] & 0x0f;
       sampleDigits[count++]=hexDigits[lowNybble];
+      highNybble = serialBytes[i] >> 4;
       sampleDigits[count++]=hexDigits[highNybble];
     }
-    delayMicroseconds(1); 
-    digitalWrite(IPIN_CS, HIGH);
-    sampleDigits[count]=0;
-    WiredSerial.println(sampleDigits);
+    sampleDigits[count++] = '\n';
+    WiredSerial.write((const uint8_t *)sampleDigits, count);
+    digitalWrite(PIN_CS, LOW);
+    digitalWrite(PIN_CS, HIGH);    
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
-        using namespace ADS1298;
-        // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
-	adc_wreg(GPIO, 0);
-        adc_wreg(CONFIG3,PD_REFBUF | CONFIG3_const);
-	//FOR RLD: Power up the internal reference and wait for it to settle
-        // adc_wreg(CONFIG3, RLDREF_INT | PD_RLD | PD_REFBUF | VREF_4V | CONFIG3_const);
-	// delay(150);
-	// adc_wreg(RLD_SENSP, 0x01);	// only use channel IN1P and IN1N
-	// adc_wreg(RLD_SENSN, 0x01);	// for the RLD Measurement
-        adc_wreg(CONFIG1,HIGH_RES_1k_SPS);
-        adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
-	// Set the first two channels to input signal
-	for (int i = 1; i <= 1; ++i) {
-		adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
-		//adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
-		//adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
-                //adc_wreg(CHnSET + i,SHORTED); //disable this channel
-	}
-	for (int i = 2; i <= 2; ++i) {
-		adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
-	}
-	for (int i = 3; i <= 8; ++i) {
-                adc_wreg(CHnSET + i,SHORTED); //disable this channel
-	}
-	digitalWrite(PIN_START, HIGH);  
+   using namespace ADS1298;
+   // Send SDATAC Command (Stop Read Data Continuously mode)
+   delay(100); //pause to provide ads129n enough time to boot up...
+   adc_send_command(SDATAC);
+   int val = adc_rreg(ID) ;
+   switch (val & B00011111 ) { //least significant bits reports channels
+         case  B10000: //16
+           gMaxChan = 4; //ads1294
+           break;
+         case B10001: //17
+           gMaxChan = 6; //ads1296
+           break;
+         case B10010: //18
+           gMaxChan = 8; //ads1298
+           break;
+         case B11110: //30
+           gMaxChan = 8; //ads1299
+           break;
+         default: 
+           gMaxChan = 0;
+   }
+   if (gMaxChan == 0) { //error mode
+     while(1) { //loop forever 
+       digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
+       delay(500);               // wait for a second
+       digitalWrite(PIN_LED, LOW);    // turn the LED off by making the voltage LOW
+       delay(500); 
+     } //while forever
+   } //error mode
+   // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
+   adc_wreg(GPIO, 0);
+   adc_wreg(CONFIG3,PD_REFBUF | CONFIG3_const);
+   //FOR RLD: Power up the internal reference and wait for it to settle
+   // adc_wreg(CONFIG3, RLDREF_INT | PD_RLD | PD_REFBUF | VREF_4V | CONFIG3_const);
+   // delay(150);
+   // adc_wreg(RLD_SENSP, 0x01);	// only use channel IN1P and IN1N
+   // adc_wreg(RLD_SENSN, 0x01);	// for the RLD Measurement
+   adc_wreg(CONFIG1,HIGH_RES_1k_SPS);
+   adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
+   // Set the first two channels to input signal
+   for (int i = 1; i <= 1; ++i) {
+   adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
+   //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
+   //adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
+   //adc_wreg(CHnSET + i,SHORTED); //disable this channel
+   }
+   for (int i = 2; i <= 2; ++i) {
+   adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
+   }
+   for (int i = 3; i <= 8; ++i) {
+   adc_wreg(CHnSET + i,SHORTED); //disable this channel
+   }
+   digitalWrite(PIN_START, HIGH);  
 }
 
 void arduinoSetup(){
-  Serial.begin(BAUD_RATE); // for debugging
-  pinMode(kPIN_LED, OUTPUT);
-  using namespace ADS1298;
-  //prepare pins to be outputs or inputs
-  //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us
-  //pinMode(PIN_DIN, OUTPUT); //optional - SPI library will do this for us
-  //pinMode(PIN_DOUT, INPUT); //optional - SPI library will do this for us
-  pinMode(IPIN_CS, OUTPUT);
-  pinMode(PIN_START, OUTPUT);
-  pinMode(IPIN_DRDY, INPUT);
-  pinMode(PIN_CLKSEL, OUTPUT);// *optional
-  pinMode(IPIN_RESET, OUTPUT);// *optional
-  //pinMode(IPIN_PWDN, OUTPUT);// *optional
-  digitalWrite(PIN_CLKSEL, HIGH); // internal clock
-  //start Serial Peripheral Interface
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE1);
-  //Start ADS1298
-  delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
-  digitalWrite(PIN_CLKSEL, HIGH);// *optional
-  delay(1);digitalWrite(IPIN_PWDN, HIGH);// *optional - turn off power down mode
-  digitalWrite(IPIN_RESET, HIGH);delay(100);// *optional
-  digitalWrite(IPIN_RESET, LOW);delay(1);// *optional
-  digitalWrite(IPIN_RESET, HIGH);delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisec
-  // Send SDATAC Command (Stop Read Data Continuously mode)
-  delay(100); //pause to provide ads129n enough time to boot up...
-  adc_send_command(SDATAC);
-  int val = adc_rreg(ID) ; 
-  switch (val & B00011111 ) { //least significant bits reports channels
-          case  B10000: //16
-            gMaxChan = 4; //ads1294
-            break;
-          case B10001: //17
-            gMaxChan = 6; //ads1296
-            break;
-          case B10010: //18
-            gMaxChan = 8; //ads1298
-            break;
-          case B11110: //30
-            gMaxChan = 8; //ads1299
-            break;
-          default: 
-            gMaxChan = 0;
-  }
-  WiredSerial.begin(BAUD_RATE); // use native port on Due
-  while (WiredSerial.read() >= 0) {} //http://forum.arduino.cc/index.php?topic=134847.0
-  delay(200);  // Catch Due reset problem
-  if (gMaxChan == 0) { //error mode
-    while(1) { //loop forever 
-      digitalWrite(kPIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-      delay(500);               // wait for a second
-      digitalWrite(kPIN_LED, LOW);    // turn the LED off by making the voltage LOW
-      delay(500); 
-    } //while forever
-  } //error mode
-  adsSetup(); //optional - sets up device - the PC can do this as well       
+   Serial.begin(BAUD_RATE); // for debugging
+   pinMode(PIN_LED, OUTPUT);
+   using namespace ADS1298;
+   //prepare pins to be outputs or inputs
+   //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us
+   //pinMode(PIN_DIN, OUTPUT); //optional - SPI library will do this for us
+   //pinMode(PIN_DOUT, INPUT); //optional - SPI library will do this for us
+   pinMode(PIN_CS, OUTPUT);
+   pinMode(PIN_START, OUTPUT);
+   pinMode(IPIN_DRDY, INPUT);
+   pinMode(PIN_CLKSEL, OUTPUT);// *optional
+   pinMode(IPIN_RESET, OUTPUT);// *optional
+   //pinMode(IPIN_PWDN, OUTPUT);// *optional
+   digitalWrite(PIN_CLKSEL, HIGH); // internal clock
+   //start Serial Peripheral Interface
+   SPI.begin();
+   SPI.setBitOrder(MSBFIRST);
+   SPI.setDataMode(SPI_MODE1);
+   SPI.setClockDivider(5);
+   //Start ADS1298
+   delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
+   digitalWrite(PIN_CLKSEL, HIGH);// *optional
+   delay(1);digitalWrite(IPIN_PWDN, HIGH); // *optional - turn off power down mode
+   digitalWrite(IPIN_RESET, HIGH);delay(100);// *optional
+   digitalWrite(IPIN_RESET, LOW);delay(1);// *optional
+   digitalWrite(IPIN_RESET, HIGH);delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisecond
 } //setup()
 
 
