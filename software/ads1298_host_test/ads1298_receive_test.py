@@ -470,7 +470,7 @@ def main():
    print("using device: %s" % ser.portstr)
 
    #sampleMode = HIGH_RES_16k_SPS
-   sampleMode = HIGH_RES_16k_SPS
+   sampleMode = HIGH_RES_8k_SPS
    sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
    print(sampleModeCommand)
    send(ser, sampleModeCommand)
@@ -486,7 +486,7 @@ def main():
       #lines.append(line)
    #   count += 1
    #[lines.append(ser.readline()) for i in range(0, NUMBER_OF_SAMPLES)]
-   buf = ser.read(NUMBER_OF_SAMPLES*27)
+   buf = ser.read(NUMBER_OF_SAMPLES*28)
    lines = buf.decode().split('\n')
    count = len(lines)
    end = datetime.datetime.today()

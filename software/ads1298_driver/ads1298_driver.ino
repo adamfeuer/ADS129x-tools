@@ -230,32 +230,7 @@ inline void sendSamples(void) {
 
 
 
-// about 2000 SPS
-/*
-void sendSample(void) { 
-    digitalWrite(PIN_CS, LOW);
-    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
-    register unsigned int i = 0;
-    register byte lowNybble;
-    register byte highNybble;
-    for (i = 0; i < numSerialBytes; i++) { 
-      serialBytes[i] =SPI.transfer(0); 
-    }
-    digitalWrite(PIN_CS, HIGH);
-    register unsigned int count = 0;
-    for (i = 0; i < numSerialBytes; i++) { 
-      lowNybble = serialBytes[i] & 0x0f;
-      sampleDigits[count++]=hexDigits[lowNybble];
-      highNybble = serialBytes[i] >> 4;
-      sampleDigits[count++]=hexDigits[highNybble];
-    }
-    sampleDigits[count++] = '\n';
-    WiredSerial.write((const uint8_t *)sampleDigits, count);
-    digitalWrite(PIN_CS, LOW);
-    digitalWrite(PIN_CS, HIGH);    
-}
-*/
-
+// about 8000 SPS
 inline void sendSample(void) { 
     digitalWrite(PIN_CS, LOW);
     register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
@@ -270,7 +245,7 @@ inline void sendSample(void) {
     base64_encode(sampleBuffer, serialBytes, numSerialBytes);
     WiredSerial.println(sampleBuffer);
     //digitalWrite(PIN_CS, LOW);
-    //  digitalWrite(PIN_CS, HIGH);    
+    //digitalWrite(PIN_CS, HIGH);    
 }
 
 
