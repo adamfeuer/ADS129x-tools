@@ -14,7 +14,7 @@ const int IPIN_RESET  = 48;//*optional
 
 const int PIN_START = 46;
 const int IPIN_DRDY = 45;
-const int IPIN_CS = 53; //10
+const int IPIN_CS = 52;
 //const int PIN_DOUT = 11;//SPI out
 //const int PIN_DIN = 12;//SPI in
 //const int PIN_SCLK = 13;//SPI clock

@@ -34,7 +34,7 @@ connections. There are also a couple of photos.
     RESET                - D48 (97)
     PWDN                 - D47 (98)
     START                - D46 (99)
-    CS                   - D53 (140)
+    CS                   - D52 (92)
 
 Testing
 =======
