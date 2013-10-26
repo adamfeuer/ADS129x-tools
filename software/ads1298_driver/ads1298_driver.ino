@@ -7,12 +7,14 @@
 // Steven Cogswell and Stefan Rado (SerialCommand).
 //
 
+#include <SPI.h>
+
 #include <stdlib.h>
-#include <SPI.h> 
-#include "SerialCommand.h"
-#include "ads1298.h"
 #include "adsCommand.h"
+#include "ads1298.h"
+#include "SerialCommand.h"
 #include "Base64.h"
+#include "SpiDma.h"
 
 #define VERSION "ADS1298 driver v0.1"
 
@@ -28,9 +30,6 @@ boolean isRDATAC = false;
 
 
 char hexDigits[] = "0123456789ABCDEF";
-char serialBytes[200];
-//char sampleDigits[400];
-char sampleBuffer[1000];
 
 SerialCommand serialCommand;  
 
@@ -231,30 +230,42 @@ inline void sendSamples(void) {
 
 
 // about 8000 SPS
-inline void sendSample(void) { 
+/*
+char serialBytes[200];
+char sampleBuffer[1000];
+inline void sendSample1(void) { 
     digitalWrite(PIN_CS, LOW);
     register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
     register unsigned int i = 0;
-    register byte lowNybble;
-    register byte highNybble;
     for (i = 0; i < numSerialBytes; i++) { 
-      serialBytes[i] =SPI.transfer(0); 
+      serialBytes[i] = (char) spiRec(); 
     }
     digitalWrite(PIN_CS, HIGH);
     register unsigned int count = 0;
     base64_encode(sampleBuffer, serialBytes, numSerialBytes);
     WiredSerial.println(sampleBuffer);
-    //digitalWrite(PIN_CS, LOW);
-    //digitalWrite(PIN_CS, HIGH);    
 }
+*/
 
-
+// Use SAM3X DMA
+uint8_t serialBytes[200];
+char sampleBuffer[1000];
+inline void sendSample(void) { 
+    digitalWrite(PIN_CS, LOW);
+    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
+    uint8_t returnCode = spiRec(serialBytes, numSerialBytes);
+    digitalWrite(PIN_CS, HIGH);
+    register unsigned int count = 0;
+    base64_encode(sampleBuffer, (char *)serialBytes, numSerialBytes);
+    WiredSerial.println(sampleBuffer);
+}
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
    using namespace ADS1298;
    // Send SDATAC Command (Stop Read Data Continuously mode)
    delay(100); //pause to provide ads129n enough time to boot up...
    adc_send_command(SDATAC);
+   delayMicroseconds(2);
    int val = adc_rreg(ID) ;
    switch (val & B00011111 ) { //least significant bits reports channels
          case  B10000: //16
@@ -314,7 +325,7 @@ void arduinoSetup(){
    //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us
    //pinMode(PIN_DIN, OUTPUT); //optional - SPI library will do this for us
    //pinMode(PIN_DOUT, INPUT); //optional - SPI library will do this for us
-   pinMode(PIN_CS, OUTPUT);
+   //pinMode(PIN_CS, OUTPUT);
    pinMode(PIN_START, OUTPUT);
    pinMode(IPIN_DRDY, INPUT);
    pinMode(PIN_CLKSEL, OUTPUT);// *optional
@@ -322,10 +333,8 @@ void arduinoSetup(){
    //pinMode(IPIN_PWDN, OUTPUT);// *optional
    digitalWrite(PIN_CLKSEL, HIGH); // internal clock
    //start Serial Peripheral Interface
-   SPI.begin();
-   SPI.setBitOrder(MSBFIRST);
-   SPI.setDataMode(SPI_MODE1);
-   SPI.setClockDivider(4);
+   spiBegin(PIN_CS);
+   spiInit(SPI_CLOCK_DIVIDER);
    //Start ADS1298
    delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
    digitalWrite(PIN_CLKSEL, HIGH);// *optional

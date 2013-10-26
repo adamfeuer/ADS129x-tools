@@ -454,6 +454,8 @@ WCTC_CH4N = (WCTC2 | WCTC1 | WCTC0)
 def send(ser, command):
    #ser.write(bytes(command +'\n', 'utf-8'))
    ser.write(bytes(command +'\n'))
+   time.sleep(0.1)
+   print(ser.readline())
 
 
 def main():
@@ -469,13 +471,11 @@ def main():
 
    print("using device: %s" % ser.portstr)
 
-   #sampleMode = HIGH_RES_16k_SPS
-   sampleMode = HIGH_RES_8k_SPS
+   send(ser, "sdatac")
+   sampleMode = HIGH_RES_16k_SPS
+   #sampleMode = HIGH_RES_8k_SPS
    sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
-   print(sampleModeCommand)
    send(ser, sampleModeCommand)
-   time.sleep(0.1)
-   print(ser.readline())
    send(ser, "rdatac")
    line = ""
    lines = []

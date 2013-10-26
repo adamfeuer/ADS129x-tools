@@ -6,7 +6,7 @@
 #include "Arduino.h"   // use: Wprogram.h for Arduino versions prior to 1.0
 #include "adsCommand.h"
 #include "ads1298.h"
-#include <SPI.h>  // include the SPI library:
+#include "SpiDma.h"
 
 /*void wait_for_drdy(int interval)
 {
@@ -21,7 +21,7 @@
 
 void adc_send_command(int cmd) {
    digitalWrite(PIN_CS, LOW);
-   SPI.transfer(cmd);
+   spiSend(cmd);
    delayMicroseconds(1);
    digitalWrite(PIN_CS, HIGH);
 }
@@ -29,20 +29,24 @@ void adc_send_command(int cmd) {
 void adc_wreg(int reg, int val) {
    //see pages 40,43 of datasheet - 
    digitalWrite(PIN_CS, LOW);
-   SPI.transfer(ADS1298::WREG | reg);
-   SPI.transfer(0);	// number of registers to be read/written – 1
-   SPI.transfer(val);
+   spiSend(ADS1298::WREG | reg);
+   delayMicroseconds(2);
+   spiSend(0);	// number of registers to be read/written – 1
+   delayMicroseconds(2);
+   spiSend(val);
    delayMicroseconds(1);
    digitalWrite(PIN_CS, HIGH);
 }
 
 int adc_rreg(int reg){
-   int out = 0;
+   uint8_t out = 0;
    digitalWrite(PIN_CS, LOW);
-   SPI.transfer(ADS1298::RREG | reg);
-   SPI.transfer(0, SPI_CONTINUE);	// number of registers to be read/written – 1
-   out = SPI.transfer(0);
+   spiSend(ADS1298::RREG | reg);
+   delayMicroseconds(2);
+   spiSend(0);	// number of registers to be read/written – 1
+   delayMicroseconds(2);
+   out = spiRec();
    delayMicroseconds(1);
    digitalWrite(PIN_CS, HIGH);
-   return(out);
+   return((int)out);
 }
