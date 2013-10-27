@@ -15,6 +15,8 @@ The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x pro
 amplifier and much of the analog circuitry needed for EEG. It is capable of 16,000 samples
 per second at 24 bit resolution.
 
+http://www.ti.com/product/ads1299
+
 These chips are ideally suited for digitizing biological signals.
 
 Arduino Due drivers
@@ -77,6 +79,15 @@ connections. There are also a couple of photos.
     PWDN                 - D47 (98)
     START                - D46 (99)
     CS                   - D52 (92)
+
+
+Python Host Software
+====================
+
+The Python host software is designed to run on a laptop computer. Right now it is a rudimentary performance testing script. Using Python 3.x on
+2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
+
+It require the PySerial module.
 
 Credits
 =======
