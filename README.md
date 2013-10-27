@@ -17,7 +17,6 @@ per second at 24 bit resolution.
 
 These chips are ideally suited for digitizing biological signals.
 
-
 Arduino Due drivers
 ===================
 
@@ -62,7 +61,7 @@ This driver was tested using the open source hardware ADS1298-breakout board, av
 
 https://github.com/adamfeuer/ADS1298-breakout
 
-There is an Arduino Due pinout diagram in docs/arduino_pinout_diagram.png. Refer to that when making the wiring
+There is an Arduino Due pinout diagram in that project's docs/arduino_pinout_diagram.png. Refer to that when making the wiring
 connections. There are also a couple of photos.
 
     ADS1298-breakout pin - Arduino Due pin (SAM3X8E pin)
@@ -102,5 +101,4 @@ Adam Feuer<br>
 Seattle, WA, USA<br>
 adam@adamfeuer.com<br>
 http://adamfeuer.com<br>
-
 
