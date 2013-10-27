@@ -83,13 +83,13 @@ Credits
 
 This software would not be possible without the help of many people. The following people contributed software to this driver:
 
-Chris Rorden (original ADS1298 driver)
-Stefan Rado (SerialCommand library)
-Steven Cogswell (SerialCommand library)
-Adam Rudd (Base64 library)
-William Greiman (SPI DMA library)
-Cristian Maglie (SPI DMA library)
-Bill Porter (SPI DMA library)
+* Chris Rorden (original ADS1298 driver)
+* Stefan Rado (SerialCommand library)
+* Steven Cogswell (SerialCommand library)
+* Adam Rudd (Base64 library)
+* William Greiman (SPI DMA library)
+* Cristian Maglie (SPI DMA library)
+* Bill Porter (SPI DMA library)
 
 If I forgot to credit you, please let me know!
 
