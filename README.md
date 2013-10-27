@@ -41,15 +41,15 @@ Using the Driver
 
 The commands that are available are:
 
-RREG - read register. Takes two hex digits as an argument (one byte, for example: FF). Argument 1 is the register to read.
+* RREG - read register. Takes two hex digits as an argument (one byte, for example: FF). Argument 1 is the register to read.
 Returns a single hex-encoded byte (for example, 0E) that represents the contents of the register.
-WREG - write register. Takes two hex-encoded bytes as arguments, separated by a space. Argument 1 is the register to write, argument 2 is the register value.
-RDATA - read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64.
-SDATAC - stop read data continuous mode. 
-RDATAC - start read data continuous mode.
-VERSION - reports the driver version
-LEDON - turns on the Arduino Due onboard LED.
-LEDOFF - turns off the Arduino Due onboard LED.
+* WREG - write register. Takes two hex-encoded bytes as arguments, separated by a space. Argument 1 is the register to write, argument 2 is the register value.
+* RDATA - read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64.
+* SDATAC - stop read data continuous mode. 
+* RDATAC - start read data continuous mode.
+* VERSION - reports the driver version
+* LEDON - turns on the Arduino Due onboard LED.
+* LEDOFF - turns off the Arduino Due onboard LED.
 
 See the chip datasheet for more information.
 
