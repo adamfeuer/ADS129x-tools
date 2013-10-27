@@ -1,23 +1,66 @@
-ADS1298-breakout
-================
+ADS129x-tools
+=============
 
-This is an ADS1298 breakout board. It can also be used with the ADS1294 and ADS1296. 
+This is a collection of software for working with the TI ADS129x series of analog to digital
+converter chips.
 
-The ADS1298 is an 8 channel ADC chip with SPI interface, meant for ECG and EEG:
+The ADS1298 is a 24-bit, 8-channel ADC chip with SPI interface, and 12x programmable gain amplifiers,
+meant for ECG and EEG:
 
 http://www.ti.com/product/ads1298
 
-The breakout board needs +5v input, and provides clean analog and digital power, along with some minimal support circuitry.
+The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version.
 
-Most of the ADS1298's pins are available on the two 20-pin headers.
- 
-This board is meant for basic system debugging - electrode circuitry for EEG or ECG is not provided, just access to
-the chip's differential input pins.
+The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x programmable gain 
+amplifier and much of the analog circuitry needed for EEG. It is capable of 16,000 samples
+per second at 24 bit resolution.
 
-v0.1 of the board has been made and is in testing; v0.2 of the board has not been made yet, and is development.
+These chips are ideally suited for digitizing biological signals.
 
-Connecting the Board to an Arduino Due
-======================================
+
+Arduino Due drivers
+===================
+
+The ads1298-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
+for ADS129x chips. So far it has only been tested on the ADS1298, but should work on the other models.
+
+The driver is a text-mode driver, so can be used without any client software - just open up a serial port
+to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). The driver can read from the ADS129x
+at 16,000 samples per second, and can send that data on to the host via the Arduino DUE's USB 2.0 High Speed
+connection.
+
+It can be configured to use the Arduino library's SPI software (without DMA), and can do 8,000 samples per second
+in that configuration.
+
+Samples are currently encoded using the base64 encoding. For more information about that, see this 
+Wikipedia page:
+
+http://en.wikipedia.org/wiki/Base64
+
+Using the Driver
+================
+
+The commands that are available are:
+
+RREG - read register. Takes two hex digits as an argument (one byte, for example: FF). Argument 1 is the register to read.
+Returns a single hex-encoded byte (for example, 0E) that represents the contents of the register.
+WREG - write register. Takes two hex-encoded bytes as arguments, separated by a space. Argument 1 is the register to write, argument 2 is the register value.
+RDATA - read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64.
+SDATAC - stop read data continuous mode. 
+RDATAC - start read data continuous mode.
+VERSION - reports the driver version
+LEDON - turns on the Arduino Due onboard LED.
+LEDOFF - turns off the Arduino Due onboard LED.
+
+See the chip datasheet for more information.
+
+
+Connecting the ADS1298-breakout board to an Arduino Due
+=======================================================
+
+This driver was tested using the open source hardware ADS1298-breakout board, available here:
+
+https://github.com/adamfeuer/ADS1298-breakout
 
 There is an Arduino Due pinout diagram in docs/arduino_pinout_diagram.png. Refer to that when making the wiring
 connections. There are also a couple of photos.
@@ -36,15 +79,22 @@ connections. There are also a couple of photos.
     START                - D46 (99)
     CS                   - D52 (92)
 
-Testing
+Credits
 =======
 
-software/ads1298_hello_world has a basic test sketch that can establish if the ADS1298 board is connected correctly
-and working. This sketch is based on code from this page:
+This software would not be possible without the help of many people. The following people contributed software to this driver:
 
-http://www.mccauslandcenter.sc.edu/CRNL/tools/ads1298
+Chris Rorden (original ADS1298 driver)
+Stefan Rado (SerialCommand library)
+Steven Cogswell (SerialCommand library)
+Adam Rudd (Base64 library)
+William Greiman (SPI DMA library)
+Cristian Maglie (SPI DMA library)
+Bill Porter (SPI DMA library)
 
-If you have questions, comments, or improvements, I would love to know them!
+If I forgot to credit you, please let me know!
+
+If you have questions, comments, or improvements, I would love to know them! Pull requests welcome!
 
 cheers<br>
 adam<br>
