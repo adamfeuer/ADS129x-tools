@@ -1,7 +1,20 @@
 #!/usr/bin/env python
-# requires python 3.x
+# 
+# Simple test program that reads data from the ADS1298 driver,
+# measures speed, and decodes some of the data to display
+#
+# Requires pypy to read 16,000 samples per second
+#
+# Usage:
+#
+# ads1298_host_test.py [arduino serial device] [baud rate]
+#
+# For example:
+#
+# ads1298_receive_test.py /dev/tty.usbmodem1d11421 115200
+#
 
-import sys, time, datetime
+import sys, time, datetime, base64
 import serial
 NUMBER_OF_SAMPLES = 100000
 
@@ -454,7 +467,7 @@ WCTC_CH4N = (WCTC2 | WCTC1 | WCTC0)
 def send(ser, command):
    #ser.write(bytes(command +'\n', 'utf-8'))
    ser.write(bytes(command +'\n'))
-   time.sleep(0.1)
+   time.sleep(0.5)
    print(ser.readline())
 
 
@@ -491,12 +504,26 @@ def main():
    count = len(lines)
    end = datetime.datetime.today()
    send(ser, "sdatac")
+   for i in range(0, 1000):
+      line = ser.readline()
+      if line.startswith("200"):
+         print(line)
+         break
    delta = end - start
    deltaSeconds = delta.total_seconds()
    samplesPerSecond = count / deltaSeconds 
    print("%d samples received in %f seconds." % (count, deltaSeconds))
    print("samples per second: %f" % samplesPerSecond)
-   print(lines[0:30])
+
+   print(lines[3:10])
+   print("")
+   for i in range(3, 10):
+      print(lines[i])
+      decoded = base64.b64decode(lines[i])
+      for char in decoded:
+         print(" {:02x} ".format(ord(char)) ),
+      print("")
+   
    ser.close()
 
 if __name__ == "__main__":
