@@ -1,4 +1,4 @@
-// text-mode driver for ADS1298 
+// text-mode driver for ADS129x 
 // for Arduino Due
 //
 // Copright 2013 Adam Feuer
@@ -18,17 +18,19 @@
 
 #define VERSION "ADS1298 driver v0.1"
 
-#define BAUD_RATE  115200 // WiredSerial ignores this and uses the maximum rate
-#define txActiveChannelsOnly //reduce bandwidth: only send data for active data channels
-#define WiredSerial SerialUSB //use Due's Native port
+#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+#define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
+#define WiredSerial SerialUSB // use Due's Native USB port
 
-int gMaxChan = 0;
-int gNumActiveChan = 0;
-int activeSerialPort = 0; //data will be sent to serial port that last sent commands. E.G. bluetooth or USB port
+int maxChannels = 0;
+int numActiveChannels = 0;
 boolean gActiveChan[9]; // reports whether channels 1..9 are active
-boolean isRDATAC = false;
+boolean isRdatac = false;
+boolean base64Mode = true;
 
 char hexDigits[] = "0123456789ABCDEF";
+uint8_t serialBytes[200];
+char sampleBuffer[1000];
 
 SerialCommand serialCommand;  
 
@@ -42,15 +44,18 @@ void setup() {
   WiredSerial.println("Ready"); 
 
   // Setup callbacks for SerialCommand commands 
-  serialCommand.addCommand("version",version);     // Echos the driver version number
-  serialCommand.addCommand("ledon",ledOn);         // Turns Due onboad LED on
-  serialCommand.addCommand("ledoff", ledOff);      // Turns Due onboard LED off
-  serialCommand.addCommand("rreg", readRegister);  // Read ADS129x register, argument in hex, print contents in hex
-  serialCommand.addCommand("wreg", writeRegister); // Write ADS129x register, arguments in hex
-  serialCommand.addCommand("rdata", rdata);        // Read one sample of data from each channel
-  serialCommand.addCommand("rdatac", rdatac);      // Enter read data continuous mode
-  serialCommand.addCommand("sdatac", sdatac);      // Stop read data continuous mode
-  serialCommand.setDefaultHandler(unrecognized);   // Handler for command that isn't matched 
+  serialCommand.addCommand("version",version);        // Echos the driver version number
+  serialCommand.addCommand("ledon",ledOn);            // Turns Due onboad LED on
+  serialCommand.addCommand("ledoff", ledOff);         // Turns Due onboard LED off
+  serialCommand.addCommand("rreg", readRegister);     // Read ADS129x register, argument in hex, print contents in hex
+  serialCommand.addCommand("wreg", writeRegister);    // Write ADS129x register, arguments in hex
+  serialCommand.addCommand("rdata", rdata);           // Read one sample of data from each channel
+  serialCommand.addCommand("rdatac", rdatac);         // Enter read data continuous mode
+  serialCommand.addCommand("sdatac", sdatac);         // Stop read data continuous mode
+  serialCommand.addCommand("base64", base64ModeOn);   // rdata commands send base64 encoded data - default
+  serialCommand.addCommand("hex", hexModeOn);         // rdata commands send hex encoded data
+  serialCommand.addCommand("help", help);             // Print list of commands
+  serialCommand.setDefaultHandler(unrecognized);      // Handler for any command that isn't matched 
 
 }
 
@@ -86,6 +91,17 @@ void outputHexByte(int value) {
   WiredSerial.print(charValue);
 }
 
+void encodeHex(char* output, char* input, int inputLen) {
+  register int count = 0;
+  for (register int i=0; i < inputLen; i++) {
+    register uint8_t lowNybble = input[i] & 0x0f;
+    register uint8_t highNybble = input[i] >> 4;
+    output[count++] = hexDigits[lowNybble];
+    output[count++] = hexDigits[highNybble];
+  }
+  output[count] = 0;
+}
+
 void ledOn() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("LED on"); 
@@ -102,6 +118,25 @@ void version() {
   WiredSerial.println("200 Ok");
   WiredSerial.println(VERSION);
   digitalWrite(PIN_LED,LOW);
+}
+
+void base64ModeOn() {
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Base64 mode on - rdata commands will send bas64 encoded data."); 
+  base64Mode = true;
+}
+
+void hexModeOn() {
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Hex mode on - rdata commands will send hex encoded data"); 
+  base64Mode = false;
+}
+
+void help() {
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Available commands: "); 
+  serialCommand.printCommands();
+  WiredSerial.println();
 }
 
 void readRegister() {
@@ -170,8 +205,8 @@ void rdatac() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("RDATAC mode on."); 
   detectActiveChannels();
-  if (gNumActiveChan > 0) { 
-      isRDATAC = true;
+  if (numActiveChannels > 0) { 
+      isRdatac = true;
       adc_send_command(RDATAC);
   }
 }
@@ -180,7 +215,7 @@ void sdatac() {
   using namespace ADS1298; 
   WiredSerial.println("200 Ok");
   WiredSerial.println("RDATAC mode off."); 
-  isRDATAC= false;
+  isRdatac= false;
   adc_send_command(SDATAC);
 }
 
@@ -191,17 +226,17 @@ void unrecognized(const char *command) {
 
 
 void detectActiveChannels() {  //set device into RDATAC (continous) mode -it will stream data
-  if ((isRDATAC) ||  (gMaxChan < 1)) return; //we can not read registers when in RDATAC mode
+  if ((isRdatac) ||  (maxChannels < 1)) return; //we can not read registers when in RDATAC mode
   //Serial.println("Detect active channels: ");
   using namespace ADS1298; 
-  gNumActiveChan = 0;
-  for (int i = 1; i <= gMaxChan; i++) {
+  numActiveChannels = 0;
+  for (int i = 1; i <= maxChannels; i++) {
     delayMicroseconds(1); 
      int chSet = adc_rreg(CHnSET + i);
      gActiveChan[i] = ((chSet & 7) != SHORTED);
-     if ( (chSet & 7) != SHORTED) gNumActiveChan ++;   
+     if ( (chSet & 7) != SHORTED) numActiveChannels ++;   
      //WiredSerial.print("Active channels: ");
-     //WiredSerial.println(gNumActiveChan);
+     //WiredSerial.println(numActiveChannels);
   }
   
 }
@@ -214,48 +249,30 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
 #endif 
 
 void sendSamples1(void) { 
-    if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
+    if ((!isRdatac) || (numActiveChannels < 1) )  return;
     if (digitalRead(IPIN_DRDY) == HIGH) return; 
     sendSample();
 }
 
 
 inline void sendSamples(void) { 
-    if ((!isRDATAC) || (gNumActiveChan < 1) )  return;
+    if ((!isRdatac) || (numActiveChannels < 1) )  return;
     if (digitalRead(IPIN_DRDY) == HIGH) return; 
     sendSample();
 }
 
-
-
-// about 8000 SPS
-/*
-char serialBytes[200];
-char sampleBuffer[1000];
-inline void sendSample1(void) { 
-    digitalWrite(PIN_CS, LOW);
-    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
-    register unsigned int i = 0;
-    for (i = 0; i < numSerialBytes; i++) { 
-      serialBytes[i] = (char) spiRec(); 
-    }
-    digitalWrite(PIN_CS, HIGH);
-    register unsigned int count = 0;
-    base64_encode(sampleBuffer, serialBytes, numSerialBytes);
-    WiredSerial.println(sampleBuffer);
-}
-*/
-
 // Use SAM3X DMA
-uint8_t serialBytes[200];
-char sampleBuffer[1000];
 inline void sendSample(void) { 
     digitalWrite(PIN_CS, LOW);
-    register int numSerialBytes = (3 * (gMaxChan+1)); //24-bits header plus 24-bits per channel
+    register int numSerialBytes = (3 * (maxChannels+1)); //24-bits header plus 24-bits per channel
     uint8_t returnCode = spiRec(serialBytes, numSerialBytes);
     digitalWrite(PIN_CS, HIGH);
     register unsigned int count = 0;
-    base64_encode(sampleBuffer, (char *)serialBytes, numSerialBytes);
+    if (base64Mode == true) {
+       base64_encode(sampleBuffer, (char *)serialBytes, numSerialBytes);
+    } else {
+      encodeHex(sampleBuffer, (char *)serialBytes, numSerialBytes);
+    }
     WiredSerial.println(sampleBuffer);
 }
 
@@ -268,21 +285,21 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
    int val = adc_rreg(ID) ;
    switch (val & B00011111 ) { //least significant bits reports channels
          case  B10000: //16
-           gMaxChan = 4; //ads1294
+           maxChannels = 4; //ads1294
            break;
          case B10001: //17
-           gMaxChan = 6; //ads1296
+           maxChannels = 6; //ads1296
            break;
          case B10010: //18
-           gMaxChan = 8; //ads1298
+           maxChannels = 8; //ads1298
            break;
          case B11110: //30
-           gMaxChan = 8; //ads1299
+           maxChannels = 8; //ads1299
            break;
          default: 
-           gMaxChan = 0;
+           maxChannels = 0;
    }
-   if (gMaxChan == 0) { //error mode
+   if (maxChannels == 0) { //error mode
      while(1) { //loop forever 
        digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
        delay(500);               // wait for a second

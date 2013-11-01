@@ -128,7 +128,7 @@ void SerialCommand::readSerial() {
   }
 }
 
-/*
+/**
  * Clear the input buffer.
  */
 void SerialCommand::clearBuffer() {
@@ -142,4 +142,14 @@ void SerialCommand::clearBuffer() {
  */
 char *SerialCommand::next() {
   return strtok_r(NULL, delim, &last);
+}
+
+/**
+ * Print the list of commands.
+ */
+
+void SerialCommand::printCommands() { 
+   for (int i = 0; i < commandCount; i++) {
+     SerialUSB.println(commandList[i].command);
+   }
 }
