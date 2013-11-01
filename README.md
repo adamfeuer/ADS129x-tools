@@ -33,10 +33,11 @@ connection.
 It can be configured to use the Arduino library's SPI software (without DMA), and can do 8,000 samples per second
 in that configuration.
 
-Samples are currently encoded using the base64 encoding. For more information about that, see this 
+Samples are encoded using the base64 encoding by default. For more information about that, see this 
 Wikipedia page:
 
 http://en.wikipedia.org/wiki/Base64
+
 
 Using the Driver
 ================
@@ -52,8 +53,13 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * VERSION - reports the driver version
 * LEDON - turns on the Arduino Due onboard LED.
 * LEDOFF - turns off the Arduino Due onboard LED.
+* BASE64 - RDATA/RDATAC commands will encode data in base64.
+* HEX - RDATA/RDATAC commands will encode data in hex.
+* HELP - prints a list of available commands.
 
-See the chip datasheet for more information.
+Commands can be given in lower or upper case.
+
+See the chip datasheet for more information about configuring the ADS129x and reading data from it.
 
 
 Connecting the ADS1298-breakout board to an Arduino Due
@@ -87,7 +93,7 @@ Python Host Software
 The Python host software is designed to run on a laptop computer. Right now it is a rudimentary performance testing script. Using Python 3.x on
 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
 
-It require the PySerial module.
+It requires the PySerial module.
 
 Credits
 =======
