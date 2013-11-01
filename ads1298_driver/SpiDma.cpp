@@ -24,16 +24,16 @@ void spiBegin(uint8_t csPin) {
   pinMode(csPin, OUTPUT);
 }
 //------------------------------------------------------------------------------
-void spiInit(uint8_t spiClockDivider) {
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setDataMode(SPI_MODE1);
+void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
+  SPI.setBitOrder(bitOrder); // MSBFIRST or LSBFIRST 
+  SPI.setDataMode(spiMode);   // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
   SPI.setClockDivider(spiClockDivider); 
 }
 //------------------------------------------------------------------------------
 /** SPI receive a byte */
 uint8_t spiRec() {
   return SPI.transfer(0XFF);
-}
+}å
 //------------------------------------------------------------------------------
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t* buf, size_t len) {
@@ -57,6 +57,7 @@ void spiSend(const uint8_t* buf, size_t len) {
 //==============================================================================
 #elif  USE_NATIVE_SAM3X_SPI
 #include <SPI.h>
+#include "variant.h"
 /** Use SAM3X DMAC if nonzero */
 #define USE_SAM3X_DMAC 1
 /** Use extra Bus Matrix arbitration fix if nonzero */
@@ -73,6 +74,8 @@ void spiSend(const uint8_t* buf, size_t len) {
 #define SPI_TX_IDX  1
 /** DMAC Channel HW Interface Number for SPI RX. */
 #define SPI_RX_IDX  2
+
+uint8_t bitOrder = MSBFIRST;
 //------------------------------------------------------------------------------
 /** Disable DMA Controller. */
 static void dmac_disable() {
@@ -172,21 +175,23 @@ void spiDmaTX(const uint8_t* src, uint16_t count) {
 }
 //------------------------------------------------------------------------------
 //  initialize SPI controller
-void spiInit(uint8_t spiClockDivider) {
+void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
   uint8_t scbr;
   Spi* pSpi = SPI0;
-  scbr = spiClockDivider;  //thd
+  scbr = spiClockDivider; 
   //  disable SPI
   pSpi->SPI_CR = SPI_CR_SPIDIS;
   // reset SPI
   pSpi->SPI_CR = SPI_CR_SWRST;
   // no mode fault detection, set master mode
   pSpi->SPI_MR = SPI_PCS(SPI_CHIP_SEL) | SPI_MR_MODFDIS | SPI_MR_MSTR;
-  // mode 0, 8-bit,
-  // pSpi->SPI_CSR[SPI_CHIP_SEL] = SPI_CSR_SCBR(scbr) | SPI_CSR_NCPHA;
-  // mode 1, 8-bit,
-  //pSpi->SPI_CSR[SPI_CHIP_SEL] = SPI_CSR_SCBR(scbr) | SPI_CSR_DLYBCT(1);
-  pSpi->SPI_CSR[SPI_CHIP_SEL] = SPI_CSR_SCBR(scbr);
+  if (spiMode == SPI_MODE0) { // SPI_MODE0, SPI_MODE1; other modes currently not supported.
+      // mode 0, 8-bit,
+      pSpi->SPI_CSR[SPI_CHIP_SEL] = SPI_CSR_SCBR(scbr) | SPI_CSR_NCPHA;
+  } else {
+      // mode 1, 8-bit,
+      pSpi->SPI_CSR[SPI_CHIP_SEL] = SPI_CSR_SCBR(scbr);
+  }
   // enable SPI
   pSpi->SPI_CR |= SPI_CR_SPIEN;
 }
@@ -204,7 +209,6 @@ inline uint8_t spiTransfer(uint8_t b) {
 
 uint8_t spiRec() {
   return spiTransfer(0XFF);
-  //return SPI.transfer(0xFF);
 }
 //------------------------------------------------------------------------------
 /** SPI receive multiple bytes */
@@ -235,6 +239,13 @@ uint8_t spiRec(uint8_t* buf, size_t len) {
     buf[i] = pSpi->SPI_RDR;
   }
 #endif  // USE_SAM3X_DMAC
+
+  if (bitOrder == LSBFIRST) {
+    for (register int i=0; i<len; i++) {
+	buf[i] = __REV(__RBIT(buf[i]));
+    }
+  }
+  
   return rtn;
 }
 //------------------------------------------------------------------------------

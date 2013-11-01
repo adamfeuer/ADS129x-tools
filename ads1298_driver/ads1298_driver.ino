@@ -28,7 +28,6 @@ int activeSerialPort = 0; //data will be sent to serial port that last sent comm
 boolean gActiveChan[9]; // reports whether channels 1..9 are active
 boolean isRDATAC = false;
 
-
 char hexDigits[] = "0123456789ABCDEF";
 
 SerialCommand serialCommand;  
@@ -334,7 +333,7 @@ void arduinoSetup(){
    digitalWrite(PIN_CLKSEL, HIGH); // internal clock
    //start Serial Peripheral Interface
    spiBegin(PIN_CS);
-   spiInit(SPI_CLOCK_DIVIDER);
+   spiInit(MSBFIRST, SPI_MODE1, SPI_CLOCK_DIVIDER);
    //Start ADS1298
    delay(500); //wait for the ads129n to be ready - it can take a while to charge caps
    digitalWrite(PIN_CLKSEL, HIGH);// *optional
