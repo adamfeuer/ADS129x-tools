@@ -1,7 +1,7 @@
 // ADS1298 test program
 //
 // this progam can read 8000 samples per second
-// on my 2012 MacBook Pro
+// and base64 decode them on my 2012 MacBook Pro
 
 package main
 
@@ -15,13 +15,19 @@ import (
       "time"
       "strings"
       "bytes"
+      "runtime"
+      "encoding/base64"
 )
 
-var testDuration time.Duration = 10 * time.Second
-var port string
-var baud int
-var tempBuffer = make([]byte, 10000)
-var buffer bytes.Buffer
+var (
+    testDuration time.Duration = 5 * time.Second
+    port string
+    baud int
+    tempBuffer = make([]byte, 10000)
+    buffer bytes.Buffer
+    //NCPU int = runtime.NumCPU() // use the maximum number of CPUs for parallelization
+    NCPU int = 1 
+)
 
 // ADS1298 constants
 var (
@@ -39,6 +45,7 @@ var (
     HIGH_RES_500_SPS int = (HR | DR2 | DR1)
     LOW_POWR_250_SPS int = (DR2 | DR1)
 )
+
 func init() {
     flag.StringVar(&port, "port", "[undefined]", "path to serial port device")
     flag.IntVar(&baud, "baud", 115200, "baud rate to use with serial port device")
@@ -76,21 +83,48 @@ func send(serialWriter io.Writer, command string) {
 }
 
 func reader(serialReader *bufio.Reader, quit chan bool) {
-    Loop:     
+    ReaderLoop:     
     for {
         select {
              case <- quit:
-                 break Loop
+                 break ReaderLoop
              default:
                  err := readChunk(serialReader)
                  if (err != nil && err == io.EOF) {
-                     break Loop
+                     break ReaderLoop
+                 }
+         }
+    }
+}
+
+var sampleCount int
+func decoder(quit chan bool) {
+    DecoderLoop:     
+    for {
+        select {
+             case <- quit:
+                 break DecoderLoop
+             default:
+                 line, err := buffer.ReadBytes('\n')
+                 if (err != nil && err == io.EOF) {
+                     break DecoderLoop
+                 }
+                 sampleCount++
+                 sample := make([]byte, 100)
+                 sampleLength, err := base64.StdEncoding.Decode(sample, line)
+                 _ = sampleLength
+                 if err != nil {
+                        fmt.Println("error:", err)
                  }
          }
     }
 }
 
 func main() {
+    fmt.Printf("Number of reported CPUs: %d\n", runtime.NumCPU())
+    fmt.Printf("Using CPUs: %d\n", NCPU)
+    runtime.GOMAXPROCS(NCPU)    
+
     flag.Parse()
     fmt.Printf("Serial port: %s\n", port)
     fmt.Printf("Baud rate: %d\n", baud)
@@ -118,11 +152,13 @@ func main() {
     fmt.Printf("%s\n", readLine(serialReader))
     fmt.Printf("%s\n", readLine(serialReader))
 
-    quit := make(chan bool)
-    go reader(serialReader, quit)
+    quitReader := make(chan bool)
+    quitDecoder := make(chan bool)
+    go reader(serialReader, quitReader)
     time.Sleep(testDuration)
-    quit <- true
+    quitReader <- true
     time.Sleep(300 * time.Millisecond)
+    go decoder(quitDecoder)
 
     send(serialWriter, "sdatac")
     line := ""
@@ -139,17 +175,7 @@ func main() {
     var bps float64 = float64(buffer.Len()) / seconds
     fmt.Printf("\n\n")
     fmt.Printf("%d bytes in %f seconds; %f bytes per second.\n", buffer.Len(), seconds, bps)
-
-    var lines = 0
-    s, err := buffer.ReadString('\n')
-    for err != io.EOF {
-        lines++;
-        if lines < 10 {
-            fmt.Printf("%s", s)
-        }
-        s, err = buffer.ReadString('\n')
-    }
-    var sps float64 = float64(lines) / seconds
-    fmt.Printf("%d samples in %f seconds; %f samples per second.\n", lines, seconds, sps)
+    var sps float64 = float64(sampleCount) / seconds
+    fmt.Printf("%d samples in %f seconds; %f samples per second.\n", sampleCount, seconds, sps)
 
 }
