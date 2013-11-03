@@ -1,3 +1,8 @@
+// ADS1298 test program
+//
+// this seems to be good up to about 7800 samples per second
+// on my 2012 MacBook Pro
+
 package main
 
 import (

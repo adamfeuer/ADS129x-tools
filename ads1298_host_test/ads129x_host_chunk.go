@@ -1,3 +1,8 @@
+// ADS1298 test program
+//
+// this progam can read 8000 samples per second
+// on my 2012 MacBook Pro
+
 package main
 
 import (
@@ -61,6 +66,7 @@ func readLine(serialReader *bufio.Reader) (result string) {
 }
 
 func send(serialWriter io.Writer, command string) {
+    fmt.Println(command)
     n, err := serialWriter.Write([]byte(command + "\n"))
     if err != nil {
             log.Fatal(err)
@@ -69,19 +75,23 @@ func send(serialWriter io.Writer, command string) {
     time.Sleep(100 * time.Millisecond)
 }
 
-func reader(serialReader *bufio.Reader) {
+func reader(serialReader *bufio.Reader, quit chan bool) {
     Loop:     
     for {
-        err := readChunk(serialReader)
-        if (err != nil && err == io.EOF) {
-            break Loop
-        }
+        select {
+             case <- quit:
+                 break Loop
+             default:
+                 err := readChunk(serialReader)
+                 if (err != nil && err == io.EOF) {
+                     break Loop
+                 }
+         }
     }
 }
 
 func main() {
     flag.Parse()
-    fmt.Printf("Hello, world.\n")
     fmt.Printf("Serial port: %s\n", port)
     fmt.Printf("Baud rate: %d\n", baud)
 
@@ -95,6 +105,7 @@ func main() {
     serialWriter := ser
 
     send(serialWriter, "sdatac")
+    time.Sleep(1 * time.Second)
     fmt.Printf("%s\n", readLine(serialReader))
     fmt.Printf("%s\n", readLine(serialReader))
     send(serialWriter, "version")
@@ -106,26 +117,29 @@ func main() {
     send(serialWriter, "rdatac")
     fmt.Printf("%s\n", readLine(serialReader))
     fmt.Printf("%s\n", readLine(serialReader))
-    fmt.Printf("%s\n", readLine(serialReader))
-    fmt.Printf("%s\n", readLine(serialReader))
 
-    go reader(serialReader)
+    quit := make(chan bool)
+    go reader(serialReader, quit)
     time.Sleep(testDuration)
+    quit <- true
+    time.Sleep(300 * time.Millisecond)
+
+    send(serialWriter, "sdatac")
+    line := ""
+    count := 0
+    for (strings.HasPrefix(line, "200") != true) {
+       line = readLine(serialReader)
+       fmt.Printf(".")
+       count++
+    }
+    fmt.Printf("\n")
+    fmt.Printf("Samples read after giving SDATAC command: %d\n", count)
 
     var seconds float64 = testDuration.Seconds()
     var bps float64 = float64(buffer.Len()) / seconds
     fmt.Printf("\n\n")
     fmt.Printf("%d bytes in %f seconds; %f bytes per second.\n", buffer.Len(), seconds, bps)
 
-    /*
-    for i := 0; i < 10; i++ {
-        s, err := buffer.ReadString('\n')
-        fmt.Printf("%s", s)
-        if err != nil {
-            fmt.Printf("error")
-        }
-    }
-    */
     var lines = 0
     s, err := buffer.ReadString('\n')
     for err != io.EOF {
@@ -136,6 +150,6 @@ func main() {
         s, err = buffer.ReadString('\n')
     }
     var sps float64 = float64(lines) / seconds
-    fmt.Printf("%d lines in %f seconds; %f lines per second.\n", lines, seconds, sps)
+    fmt.Printf("%d samples in %f seconds; %f samples per second.\n", lines, seconds, sps)
 
 }
