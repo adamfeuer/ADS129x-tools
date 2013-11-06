@@ -14,19 +14,8 @@ import (
       "bufio"
       "time"
       "strings"
-      "bytes"
       "runtime"
       "encoding/base64"
-)
-
-var (
-    testDuration time.Duration = 5 * time.Second
-    port string
-    baud int
-    tempBuffer = make([]byte, 10000)
-    buffer bytes.Buffer
-    //NCPU int = runtime.NumCPU() // use the maximum number of CPUs for parallelization
-    NCPU int = 1 
 )
 
 // ADS1298 constants
@@ -46,18 +35,33 @@ var (
     LOW_POWR_250_SPS int = (DR2 | DR1)
 )
 
+var (
+    NCPU int = 1 
+    BUFFER_SIZE int = 1000
+    SAMPLING_MODE int = HIGH_RES_8k_SPS
+    testDuration time.Duration = 10 * time.Second
+    port string
+    baud int
+    tempBuffer = make([]byte, 10000)
+    //NCPU int = runtime.NumCPU() // use the maximum number of CPUs for parallelization
+    byteCount int
+    sampleCount int
+)
+
+
 func init() {
     flag.StringVar(&port, "port", "[undefined]", "path to serial port device")
     flag.IntVar(&baud, "baud", 115200, "baud rate to use with serial port device")
 }
 
-func readChunk(serialReader *bufio.Reader) (err error) {
+func readChunk(serialReader *bufio.Reader, bufferedWritePipe *bufio.Writer) (err error) {
     chunkLen, err := serialReader.Read(tempBuffer)
     if err != nil && err == io.EOF {
         return err
     }
     if chunkLen > 0 {
-        buffer.Write(tempBuffer[:chunkLen])
+        bufferedWritePipe.Write(tempBuffer[:chunkLen])
+        byteCount += chunkLen
     }
     return nil
 }
@@ -82,32 +86,33 @@ func send(serialWriter io.Writer, command string) {
     time.Sleep(100 * time.Millisecond)
 }
 
-func reader(serialReader *bufio.Reader, quit chan bool) {
-    ReaderLoop:     
+func reader(serialReader *bufio.Reader, bufferedWritePipe *bufio.Writer, quit chan bool) {
+    Loop:     
     for {
         select {
              case <- quit:
-                 break ReaderLoop
+                 break Loop
              default:
-                 err := readChunk(serialReader)
+                 err := readChunk(serialReader, bufferedWritePipe)
                  if (err != nil && err == io.EOF) {
-                     break ReaderLoop
+                     break Loop
                  }
          }
     }
 }
 
-var sampleCount int
-func decoder(quit chan bool) {
-    DecoderLoop:     
+func decoder(bufferedReadPipe *bufio.Reader, quit chan bool) {
+    Loop:     
     for {
         select {
              case <- quit:
-                 break DecoderLoop
+                 break Loop
              default:
-                 line, err := buffer.ReadBytes('\n')
+                 line, isPrefix, err := bufferedReadPipe.ReadLine()
+                 //fmt.Printf("%s\n", line) // printing the samples radically reduces sample rate
+                 _ = isPrefix
                  if (err != nil && err == io.EOF) {
-                     break DecoderLoop
+                     break Loop
                  }
                  sampleCount++
                  sample := make([]byte, 100)
@@ -145,20 +150,26 @@ func main() {
     send(serialWriter, "version")
     fmt.Printf("%s\n", readLine(serialReader))
     fmt.Printf("%s\n", readLine(serialReader))
-    mode := fmt.Sprintf("%0x", HIGH_RES_8k_SPS)
+    mode := fmt.Sprintf("%0x", SAMPLING_MODE)
     send(serialWriter, "wreg 01 " + mode) 
     fmt.Printf("%s\n", readLine(serialReader))
     send(serialWriter, "rdatac")
     fmt.Printf("%s\n", readLine(serialReader))
     fmt.Printf("%s\n", readLine(serialReader))
 
-    quitReader := make(chan bool)
-    quitDecoder := make(chan bool)
-    go reader(serialReader, quitReader)
+    readPipe, writePipe := io.Pipe()
+    bufferedReadPipe := bufio.NewReaderSize(readPipe, BUFFER_SIZE)
+    bufferedWritePipe := bufio.NewWriterSize(writePipe, BUFFER_SIZE)
+
+    readerMessages := make(chan bool)
+    decoderMessages := make(chan bool)
+
+    quit := true
+    go reader(serialReader, bufferedWritePipe, readerMessages)
+    go decoder(bufferedReadPipe, decoderMessages)
     time.Sleep(testDuration)
-    quitReader <- true
+    readerMessages <- quit 
     time.Sleep(300 * time.Millisecond)
-    go decoder(quitDecoder)
 
     send(serialWriter, "sdatac")
     line := ""
@@ -172,9 +183,9 @@ func main() {
     fmt.Printf("Samples read after giving SDATAC command: %d\n", count)
 
     var seconds float64 = testDuration.Seconds()
-    var bps float64 = float64(buffer.Len()) / seconds
+    var bps float64 = float64(byteCount) / seconds
     fmt.Printf("\n\n")
-    fmt.Printf("%d bytes in %f seconds; %f bytes per second.\n", buffer.Len(), seconds, bps)
+    fmt.Printf("%d bytes in %f seconds; %f bytes per second.\n", byteCount, seconds, bps)
     var sps float64 = float64(sampleCount) / seconds
     fmt.Printf("%d samples in %f seconds; %f samples per second.\n", sampleCount, seconds, sps)
 
