@@ -61,6 +61,9 @@ Commands can be given in lower or upper case.
 
 See the chip datasheet for more information about configuring the ADS129x and reading data from it.
 
+If the host program (the program that reads data from the driver) does not pull data from the serial or USB interface fast enough, the driver
+will block on sending when the serial or USB buffers fill up. This will cause the driver to lose samples. 
+
 
 Connecting the ADS1298-breakout board to an Arduino Due
 =======================================================
