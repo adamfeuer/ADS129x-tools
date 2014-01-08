@@ -25,12 +25,12 @@
 
 #include <stdlib.h>
 #include "adsCommand.h"
-#include "ads1298.h"
+#include "ads129x.h"
 #include "SerialCommand.h"
 #include "Base64.h"
 #include "SpiDma.h"
 
-#define VERSION "ADS1298 driver v0.1"
+#define VERSION "ADS129x driver v0.2"
 
 #define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
@@ -61,6 +61,8 @@ void setup() {
   serialCommand.addCommand("version",version);        // Echos the driver version number
   serialCommand.addCommand("ledon",ledOn);            // Turns Due onboad LED on
   serialCommand.addCommand("ledoff", ledOff);         // Turns Due onboard LED off
+  serialCommand.addCommand("boardledoff", boardLedOff);  // Turns HackEEG GPIO LED off
+  serialCommand.addCommand("boardledon", boardLedOn);    // Turns HackEEG GPIO LED on
   serialCommand.addCommand("rreg", readRegister);     // Read ADS129x register, argument in hex, print contents in hex
   serialCommand.addCommand("wreg", writeRegister);    // Write ADS129x register, arguments in hex
   serialCommand.addCommand("rdata", rdata);           // Read one sample of data from each channel
@@ -128,6 +130,23 @@ void ledOff() {
   digitalWrite(PIN_LED,LOW);
 }
 
+void boardLedOn() {
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Board GPIO LED on"); 
+  int state = adc_rreg(ADS1298::GPIO);
+  state = state & 0xF7;
+  state = state | 0x80;
+  adc_wreg(ADS1298::GPIO, state);
+}
+
+void boardLedOff() {
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Board GPIO LED off"); 
+  int state = adc_rreg(ADS1298::GPIO);
+  state = state & 0x77;
+  adc_wreg(ADS1298::GPIO, state);
+}
+
 void version() {
   WiredSerial.println("200 Ok");
   WiredSerial.println(VERSION);
@@ -185,7 +204,7 @@ void writeRegister() {
     if (arg2 != NULL) { 
       long registerNumber = hexToLong(arg1);
       long registerValue = hexToLong(arg2);
-      if (registerNumber >= 0 && registerValue > 0) {
+      if (registerNumber >= 0 && registerValue >= 0) {
         adc_wreg(registerNumber, registerValue);        
         WiredSerial.print("200 Ok"); 
         WiredSerial.print(" (Write Register "); 
@@ -194,7 +213,6 @@ void writeRegister() {
         WiredSerial.print(registerValue); 
         WiredSerial.print(") "); 
         WiredSerial.println();
-                
       } else {
          WiredSerial.println("402 Error: expected hexidecimal digits."); 
       }

@@ -23,7 +23,7 @@
 
 #include "Arduino.h"   // use: Wprogram.h for Arduino versions prior to 1.0
 #include "adsCommand.h"
-#include "ads1298.h"
+#include "ads129x.h"
 #include "SpiDma.h"
 
 /*void wait_for_drdy(int interval)

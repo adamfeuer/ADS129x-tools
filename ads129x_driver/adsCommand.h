@@ -25,16 +25,17 @@
 // constants define pins on Arduino 
 
 // Arduino Due
-const int IPIN_PWDN = 47; //not required for TI demo kit
-const int PIN_CLKSEL = 49; // *optional
-const int IPIN_RESET  = 48;// *optional
+// HackEEG Shield v1.0 - with reversed XIO connector
+const int IPIN_PWDN = 43; 
+const int PIN_CLKSEL = 23; 
+const int IPIN_RESET  = 29;
 
-const int PIN_START = 46;
-const int IPIN_DRDY = 45;
-const int PIN_CS = 52; 
-//const int PIN_DOUT = 11; //SPI out
-//const int PIN_DIN = 12; //SPI in
-//const int PIN_SCLK = 13; //SPI clock
+const int PIN_START = 45;
+const int IPIN_DRDY = 51;
+const int PIN_CS = 4;
+//const int PIN_DOUT = 11;//SPI out
+//const int PIN_DIN = 12;//SPI in
+//const int PIN_SCLK = 13;//SPI clock
 
 //function prototypes
 void adc_wreg(int reg, int val); //write register
