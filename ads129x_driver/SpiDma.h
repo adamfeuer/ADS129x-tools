@@ -28,6 +28,7 @@
 // works at 10
 // doesn't work at 9 or 6
 #define SPI_CLOCK_DIVIDER 5
+//#define SPI_CLOCK_DIVIDER 10
 
 void spiBegin(uint8_t csPin);
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider);

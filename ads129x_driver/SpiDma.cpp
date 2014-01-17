@@ -34,7 +34,7 @@ void spiBegin(uint8_t csPin) {
 }
 //------------------------------------------------------------------------------
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
-  SPI.setBitOrder(bitOrder); // MSBFIRST or LSBFIRST 
+  SPI.setBitOrder((BitOrder)bitOrder); // MSBFIRST or LSBFIRST 
   SPI.setDataMode(spiMode);   // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
   SPI.setClockDivider(spiClockDivider); 
 }
@@ -42,7 +42,7 @@ void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
 /** SPI receive a byte */
 uint8_t spiRec() {
   return SPI.transfer(0XFF);
-}å
+}
 //------------------------------------------------------------------------------
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t* buf, size_t len) {

@@ -93,8 +93,18 @@ namespace ADS1298 {
 		DR2 = 0x04,
 		DR1 = 0x02,
 		DR0 = 0x01,
+                
+                // correct for ADS1298/1294; incorrect for ADS1299
+                // TODO: Fix for ADS1299
+                
+                // ADS1298
+		//CONFIG1_const = 0x00,
 
-		CONFIG1_const = 0x00,
+                // ADS1299
+		CONFIG1_const = 0xE0,
+
+                // ADS1298
+                /*
 		HIGH_RES_32k_SPS = HR,
 		HIGH_RES_16k_SPS = (HR | DR0),
 		HIGH_RES_8k_SPS = (HR | DR1),
@@ -103,6 +113,17 @@ namespace ADS1298 {
 		HIGH_RES_1k_SPS = (HR | DR2 | DR0),
 		HIGH_RES_500_SPS = (HR | DR2 | DR1),
 		LOW_POWR_250_SPS = (DR2 | DR1)
+                */
+                
+                // ADS1299
+		HIGH_RES_16k_SPS = HR,
+		HIGH_RES_8k_SPS = (HR | DR0),
+		HIGH_RES_4k_SPS = (HR | DR1),
+		HIGH_RES_2k_SPS = (HR | DR1 | DR0),
+		HIGH_RES_1k_SPS = (HR | DR2),
+		HIGH_RES_500_SPS = (HR | DR2 | DR0),
+		HIGH_RES_250_SPS = (HR | DR2 | DR1),
+
 	};
 
 	enum CONFIG2_bits {
@@ -112,7 +133,12 @@ namespace ADS1298 {
 		TEST_FREQ1 = 0x02,
 		TEST_FREQ0 = 0x01,
 
-		CONFIG2_const = 0x00,
+                // ADS1298
+		//CONFIG2_const = 0x00,
+
+                // ADS1299
+		CONFIG2_const = 0xC0,
+
 		INT_TEST_4HZ = INT_TEST, 
 		INT_TEST_8HZ = (INT_TEST | TEST_FREQ0),
 		INT_TEST_DC = (INT_TEST | TEST_FREQ1 | TEST_FREQ0)
@@ -127,7 +153,11 @@ namespace ADS1298 {
 		RLD_LOFF_SENS = 0x02,
 		RLD_STAT = 0x01,
 
-		CONFIG3_const = 0x40
+                // ADS1298
+		//CONFIG3_const = 0x40
+
+                // ADS1299
+		CONFIG3_const = 0x60
 	};
 
 	enum LOFF_bits {

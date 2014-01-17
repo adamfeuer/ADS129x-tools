@@ -49,10 +49,13 @@ void adc_wreg(int reg, int val) {
    digitalWrite(PIN_CS, LOW);
    spiSend(ADS1298::WREG | reg);
    delayMicroseconds(2);
+   //delayMicroseconds(5);
    spiSend(0);	// number of registers to be read/written – 1
    delayMicroseconds(2);
+   //delayMicroseconds(5);
    spiSend(val);
    delayMicroseconds(1);
+   //delayMicroseconds(5);
    digitalWrite(PIN_CS, HIGH);
 }
 
@@ -61,10 +64,13 @@ int adc_rreg(int reg){
    digitalWrite(PIN_CS, LOW);
    spiSend(ADS1298::RREG | reg);
    delayMicroseconds(2);
+   //delayMicroseconds(5);
    spiSend(0);	// number of registers to be read/written – 1
    delayMicroseconds(2);
+   //delayMicroseconds(5);
    out = spiRec();
    delayMicroseconds(1);
+   //delayMicroseconds(5);
    digitalWrite(PIN_CS, HIGH);
    return((int)out);
 }
