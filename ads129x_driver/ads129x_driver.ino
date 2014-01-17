@@ -30,8 +30,6 @@
 #include "Base64.h"
 #include "SpiDma.h"
 
-#define VERSION "ADS129x driver v0.2"
-
 #define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB // use Due's Native USB port
@@ -45,6 +43,11 @@ boolean base64Mode = true;
 char hexDigits[] = "0123456789ABCDEF";
 uint8_t serialBytes[200];
 char sampleBuffer[1000];
+
+const char *hardwareType = "unknown";
+const char *boardName = "HackEEG";
+const char *makerName = "StarCat, LLC";
+const char *driverVersion = "ADS129x driver v0.2.1";
 
 SerialCommand serialCommand;  
 
@@ -128,17 +131,25 @@ void encodeHex(char* output, char* input, int inputLen) {
 
 void version_command() {
   WiredSerial.println("200 Ok");
-  WiredSerial.println(VERSION);
+  WiredSerial.println(driverVersion);
   digitalWrite(PIN_LED,LOW);
 }
 
 void status_command() {
   WiredSerial.println("200 Ok");
+  WiredSerial.print("Board name: ");   
+  WiredSerial.println(boardName);   
+  WiredSerial.print("Board maker: ");   
+  WiredSerial.println(makerName);   
+  WiredSerial.print("Hardware type: ");   
+  WiredSerial.println(hardwareType);   
   WiredSerial.print("Max channels: "); 
   WiredSerial.println(maxChannels); 
   detectActiveChannels();
   WiredSerial.print("Number of active channels: "); 
   WiredSerial.println(numActiveChannels); 
+  WiredSerial.print("Driver version: "); 
+  WiredSerial.println(driverVersion); 
   WiredSerial.println(""); 
 }
 
@@ -162,18 +173,18 @@ void ledOff_command() {
 void boardLedOn_command() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("Board GPIO LED on"); 
-  int state = adc_rreg(ADS1298::GPIO);
+  int state = adc_rreg(ADS129x::GPIO);
   state = state & 0xF7;
   state = state | 0x80;
-  adc_wreg(ADS1298::GPIO, state);
+  adc_wreg(ADS129x::GPIO, state);
 }
 
 void boardLedOff_command() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("Board GPIO LED off"); 
-  int state = adc_rreg(ADS1298::GPIO);
+  int state = adc_rreg(ADS129x::GPIO);
   state = state & 0x77;
-  adc_wreg(ADS1298::GPIO, state);
+  adc_wreg(ADS129x::GPIO, state);
 }
 
 void base64ModeOn_command() {
@@ -196,7 +207,7 @@ void help_command() {
 }
 
 void readRegister_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   char *arg1; 
   arg1 = serialCommand.next();   
   if (arg1 != NULL) {
@@ -254,37 +265,37 @@ void writeRegister_command() {
 
 
 void wakeup_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(WAKEUP);
 }
 
 void standby_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(STANDBY);
 }
 
 void reset_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(RESET);
 }
 
 void start_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(START);
 }
 
 void stop_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(STOP);
 }
 
 void rdata_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok ");
   adc_send_command(RDATA);
   while (digitalRead(IPIN_DRDY) == HIGH);
@@ -292,7 +303,7 @@ void rdata_command() {
 }
 
 void rdatac_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok");
   WiredSerial.println("RDATAC mode on."); 
   detectActiveChannels();
@@ -303,7 +314,7 @@ void rdatac_command() {
 }
 
 void sdatac_command() {
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok");
   WiredSerial.println("RDATAC mode off."); 
   isRdatac= false;
@@ -319,7 +330,7 @@ void unrecognized(const char *command) {
 void detectActiveChannels() {  //set device into RDATAC (continous) mode -it will stream data
   if ((isRdatac) ||  (maxChannels < 1)) return; //we can not read registers when in RDATAC mode
   //Serial.println("Detect active channels: ");
-  using namespace ADS1298; 
+  using namespace ADS129x; 
   numActiveChannels = 0;
   for (int i = 1; i <= maxChannels; i++) {
     delayMicroseconds(1); 
@@ -362,7 +373,7 @@ inline void sendSample(void) {
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
-  using namespace ADS1298;
+  using namespace ADS129x;
   // Send SDATAC Command (Stop Read Data Continuously mode)
   delay(1000); //pause to provide ads129n enough time to boot up...
   adc_send_command(SDATAC);
@@ -371,16 +382,20 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
   int val = adc_rreg(ID) ;
   switch (val & B00011111 ) { //least significant bits reports channels
   case  B10000: //16
-    maxChannels = 4; //ads1294
+    hardwareType = "ADS1294";
+    maxChannels = 4;
     break;
   case B10001: //17
-    maxChannels = 6; //ads1296
+    hardwareType = "ADS1296";
+    maxChannels = 6; 
     break;
   case B10010: //18
-    maxChannels = 8; //ads1298
+    hardwareType = "ADS1298";
+    maxChannels = 8; 
     break;
   case B11110: //30
-    maxChannels = 8; //ads1299
+    hardwareType = "ADS1299";
+    maxChannels = 8; 
     break;
   default: 
     maxChannels = 0;
@@ -434,7 +449,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 void arduinoSetup(){
   Serial.begin(BAUD_RATE); // for debugging
   pinMode(PIN_LED, OUTPUT);
-  using namespace ADS1298;
+  using namespace ADS129x;
 
   //prepare pins to be outputs or inputs
   //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us

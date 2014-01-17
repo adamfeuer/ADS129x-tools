@@ -47,30 +47,24 @@ void adc_send_command(int cmd) {
 void adc_wreg(int reg, int val) {
    //see pages 40,43 of datasheet - 
    digitalWrite(PIN_CS, LOW);
-   spiSend(ADS1298::WREG | reg);
+   spiSend(ADS129x::WREG | reg);
    delayMicroseconds(2);
-   //delayMicroseconds(5);
    spiSend(0);	// number of registers to be read/written – 1
    delayMicroseconds(2);
-   //delayMicroseconds(5);
    spiSend(val);
    delayMicroseconds(1);
-   //delayMicroseconds(5);
    digitalWrite(PIN_CS, HIGH);
 }
 
 int adc_rreg(int reg){
    uint8_t out = 0;
    digitalWrite(PIN_CS, LOW);
-   spiSend(ADS1298::RREG | reg);
+   spiSend(ADS129x::RREG | reg);
    delayMicroseconds(2);
-   //delayMicroseconds(5);
    spiSend(0);	// number of registers to be read/written – 1
    delayMicroseconds(2);
-   //delayMicroseconds(5);
    out = spiRec();
    delayMicroseconds(1);
-   //delayMicroseconds(5);
    digitalWrite(PIN_CS, HIGH);
    return((int)out);
 }

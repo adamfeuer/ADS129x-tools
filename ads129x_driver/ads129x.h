@@ -1,8 +1,8 @@
-#ifndef ADS1298_H
-#define ADS1298_H
+#ifndef ADS129x_H
+#define ADS129x_H
 
 #ifdef __cplusplus
-namespace ADS1298 {
+namespace ADS129x {
 #endif
 
 	enum spi_command {
@@ -540,6 +540,6 @@ namespace ADS1298 {
 
 #ifdef __cplusplus
 }
-#endif /* namespace ADS1298 */
+#endif /* namespace ADS129x */
 
-#endif				/* ADS1298_H */
+#endif				/* ADS129x_H */
