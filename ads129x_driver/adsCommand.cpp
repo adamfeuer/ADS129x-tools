@@ -44,6 +44,11 @@ void adc_send_command(int cmd) {
    digitalWrite(PIN_CS, HIGH);
 }
 
+void adc_send_command_leave_cs_active(int cmd) {
+   digitalWrite(PIN_CS, LOW);
+   spiSend(cmd);
+}
+
 void adc_wreg(int reg, int val) {
    //see pages 40,43 of datasheet - 
    digitalWrite(PIN_CS, LOW);

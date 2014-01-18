@@ -39,5 +39,6 @@ const int PIN_CS = 4;
 
 //function prototypes
 void adc_wreg(int reg, int val); //write register
-void adc_send_command(int cmd); //send command
+void adc_send_command(int cmd); 
+void adc_send_command_leave_cs_active(int cmd); 
 int adc_rreg(int reg); //read register

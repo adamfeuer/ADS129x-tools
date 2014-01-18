@@ -132,7 +132,7 @@ void encodeHex(char* output, char* input, int inputLen) {
 void version_command() {
   WiredSerial.println("200 Ok");
   WiredSerial.println(driverVersion);
-  digitalWrite(PIN_LED,LOW);
+  WiredSerial.println(); 
 }
 
 void status_command() {
@@ -150,53 +150,60 @@ void status_command() {
   WiredSerial.println(numActiveChannels); 
   WiredSerial.print("Driver version: "); 
   WiredSerial.println(driverVersion); 
-  WiredSerial.println(""); 
+  WiredSerial.println(); 
 }
 
 void serialNumber_command() {
   WiredSerial.println("200 Ok");
   WiredSerial.println("Not implemented yet. "); 
+  WiredSerial.println(); 
 }
 
 void ledOn_command() {
+  digitalWrite(PIN_LED,HIGH);  
   WiredSerial.println("200 Ok");
   WiredSerial.println("LED on"); 
-  digitalWrite(PIN_LED,HIGH);  
+  WiredSerial.println(); 
 }
 
 void ledOff_command() {
+  digitalWrite(PIN_LED,LOW);
   WiredSerial.println("200 Ok");
   WiredSerial.println("LED off"); 
-  digitalWrite(PIN_LED,LOW);
+  WiredSerial.println(); 
 }
 
 void boardLedOn_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Board GPIO LED on"); 
   int state = adc_rreg(ADS129x::GPIO);
   state = state & 0xF7;
   state = state | 0x80;
   adc_wreg(ADS129x::GPIO, state);
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Board GPIO LED on"); 
+  WiredSerial.println(); 
 }
 
 void boardLedOff_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Board GPIO LED off"); 
   int state = adc_rreg(ADS129x::GPIO);
   state = state & 0x77;
   adc_wreg(ADS129x::GPIO, state);
+  WiredSerial.println("200 Ok");
+  WiredSerial.println("Board GPIO LED off"); 
+  WiredSerial.println(); 
 }
 
 void base64ModeOn_command() {
+  base64Mode = true;
   WiredSerial.println("200 Ok");
   WiredSerial.println("Base64 mode on - rdata commands will send bas64 encoded data."); 
-  base64Mode = true;
+  WiredSerial.println(); 
 }
 
 void hexModeOn_command() {
+  base64Mode = false;
   WiredSerial.println("200 Ok");
   WiredSerial.println("Hex mode on - rdata commands will send hex encoded data"); 
-  base64Mode = false;
+  WiredSerial.println(); 
 }
 
 void help_command() {
@@ -221,7 +228,6 @@ void readRegister_command() {
       WiredSerial.println();               
       outputHexByte(result);      
       WiredSerial.println();      
-
     } 
     else {
       WiredSerial.println("402 Error: expected hexidecimal digits."); 
@@ -230,6 +236,7 @@ void readRegister_command() {
   else {
     WiredSerial.println("403 Error: register argument missing."); 
   }
+  WiredSerial.println();      
 }
 
 void writeRegister_command() {
@@ -261,69 +268,87 @@ void writeRegister_command() {
   else {
     WiredSerial.println("403 Error: register argument missing."); 
   }
+  WiredSerial.println();      
 }
 
 
 void wakeup_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
   adc_send_command(WAKEUP);
+  WiredSerial.println("200 Ok ");
+  WiredSerial.println("Wakeup command sent.");
+  WiredSerial.println(); 
 }
 
 void standby_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
   adc_send_command(STANDBY);
+  WiredSerial.println("200 Ok ");
+  WiredSerial.println("Standby command sent.");
+  WiredSerial.println(); 
 }
 
 void reset_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
   adc_send_command(RESET);
+  WiredSerial.println("200 Ok ");
+  WiredSerial.println("Reset command sent.");
+  WiredSerial.println(); 
 }
 
 void start_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
   adc_send_command(START);
+  WiredSerial.println("200 Ok ");
+  WiredSerial.println("Start command sent.");
+  WiredSerial.println(); 
 }
 
 void stop_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
   adc_send_command(STOP);
+  WiredSerial.println("200 Ok ");
+  WiredSerial.println("Stop command sent.");
+  WiredSerial.println(); 
 }
 
 void rdata_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok ");
-  adc_send_command(RDATA);
   while (digitalRead(IPIN_DRDY) == HIGH);
+  adc_send_command_leave_cs_active(RDATA);
+  WiredSerial.println("200 Ok ");
   sendSample();
+  WiredSerial.println(); 
 }
 
 void rdatac_command() {
   using namespace ADS129x; 
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("RDATAC mode on."); 
   detectActiveChannels();
   if (numActiveChannels > 0) { 
     isRdatac = true;
     adc_send_command(RDATAC);
+    WiredSerial.println("200 Ok");
+    WiredSerial.println("RDATAC mode on."); 
+  } else {
+    WiredSerial.println("405 Error: no active channels.");
   }
+  WiredSerial.println(); 
 }
 
 void sdatac_command() {
   using namespace ADS129x; 
+  isRdatac = false;
+  adc_send_command(SDATAC);
+  using namespace ADS129x; 
   WiredSerial.println("200 Ok");
   WiredSerial.println("RDATAC mode off."); 
-  isRdatac= false;
-  adc_send_command(SDATAC);
+  WiredSerial.println(); 
 }
 
 // This gets set as the default handler, and gets called when no other command matches. 
 void unrecognized(const char *command) {
-  WiredSerial.println("Unrecognized command."); 
+  WiredSerial.println("406 Error: Unrecognized command."); 
+  WiredSerial.println();   
 }
 
 
@@ -337,10 +362,7 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
     int chSet = adc_rreg(CHnSET + i);
     gActiveChan[i] = ((chSet & 7) != SHORTED);
     if ( (chSet & 7) != SHORTED) numActiveChannels ++;   
-    //WiredSerial.print("Active channels: ");
-    //WiredSerial.println(numActiveChannels);
   }
-
 }
 
 //#define testSignal //use this to determine if your software is accurately measuring full range 24-bit signed data -8388608..8388607
