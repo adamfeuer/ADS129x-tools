@@ -4,6 +4,12 @@ ADS129x-tools
 This is a collection of software for working with the TI ADS129x series of analog to digital
 converter chips.
 
+The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x programmable gain 
+amplifier and much of the analog circuitry needed for EEG. It is capable of 16,000 samples
+per second at 24 bit resolution.
+
+http://www.ti.com/product/ads1299
+
 The ADS1298 is a 24-bit, 8-channel ADC chip with SPI interface, and 12x programmable gain amplifiers,
 meant for ECG and EEG:
 
@@ -11,19 +17,13 @@ http://www.ti.com/product/ads1298
 
 The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version.
 
-The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x programmable gain 
-amplifier and much of the analog circuitry needed for EEG. It is capable of 16,000 samples
-per second at 24 bit resolution.
-
-http://www.ti.com/product/ads1299
-
 These chips are ideally suited for digitizing biological signals.
 
 Arduino Due drivers
 ===================
 
-The ads1298-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
-for ADS129x chips. So far it has only been tested on the ADS1298, but should work on the other models.
+The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
+for ADS129x chips. So far it has only been tested on the ADS1298 and ADS1298, but should work on the other models.
 
 The driver is a text-mode driver, so can be used without any client software - just open up a serial port
 to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). The driver can read from the ADS129x
@@ -63,31 +63,6 @@ See the chip datasheet for more information about configuring the ADS129x and re
 
 If the host program (the program that reads data from the driver) does not pull data from the serial or USB interface fast enough, the driver
 will block on sending when the serial or USB buffers fill up. This will cause the driver to lose samples. 
-
-
-Connecting the ADS1298-breakout board to an Arduino Due
-=======================================================
-
-This driver was tested using the open source hardware ADS1298-breakout board, available here:
-
-https://github.com/adamfeuer/ADS1298-breakout
-
-There is an Arduino Due pinout diagram in that project's docs/arduino_pinout_diagram.png. Refer to that when making the wiring
-connections. There are also a couple of photos.
-
-    ADS1298-breakout pin - Arduino Due pin (SAM3X8E pin)
-    SPI OUT (MISO)       - SPI Header 1 (108)
-    SPI IN (MOSI)        - SPI Header 4 (109)
-    SCK                  - SPI Header 3 (11)
-    GND                  - SPI Header 6
-    5V                   - SPI Header 2
-    DRDY                 - D45 (100)
-    CLK                  - A7 (85)
-    CLKSEL               - D49 (96)
-    RESET                - D48 (97)
-    PWDN                 - D47 (98)
-    START                - D46 (99)
-    CS                   - D52 (92)
 
 
 Python Host Software
