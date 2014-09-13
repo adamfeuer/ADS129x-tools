@@ -53,6 +53,8 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * VERSION - reports the driver version
 * LEDON - turns on the Arduino Due onboard LED.
 * LEDOFF - turns off the Arduino Due onboard LED.
+* BOARDLEDON - turns on the HackEEG Shield LED. (HackEEG shield only) 
+* BOARDLEDOFF - turns off the HackEEG Shield LED. (HackEEG shield only) 
 * BASE64 - RDATA/RDATAC commands will encode data in base64.
 * HEX - RDATA/RDATAC commands will encode data in hex.
 * HELP - prints a list of available commands.
