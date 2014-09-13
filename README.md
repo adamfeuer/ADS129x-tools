@@ -23,7 +23,7 @@ Arduino Due drivers
 ===================
 
 The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
-for ADS129x chips. So far it has only been tested on the ADS1298 and ADS1298, but should work on the other models.
+for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models.
 
 The driver is a text-mode driver, so can be used without any client software - just open up a serial port
 to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). The driver can read from the ADS129x
