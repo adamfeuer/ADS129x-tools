@@ -79,8 +79,8 @@ Hardware
 ========
 
 If you are looking for a full Arduino shield with analog input capability, you might
-be interested in the [HackEEG Shield](https://github.com/adamfeuer/hackeeg-shield)
-instead. The HackEEG shield is compatible with the ADS1298 or ADS1299.
+be interested in the [HackEEG Shield](https://github.com/adamfeuer/hackeeg-shield).
+The HackEEG shield is compatible with the ADS1298 or ADS1299.
 
 For prototyping software, the [ADS1298 breakout board](https://github.com/adamfeuer/ADS1298-breakout)
 might be useful. It is designed for the ADS1298, but should also work with the ADS1294, ADS1296, or ADS1299.
