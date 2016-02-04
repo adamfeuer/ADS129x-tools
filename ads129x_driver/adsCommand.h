@@ -25,13 +25,13 @@
 // constants define pins on Arduino 
 
 // Arduino Due
-// HackEEG Shield v1.0 - with reversed XIO connector
-const int IPIN_PWDN = 43; 
-const int PIN_CLKSEL = 27; 
-const int IPIN_RESET  = 29;
+// HackEEG Shield v1.3.1
+const int IPIN_PWDN = 33; 
+const int PIN_CLKSEL = 48; 
+const int IPIN_RESET  = 47;
 
-const int PIN_START = 45;
-const int IPIN_DRDY = 49;
+const int PIN_START = 59;
+const int IPIN_DRDY = 25;
 const int PIN_CS = 4;
 //const int PIN_DOUT = 11;//SPI out
 //const int PIN_DIN = 12;//SPI in
