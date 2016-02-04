@@ -56,7 +56,7 @@ void setup() {
   pinMode(PIN_LED,OUTPUT);      // Configure the onboard LED for output
   digitalWrite(PIN_LED,LOW);    // default to LED off
   arduinoSetup();
-  adsSetup();
+  //adsSetup();
 
   WiredSerial.println("Ready"); 
 
@@ -422,6 +422,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
   default: 
     maxChannels = 0;
   }
+  WiredSerial.println("Max channels: " + maxChannels);
   if (maxChannels == 0) { //error mode
     while(1) { //loop forever 
       digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
@@ -469,7 +470,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 }
 
 void arduinoSetup(){
-  Serial.begin(BAUD_RATE); // for debugging
+  //Serial.begin(BAUD_RATE); // for debugging
   pinMode(PIN_LED, OUTPUT);
   using namespace ADS129x;
 
