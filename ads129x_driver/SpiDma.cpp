@@ -21,8 +21,8 @@
 #include <string.h>
 #include "Arduino.h"
 
-#define USE_ARDUINO_SPI_LIBRARY 0
-#define USE_NATIVE_SAM3X_SPI 1
+#define USE_ARDUINO_SPI_LIBRARY 1
+#define USE_NATIVE_SAM3X_SPI 0
 
 //==============================================================================
 #if USE_ARDUINO_SPI_LIBRARY
