@@ -56,7 +56,7 @@ void setup() {
   pinMode(PIN_LED,OUTPUT);      // Configure the onboard LED for output
   digitalWrite(PIN_LED,LOW);    // default to LED off
   arduinoSetup();
-  //adsSetup();
+  adsSetup();
 
   WiredSerial.println("Ready"); 
 
@@ -399,8 +399,8 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
   // Send SDATAC Command (Stop Read Data Continuously mode)
   delay(1000); //pause to provide ads129n enough time to boot up...
   adc_send_command(SDATAC);
-  delayMicroseconds(2);
-  //delay(100); 
+  // delayMicroseconds(2);
+  delay(100); 
   int val = adc_rreg(ID) ;
   switch (val & B00011111 ) { //least significant bits reports channels
   case  B10000: //16
