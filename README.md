@@ -103,10 +103,9 @@ If I forgot to credit you, please let me know!
 
 If you have questions, comments, or improvements, I would love to know them! Pull requests welcome!
 
-cheers<br>
-adam<br>
-Adam Feuer<br>
-Seattle, WA, USA<br>
-adam@adamfeuer.com<br>
-http://adamfeuer.com<br>
-
+cheers <br>
+adam <br>
+Adam Feuer <br>
+adam@starcat.io<br>
+[StarCat Biosignals](https://starcat.io)<br>
+Seattle, WA, USA <br>
