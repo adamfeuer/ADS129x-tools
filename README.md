@@ -1,5 +1,4 @@
-ADS129x-tools
-=============
+# ADS129x-tools
 
 This is a collection of software for working with the TI ADS129x series of analog to digital
 converter chips.
@@ -19,8 +18,7 @@ The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version.
 
 These chips are ideally suited for digitizing biological signals.
 
-Arduino Due drivers
-===================
+## Arduino Due drivers
 
 The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
 for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models.
@@ -38,6 +36,10 @@ Wikipedia page:
 
 http://en.wikipedia.org/wiki/Base64
 
+## Installing
+
+You must install the [ArduinoJson](https://arduinojson.org/v6/doc/installation/) and [RingBuffer](https://github.com/Locoduino/RingBuffer) libraries before compiling this driver.
+
 
 ## Using the Driver
 
@@ -47,9 +49,9 @@ The commands that are available are:
 Returns a single hex-encoded byte (for example, 0E) that represents the contents of the register.
 * WREG – write register. Takes two hex-encoded bytes as arguments, separated by a space. Argument 1 is the register to write, argument 2 is the register value.
 * RDATA – read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64.
-* RDATAC – start read data continuous mode. Data is read into a circular buffer in the Arduino RAM, and read via DATA commands.
+* RDATAC – start read data continuous mode. Data is read into a circular buffer in the Arduino RAM, and read via GETDATA commands.
 * SDATAC – stop read data continuous mode. 
-* DATA – return the contents of the data buffer at this time, and update the circular buffer pointers.
+* GETDATA – return the contents of the data buffer at this time, and update the circular buffer pointers.
 * VERSION – reports the driver version
 * SERIALNUMBER – reports the HackEEG serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
 * LEDON – turns on the Arduino Due onboard LED.
@@ -60,12 +62,12 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * TEXT – communication protocol switches to text. See the Communication Protocol section.
 * JSONLINES – communication protocol switches from text to [JSONLines](http://jsonlines.org/). This is a text-oriented serialization format with libraries in many languages. See the Communication Protocol section.
 * MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org). This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
-* HEX – RDATA/RDATAC commands will encode data in hex.
+* HEX – RDATA commands will encode data in hex.
 * HELP – prints a list of available commands.
 
 
 
-##General Operation
+## General Operation
 
 The ADS129x chips are configured by reading and writing registers. See the chip datasheet for more information about configuring the ADS129x and reading data from it.
 
@@ -88,17 +90,17 @@ while 1:
 
 ```
 
-##Communication Protocol
+## Communication Protocol
 
-###Text mode
+### Text mode
 
 The driver starts up in this mode. When the command TEXT is given, the driver communication protocol switches to text, and the response will be in text format.  Commands can be given in lower or upper case, parameters separated by a space. Responses are given on one line, starting with a status code (200 for OK, errors are in the 300s and 400s.)
 
-###JSONLines mode
+### JSONLines mode
 
 When the command JSONLINES is given, the driver communication protocol switches to [JSONLines](http://jsonlines.org/) format, and the response will be in JSONLines format. Commands and Responses are a single map, with keys and values determine the command and parameters. The format is as follows (on separate lines for readability; in use, the entire JSON blob would be on its own line):
 
-####Commands:
+#### Commands:
 
 ```
 {
@@ -107,7 +109,7 @@ When the command JSONLINES is given, the driver communication protocol switches 
 }
 ```
 
-####Responses:
+#### Responses:
 
 ```
 {
@@ -121,12 +123,13 @@ When the command JSONLINES is given, the driver communication protocol switches 
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSONLines data.
 
 
-###MessagePack mode
+### MessagePack mode
 
 When the command JSONLINES is given, the driver communication protocol switches to [MessagePack](https://msgpack.org) format, and the response will be in MessagePack format. Command and response structure are virtually identical to the JSONLines mode, but the serialization format is MessagePack, and commands are given as integers rather than strings.
 
 The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
 
+#### Commands:
 
 ```
 {
@@ -135,7 +138,7 @@ The format is as follows (on separate lines as JSON for readability, in use this
 }
 ```
 
-####Responses:
+#### Responses:
 
 ```
 {
@@ -149,14 +152,14 @@ The format is as follows (on separate lines as JSON for readability, in use this
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
 
 
-##Python Host Software
+## Python Host Software
 
 The Python host software is designed to run on a laptop computer. Right now it is a rudimentary performance testing script. Using Python 3.x on
 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
 
 It requires the PySerial module.
 
-##Hardware
+## Hardware
 
 If you are looking for a full Arduino shield with analog input capability, you might
 be interested in the [HackEEG Shield](https://github.com/adamfeuer/hackeeg-shield).
@@ -166,7 +169,7 @@ For prototyping software, the [ADS1298 breakout board](https://github.com/adamfe
 might be useful. It is designed for the ADS1298, but should also work with the ADS1294, ADS1296, or ADS1299.
 
 
-##Credits
+## Credits
 
 This software would not be possible without the help of many people. The following people contributed software to this driver:
 
@@ -178,6 +181,9 @@ This software would not be possible without the help of many people. The followi
 * William Greiman (SPI DMA library)
 * Cristian Maglie (SPI DMA library)
 * Bill Porter (SPI DMA library)
+* Benoît Blanchon ([ArduinoJson](https://arduinojson.org/) library)
+* [Locoduino](http://www.locoduino.org/) ([RingBuffer](https://github.com/Locoduino/RingBuffer) library)
+
 
 If I forgot to credit you, please let me know!
 
