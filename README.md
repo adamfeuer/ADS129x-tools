@@ -4,8 +4,8 @@ This is a collection of software for working with the TI ADS129x series of analo
 converter chips.
 
 The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x programmable gain 
-amplifier and much of the analog circuitry needed for EEG. It is capable of 16,000 samples
-per second at 24 bit resolution.
+amplifier and much of the analog circuitry needed for EEG. It is capable of digitizing 16,000 samples
+per second at 24 bit resolution. The ADS1299-4 is a 4-channel version of the ADS1299; the ADS1299-6 is a 6-channel version.
 
 http://www.ti.com/product/ads1299
 
@@ -14,27 +14,20 @@ meant for ECG and EEG:
 
 http://www.ti.com/product/ads1298
 
-The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version.
+The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version. 
 
 These chips are ideally suited for digitizing biological signals.
 
-## Arduino Due drivers
+## Arduino drivers
 
-The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver
-for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models.
+The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models. This driver has been tested on the Arduino Due and Mega2560, but should also work on other Arduinos. The DMA mode can only be used on the Arduino Due.
 
-The driver is a text-mode driver, so can be used without any client software – just open up a serial port
-to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). The driver can read from the ADS129x
-at 16,000 samples per second, and can send that data on to the host via the Arduino DUE's USB 2.0 High Speed
-connection.
+The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. The driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection.
 
-It can be configured to use the Arduino library's SPI software (without DMA), and can do 8,000 samples per second
-in that configuration.
+It can be configured to use the Arduino library's software SPI (without DMA), and can do 8,000 samples per second in that configuration on the Arduino Due. Other Arduinos will have lower performance.
 
-Samples are encoded using the base64 encoding by default. For more information about that, see this 
-Wikipedia page:
+In text mode, samples are encoded using the [base64](http://en.wikipedia.org/wiki/Base64) encoding by default.
 
-http://en.wikipedia.org/wiki/Base64
 
 ## Installing
 
@@ -173,7 +166,7 @@ might be useful. It is designed for the ADS1298, but should also work with the A
 
 This software would not be possible without the help of many people. The following people contributed software to this driver:
 
-* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS128.h header file and some parts of the ADS1298 driver from the [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG)
+* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver from the [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG)
 * Chris Rorden (some parts of the ADS1298 driver)
 * Stefan Rado (SerialCommand library)
 * Steven Cogswell (SerialCommand library)
