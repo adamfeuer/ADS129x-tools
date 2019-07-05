@@ -1,12 +1,11 @@
-import traceback
+import base64
 import sys
 import time
-import datetime
-import base64
-import serial
+
 import bitstring
 import numpy as np
-#import serial, construct
+import serial
+
 from hackeeg import ads1299
 
 NUMBER_OF_SAMPLES = 10000
