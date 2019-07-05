@@ -61,22 +61,24 @@ class HackEegBoard():
         line = lineToTest.strip()
         if len(line) == 0:
             return False
+        print(f"::: {line}")
         try:
             tokens = line.split()
             returnCode = tokens[0]
             if int(returnCode) == 200:
                 line = self.serialPort.readline()
-                return True
+            return True
         except BaseException:
             #tb = traceback.format_exc()
             return False
 
     def readUntilStatusLine(self):
         line = self.readUntilNonBlankLine()
-        while self.foundStatusLine(line) is False:
-            print(f"rusl.. {line}")
+        # print(f"rusl0.. {line}")
+        while not self.foundStatusLine(line):
+            # print(f"rusl1.. {line}")
             line = self.serialPort.readline()
-        print(f"rusl-.. {line}")
+        # print(f"rusl2-.. {line}")
 
     def readUntilNonBlankLineCountdown(self, count=20):
         countDown = count
@@ -97,33 +99,27 @@ class HackEegBoard():
     def wreg(self, register, value):
         command = "wreg %02x %02x" % (register, value)
         print(f"command: {command}")
-        self.serialPort.write(bytes(command + '\n'))
-        self.readUntilStatusLine()
+        self.send(command)
 
     def rreg(self, register):
         command = "rreg %02x" % register
         print(f"command: {command}")
-        self.serialPort.write(bytes(command + '\n'))
-        self.readUntilStatusLine()
+        self.send(command)
         line = self.readUntilNonBlankLineCountdown()
         print(line)
 
     def send(self, command):
         print(f"command: {command}")
-        self.serialPort.write(bytes(command + '\n'))
+        self._serialWrite(command + '\n')
         self.readUntilStatusLine()
         # self.readUntilNonBlankLineCountdown()
 
     def sendAsync(self, command):
         print(f"(async) command: {command}")
-        self.serialPort.write(bytes(command + '\n'))
+        self._serialWrite(command + '\n')
 
     def rdatac(self):
-        self.serialPort.write(bytes('rdatac\n', 'utf-8'))
-        line = self.serialPort.readline()
-        print(line)
-        line = self.serialPort.readline()
-        print(line)
+        self.send("rdatac")
 
     def sdatac(self):
         # self.sendAsync("sdatac")
@@ -136,20 +132,24 @@ class HackEegBoard():
         self.send("stop")
 
     def enableChannel(self, channel):
-        self.send("sdatac")
+        self.sdatac()
         command = "wreg %02x %02x" % (
             ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
         self.send(command)
         self.rdatac()
 
     def disableChannel(self, channel):
-        self.send("sdatac")
+        self.sdatac()
         self._disableChannel(channel)
         self.rdatac()
 
     def _disableChannel(self, channel):
         command = "wreg %02x %02x" % (ads1299.CHnSET + channel, ads1299.PDn)
         self.send(command)
+
+    def _serialWrite(self, command):
+        command_data = bytes(command, 'utf-8')
+        self.serialPort.write(command_data)
 
     def setup(self, samplesPerSecond=500):
         if samplesPerSecond not in SPEEDS.keys():
@@ -190,8 +190,8 @@ class HackEegBoard():
         self.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        self.rdatac()
-        self.start()
+        #self.rdatac()
+        #self.start()
         return
 
     def readSampleBytes(self):
@@ -199,7 +199,7 @@ class HackEegBoard():
         while len(line) != SAMPLE_LENGTH_IN_BYTES:  # \r\n
             line = self.serialPort.readline()
             print(line)
-            print(".", newline="")
+            print(".", end="")
             sys.stdout.flush()
         decodedSampleBytes = base64.b64decode(line[:-1])
         # print("driver, decoded len: {}".format(len(decodedSampleBytes)))
