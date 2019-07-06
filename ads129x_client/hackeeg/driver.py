@@ -5,12 +5,21 @@ import time
 import bitstring
 import numpy as np
 import serial
+import json
 
 from hackeeg import ads1299
+
+# TODO
+# - MessagePack
 
 NUMBER_OF_SAMPLES = 10000
 DEFAULT_BAUDRATE = 115200
 SAMPLE_LENGTH_IN_BYTES = 38  # 216 bits encoded with base64 + '\r\n\'
+
+COMMAND = "COMMAND"
+PARAMETERS = "PARAMETERS"
+HEADERS = "HEADERS"
+DATA = "DATA"
 
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           500: ads1299.HIGH_RES_500_SPS,
@@ -56,85 +65,63 @@ class HackEegBoard():
         #                                 construct.BitField("channel7", 24),
         #                                 construct.BitField("channel8", 24))
 
-    def foundStatusLine(self, lineToTest):
-        line = lineToTest.strip()
-        if len(line) == 0:
-            return False
-        print(f"::: {line}")
-        try:
-            tokens = line.split()
-            returnCode = tokens[0]
-            if int(returnCode) == 200:
-                line = self.serialPort.readline()
-            return True
-        except BaseException:
-            #tb = traceback.format_exc()
-            return False
+    def _serialWrite(self, command):
+        command_data = bytes(command, 'utf-8')
+        self.serialPort.write(command_data)
 
-    def readUntilStatusLine(self):
-        line = self.readUntilNonBlankLine()
-        # print(f"rusl0.. {line}")
-        while not self.foundStatusLine(line):
-            # print(f"rusl1.. {line}")
-            line = self.serialPort.readline()
-        # print(f"rusl2-.. {line}")
-
-    def readUntilNonBlankLineCountdown(self, count=20):
-        countDown = count
+    def readResponse(self):
         line = self.serialPort.readline()
         line = line.strip()
-        while len(line) == 0 and countDown > 0:
-            line = self.serialPort.readline()
-            countDown = countDown - 1
-        return line
+        response_obj = json.loads(line)
+        print("json response:")
+        print(self.format(response_obj))
+        return response_obj
 
-    def readUntilNonBlankLine(self):
-        line = self.serialPort.readline()
-        line = line.strip()
-        while len(line) == 0:
-            line = self.serialPort.readline()
-        return line
+    def format_json(self, json_obj):
+        return json.dumps(json_obj, indent=4, sort_keys=True)
+
+    def sendCommand(self, command, parameters):
+        print(f"command: {command}  parameters: {parameters}")
+        new_command_obj = dict(COMMAND=command, PARAMETERS=parameters)
+        new_command = json.dumps(new_command_obj)
+        print("json command:")
+        print(self.format(new_command_obj))
+        self._serialWrite(new_command + '\n')
+
+    def executeCommand(self, command, parameters):
+        self.sendCommand(command, parameters)
+        response = self.readResponse()
+        return response
 
     def wreg(self, register, value):
         command = "wreg %02x %02x" % (register, value)
         print(f"command: {command}")
-        self.send(command)
+        self.executeCommand(command)
 
     def rreg(self, register):
         command = "rreg %02x" % register
         print(f"command: {command}")
-        self.send(command)
+        self.executeCommand(command)
         line = self.readUntilNonBlankLineCountdown()
         print(line)
 
-    def send(self, command):
-        print(f"command: {command}")
-        self._serialWrite(command + '\n')
-        self.readUntilStatusLine()
-        # self.readUntilNonBlankLineCountdown()
-
-    def sendAsync(self, command):
-        print(f"(async) command: {command}")
-        self._serialWrite(command + '\n')
-
     def rdatac(self):
-        self.send("rdatac")
+        self.executeCommand("rdatac")
 
     def sdatac(self):
-        # self.sendAsync("sdatac")
-        self.send("sdatac")
+        self.executeCommand("sdatac")
 
     def start(self):
-        self.send("start")
+        self.executeCommand("start")
 
     def stop(self):
-        self.send("stop")
+        self.executeCommand("stop")
 
     def enableChannel(self, channel):
         self.sdatac()
         command = "wreg %02x %02x" % (
             ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        self.send(command)
+        self.executeCommand(command)
         self.rdatac()
 
     def disableChannel(self, channel):
@@ -144,54 +131,8 @@ class HackEegBoard():
 
     def _disableChannel(self, channel):
         command = "wreg %02x %02x" % (ads1299.CHnSET + channel, ads1299.PDn)
-        self.send(command)
+        self.executeCommand(command)
 
-    def _serialWrite(self, command):
-        command_data = bytes(command, 'utf-8')
-        self.serialPort.write(command_data)
-
-    def setup(self, samplesPerSecond=500):
-        if samplesPerSecond not in SPEEDS.keys():
-            raise HackEegException(
-                "{} is not a valid speed; valid speeds are {}".format(
-                    samplesPerSecond, sorted(
-                        SPEEDS.keys())))
-        self.sdatac()
-        time.sleep(1)
-        # self.send("reset")
-        self.blinkBoardLed()
-        self.send("base64")
-        sampleMode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
-        sampleModeCommand = "wreg %x %x" % (ads1299.CONFIG1, sampleMode)
-        self.send(sampleModeCommand)
-        self._disableChannel(1)
-        self._disableChannel(2)
-        self._disableChannel(3)
-        self._disableChannel(4)
-        # self._disableChannel(5)
-        self._disableChannel(6)
-        # self._disableChannel(7)
-        self._disableChannel(8)
-        self.wreg(ads1299.CH5SET, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
-        #self.wreg(ads1299.CH7SET, ads1299.TEMP | ads1299.GAIN_12X)
-        self.rreg(ads1299.CH5SET)
-        #self.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        self.wreg(ads1299.CH7SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        #self.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.rreg(ads1299.CH8SET)
-        # self.rreg(ads1299.CH2SET)
-        #command = "wreg %x %x" % (ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.send(command)
-        #command = "wreg %x %x" % (ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.send(command)
-        # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N
-        # inputs
-        self.wreg(ads1299.MISC1, ads1299.SRB1)
-        # add channels into bias generation
-        self.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        #self.rdatac()
-        #self.start()
-        return
 
     def readSampleBytes(self):
         line = self.serialPort.readline()
@@ -234,6 +175,6 @@ class HackEegBoard():
         return result
 
     def blinkBoardLed(self):
-        self.send("boardledon")
+        self.executeCommand("boardledon")
         time.sleep(0.3)
-        self.send("boardledoff")
+        self.executeCommand("boardledoff")
