@@ -1,8 +1,6 @@
-import base64
 import sys
 import time
 
-import bitstring
 import numpy as np
 import serial
 import json
@@ -21,6 +19,14 @@ PARAMETERS = "PARAMETERS"
 HEADERS = "HEADERS"
 DATA = "DATA"
 
+class Status:
+    OK = 200
+
+class Mode:
+    TEXT = 0
+    JSONLINES = 1
+    MESSAGEPACK = 2
+
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           500: ads1299.HIGH_RES_500_SPS,
           1024: ads1299.HIGH_RES_1k_SPS,
@@ -34,36 +40,14 @@ class HackEegException(Exception):
     pass
 
 
-def BitSequence(name, *subcons):
-    r"""A struct of bitwise fields
-
-    :param name: the name of the struct
-    :param \*subcons: the subcons that make up this structure
-    """
-    return construct.Bitwise(construct.Sequence(name, *subcons))
-
-
 class HackEegBoard():
     def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE):
-        if serialPortPath is None:
-            raise HackEegException("You must specify a serial port!")
+        self.rdatac_mode = False
+        self.mode = Mode.TEXT
         self.serialPortPath = serialPortPath
-        self.serialPort = serial.serial_for_url(
-            serialPortPath, baudrate=baudrate, timeout=0.1)
-        print(f"using device: {self.serialPort.portstr}")
-        # self.sampleParser = BitSequence("sample",
-        #                                 construct.BitField("start", 4),
-        #                                 construct.BitField("loff_statp", 8),
-        #                                 construct.BitField("loff_statn", 8),
-        #                                 construct.BitField("gpio", 4),
-        #                                 construct.BitField("channel1", 24),
-        #                                 construct.BitField("channel2", 24),
-        #                                 construct.BitField("channel3", 24),
-        #                                 construct.BitField("channel4", 24),
-        #                                 construct.BitField("channel5", 24),
-        #                                 construct.BitField("channel6", 24),
-        #                                 construct.BitField("channel7", 24),
-        #                                 construct.BitField("channel8", 24))
+        if serialPortPath:
+            self.serialPort = serial.serial_for_url(serialPortPath, baudrate=baudrate, timeout=0.1)
+            self.jsonlines_mode()
 
     def _serialWrite(self, command):
         command_data = bytes(command, 'utf-8')
@@ -88,28 +72,49 @@ class HackEegBoard():
         print(self.format(new_command_obj))
         self._serialWrite(new_command + '\n')
 
+    def sendTextCommand(self, command):
+        self._serialWrite(command + '\n')
+
     def executeCommand(self, command, parameters):
         self.sendCommand(command, parameters)
         response = self.readResponse()
         return response
 
+    def ok(self, response):
+        return response[COMMAND] == Status.OK
+
     def wreg(self, register, value):
-        command = "wreg %02x %02x" % (register, value)
-        print(f"command: {command}")
-        self.executeCommand(command)
+        command = "wreg"
+        parameters = [register, value]
+        self.executeCommand(command, parameters)
 
     def rreg(self, register):
-        command = "rreg %02x" % register
-        print(f"command: {command}")
+        command = "rreg"
+        parameters = [register]
         self.executeCommand(command)
-        line = self.readUntilNonBlankLineCountdown()
-        print(line)
+        response = self.readResponse()
+        return response
+
+    def text_mode(self):
+        self.executeCommand("text")
+        response = self.readResponse()
+        return response
+
+    def jsonlines_mode(self):
+        return self.sendTextCommand("jsonlines")
+
+    def messagepack_mode(self):
+        return self.sendTextCommand("messagepack")
 
     def rdatac(self):
-        self.executeCommand("rdatac")
+        result = self.executeCommand("rdatac")
+        if self.ok(result):
+            self.rdatac_mode = True
+        return result
 
     def sdatac(self):
         self.executeCommand("sdatac")
+        self.rdatac_mode = False
 
     def start(self):
         self.executeCommand("start")
@@ -117,62 +122,25 @@ class HackEegBoard():
     def stop(self):
         self.executeCommand("stop")
 
-    def enableChannel(self, channel):
-        self.sdatac()
-        command = "wreg %02x %02x" % (
-            ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        self.executeCommand(command)
-        self.rdatac()
+    def enableChannel(self, channel, gain=None):
+        if gain is None:
+            gain = ads1299.GAIN_1X
+        temp_rdatac_mode = self.rdatac_mode
+        if self.rdatac_mode:
+            self.sdatac()
+        command = "wreg"
+        parameters = [ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | gain]
+        self.executeCommand(command, parameters)
+        if temp_rdatac_mode:
+            self.rdatac()
 
     def disableChannel(self, channel):
-        self.sdatac()
         self._disableChannel(channel)
-        self.rdatac()
 
     def _disableChannel(self, channel):
-        command = "wreg %02x %02x" % (ads1299.CHnSET + channel, ads1299.PDn)
-        self.executeCommand(command)
-
-
-    def readSampleBytes(self):
-        line = self.serialPort.readline()
-        while len(line) != SAMPLE_LENGTH_IN_BYTES:  # \r\n
-            line = self.serialPort.readline()
-            print(line)
-            print(".", end="")
-            sys.stdout.flush()
-        decodedSampleBytes = base64.b64decode(line[:-1])
-        # print("driver, decoded len: {}".format(len(decodedSampleBytes)))
-        # print(' '.join(x.encode('hex') for x in decodedSampleBytes))
-        return decodedSampleBytes
-
-    def testBit(int_type, offset):
-        mask = 1 << offset
-        return(int_type & mask)
-
-    def readSample(self):
-        sample = self.readSampleBytes()
-        channelData = [0, 0, 0, 0]
-        for i in range(0, 8):
-            datapoint = sample[3 + i * 3:3 + i * 3 + 3]
-            if(ord(datapoint[0]) & 0x80):
-                newDatapoint = chr(0xFF) + datapoint
-            else:
-                newDatapoint = chr(0x00) + datapoint
-            datapointBitstring = bitstring.BitArray(bytes=newDatapoint)
-            unpackedSample = datapointBitstring.unpack("int:32")
-            channelData += unpackedSample
-        data = np.array(channelData) / (2. ** (24 - 1))
-        print("channel data: {} {}".format(
-            channelData[4 + 4], channelData[4 + 6]))
-        return channelData
-
-    def readSample_unused(self):
-        #result = self.sampleParser.parse(self.readSampleBytes())
-        sample = bitstring.BitArray(bytes=self.readSampleBytes())
-        result = sample.unpack(
-            "uint:4, uint:8, uint:8, uint:4, int:24, int:24, int:24, int:24, int:24, int:24, int:24, int:24")
-        return result
+        command = "wreg"
+        parameters = [ads1299.CHnSET + channel, ads1299.PDn]
+        self.executeCommand(command, parameters)
 
     def blinkBoardLed(self):
         self.executeCommand("boardledon")

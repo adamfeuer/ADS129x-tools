@@ -2,6 +2,7 @@
 
 import sys
 from hackeeg.driver import HackEegBoard, SPEEDS
+from hackeeg import ads1299
 
 # TODO
 # - argparse commandline arguments
@@ -15,18 +16,14 @@ class HackEegCommandLine:
 
     def setup(self, samplesPerSecond=500):
         if samplesPerSecond not in SPEEDS.keys():
-            raise HackEegException(
-                "{} is not a valid speed; valid speeds are {}".format(
-                    samplesPerSecond, sorted(
-                        SPEEDS.keys())))
+            raise HackEegException("{} is not a valid speed; valid speeds are {}".format(
+                samplesPerSecond, sorted(SPEEDS.keys())))
         self.hackeeg.sdatac()
         time.sleep(1)
         # self.hackeeg.send("reset")
         self.hackeeg.blinkBoardLed()
-        self.hackeeg.executeCommand("base64")
         sampleMode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
-        sampleModeCommand = "wreg %x %x" % (ads1299.CONFIG1, sampleMode)
-        self.hackeeg.executeCommand(sampleModeCommand)
+        self.hackeeg.wreg(ads1299.CONFIG1, sampleMode)
         self.hackeeg.disableChannel(1)
         self.hackeeg.disableChannel(2)
         self.hackeeg.disableChannel(3)
