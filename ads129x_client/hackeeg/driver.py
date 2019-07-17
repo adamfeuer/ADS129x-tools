@@ -1,9 +1,7 @@
-import sys
+import json
 import time
 
-import numpy as np
 import serial
-import json
 
 from hackeeg import ads1299
 
@@ -19,13 +17,16 @@ PARAMETERS = "PARAMETERS"
 HEADERS = "HEADERS"
 DATA = "DATA"
 
+
 class Status:
     OK = 200
+
 
 class Mode:
     TEXT = 0
     JSONLINES = 1
     MESSAGEPACK = 2
+
 
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           500: ads1299.HIGH_RES_500_SPS,
@@ -43,41 +44,52 @@ class HackEegException(Exception):
 class HackEegBoard():
     def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE):
         self.rdatac_mode = False
-        self.mode = Mode.TEXT
+        self.protocol_mode = Mode.TEXT
         self.serialPortPath = serialPortPath
         if serialPortPath:
             self.serialPort = serial.serial_for_url(serialPortPath, baudrate=baudrate, timeout=0.1)
             self.jsonlines_mode()
 
-    def _serialWrite(self, command):
+    def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
         self.serialPort.write(command_data)
 
-    def readResponse(self):
+    def _serial_readline(self):
         line = self.serialPort.readline()
+        line = line.decode("utf-8")
         line = line.strip()
+        print(f"line: {line}")
+        return line
+
+    def read_response(self):
+        line = self._serial_readline()
+        # TODO remove comment ignorer
+        while line.startswith("#"):
+            line = self._serial_readline()
         response_obj = json.loads(line)
         print("json response:")
-        print(self.format(response_obj))
+        print(self.format_json(response_obj))
         return response_obj
 
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
 
-    def sendCommand(self, command, parameters):
+    def send_command(self, command, parameters):
         print(f"command: {command}  parameters: {parameters}")
         new_command_obj = dict(COMMAND=command, PARAMETERS=parameters)
         new_command = json.dumps(new_command_obj)
         print("json command:")
-        print(self.format(new_command_obj))
-        self._serialWrite(new_command + '\n')
+        print(self.format_json(new_command_obj))
+        self._serial_write(new_command + '\n')
 
-    def sendTextCommand(self, command):
-        self._serialWrite(command + '\n')
+    def send_text_command(self, command):
+        self._serial_write(command + '\n')
 
-    def executeCommand(self, command, parameters):
-        self.sendCommand(command, parameters)
-        response = self.readResponse()
+    def execute_command(self, command, parameters=None):
+        if parameters is None:
+            parameters = []
+        self.send_command(command, parameters)
+        response = self.read_response()
         return response
 
     def ok(self, response):
@@ -86,43 +98,46 @@ class HackEegBoard():
     def wreg(self, register, value):
         command = "wreg"
         parameters = [register, value]
-        self.executeCommand(command, parameters)
+        self.execute_command(command, parameters)
 
     def rreg(self, register):
         command = "rreg"
         parameters = [register]
-        self.executeCommand(command)
-        response = self.readResponse()
+        self.execute_command(command)
+        response = self.read_response()
         return response
 
     def text_mode(self):
-        self.executeCommand("text")
-        response = self.readResponse()
+        self.execute_command("text")
+        response = self.read_response()
         return response
 
     def jsonlines_mode(self):
-        return self.sendTextCommand("jsonlines")
+        self.send_text_command("jsonlines")
+        self.protocol_mode = Mode.JSONLINES
+        response = self.read_response()
+        return response
 
     def messagepack_mode(self):
-        return self.sendTextCommand("messagepack")
+        return self.send_text_command("messagepack")
 
     def rdatac(self):
-        result = self.executeCommand("rdatac")
+        result = self.execute_command("rdatac")
         if self.ok(result):
             self.rdatac_mode = True
         return result
 
     def sdatac(self):
-        self.executeCommand("sdatac")
+        self.execute_command("sdatac")
         self.rdatac_mode = False
 
     def start(self):
-        self.executeCommand("start")
+        self.execute_command("start")
 
     def stop(self):
-        self.executeCommand("stop")
+        self.execute_command("stop")
 
-    def enableChannel(self, channel, gain=None):
+    def enable_channel(self, channel, gain=None):
         if gain is None:
             gain = ads1299.GAIN_1X
         temp_rdatac_mode = self.rdatac_mode
@@ -130,19 +145,19 @@ class HackEegBoard():
             self.sdatac()
         command = "wreg"
         parameters = [ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | gain]
-        self.executeCommand(command, parameters)
+        self.execute_command(command, parameters)
         if temp_rdatac_mode:
             self.rdatac()
 
-    def disableChannel(self, channel):
-        self._disableChannel(channel)
+    def disable_channel(self, channel):
+        self._disable_channel(channel)
 
-    def _disableChannel(self, channel):
+    def _disable_channel(self, channel):
         command = "wreg"
         parameters = [ads1299.CHnSET + channel, ads1299.PDn]
-        self.executeCommand(command, parameters)
+        self.execute_command(command, parameters)
 
-    def blinkBoardLed(self):
-        self.executeCommand("boardledon")
+    def blink_board_led(self):
+        self.execute_command("boardledon")
         time.sleep(0.3)
-        self.executeCommand("boardledoff")
+        self.execute_command("boardledoff")
