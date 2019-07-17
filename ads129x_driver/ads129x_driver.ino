@@ -4,7 +4,6 @@
 
    Copyright (c) 2013-2019 by Adam Feuer <adam@adamfeuer.com>
    Copyright (c) 2012 by Chris Rorden
-   Copyright (c) 2012 by Steven Cogswell and Stefan Rado
 
    This library is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -24,9 +23,11 @@
 #include <SPI.h>
 
 #include <stdlib.h>
+#include <ArduinoJson.h>
 #include "adsCommand.h"
 #include "ads129x.h"
 #include "SerialCommand.h"
+#include "JsonCommand.h"
 #include "Base64.h"
 #include "SpiDma.h"
 
@@ -34,32 +35,39 @@
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB // use Due's Native USB port
 
-#define NOP_COMMAND = 0;
-#define VERSION_COMMAND = 1;
-#define STATUS_COMMAND = 2;
-#define SERIALNUMBER_COMMAND = 3;
-#define JSONLINES_COMMAND = 4;
-#define MESSAGEPACK_COMMAND = 5;
-#define LEDON_COMMAND = 6;
-#define LEDOFF_COMMAND = 7;
-#define BOARDLEDOFF_COMMAND = 8;
-#define BOARDLEDON_COMMAND = 9;
-#define WAKEUP_COMMAND = 10;
-#define STANDBY_COMMAND = 11;
-#define RESET_COMMAND = 12;
-#define START_COMMAND = 13;
-#define STOP_COMMAND = 14;
-#define RDATAC_COMMAND = 15;
-#define SDATAC_COMMAND = 16;
-#define GETDATA_COMMAND = 17;
-#define RDATA_COMMAND = 18;
-#define RREG_COMMAND = 19;
-#define WREG_COMMAND = 20;
-#define BASE64_COMMAND = 21;
-#define HEX_COMMAND = 22;
-#define HELP_COMMAND = 23;
+#define NOP_COMMAND 0
+#define VERSION_COMMAND 1
+#define STATUS_COMMAND 2
+#define SERIALNUMBER_COMMAND 3
+#define JSONLINES_COMMAND 4
+#define MESSAGEPACK_COMMAND 5
+#define LEDON_COMMAND 6
+#define LEDOFF_COMMAND 7
+#define BOARDLEDOFF_COMMAND 8
+#define BOARDLEDON_COMMAND 9
+#define WAKEUP_COMMAND 10
+#define STANDBY_COMMAND 11
+#define RESET_COMMAND 12
+#define START_COMMAND 13
+#define STOP_COMMAND 14
+#define RDATAC_COMMAND 15
+#define SDATAC_COMMAND 16
+#define GETDATA_COMMAND 17
+#define RDATA_COMMAND 18
+#define RREG_COMMAND 19
+#define WREG_COMMAND 20
+#define BASE64_COMMAND 21
+#define HEX_COMMAND 22
+#define HELP_COMMAND 23
+
+#define TEXT_MODE 0
+#define JSONLINES_MODE 1
+#define MESSAGEPACK_MODE 2
+
+#define RESPONSE_OK 200
 
 
+int protocol_mode = TEXT_MODE;
 int maxChannels = 0;
 int numActiveChannels = 0;
 boolean gActiveChan[9]; // reports whether channels 1..9 are active
@@ -76,15 +84,44 @@ const char *makerName = "Starcat LLC";
 const char *driverVersion = "ADS129x driver v0.3.0";
 
 SerialCommand serialCommand;
+JsonCommand jsonCommand;
+
+void arduinoSetup();
+void adsSetup();
+void nop_command();
+void version_command();
+void status_command();
+void serialNumber_command();
+void jsonlines_command();
+void messagepack_command();
+void ledOn_command();
+void ledOff_command();
+void boardLedOff_command();
+void boardLedOn_command();
+void wakeup_command();
+void standby_command();
+void reset_command();
+void start_command();
+void stop_command();
+void rdatac_command();
+void sdatac_command();
+void getdata_command();
+void rdata_command();
+void readRegister_command();
+void writeRegister_command();
+void base64ModeOn_command();
+void hexModeOn_command();
+void help_command();
+void unrecognized(const char*);
+
 
 void setup() {
   WiredSerial.begin(BAUD_RATE);
   pinMode(PIN_LED, OUTPUT);     // Configure the onboard LED for output
   digitalWrite(PIN_LED, LOW);   // default to LED off
+  protocol_mode = TEXT_MODE;
   arduinoSetup();
   adsSetup();
-
-  WiredSerial.println("Ready");
 
   // Setup callbacks for SerialCommand commands
   serialCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
@@ -92,7 +129,7 @@ void setup() {
   serialCommand.addCommand("status", status_command);               // Echos the driver status
   serialCommand.addCommand("serialnumber", serialNumber_command);   // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
   serialCommand.addCommand("jsonlines", jsonlines_command);         // Sets the communication protocol to JSONLines 
-  serialCommand.addCommand("messagepack", jsonlines_command);       // Sets the communication protocol to MessagePack
+  serialCommand.addCommand("messagepack", messagepack_command);     // Sets the communication protocol to MessagePack
   serialCommand.addCommand("ledon", ledOn_command);                 // Turns Arduino Due onboard LED on
   serialCommand.addCommand("ledoff", ledOff_command);               // Turns Arduino Due onboard LED off
   serialCommand.addCommand("boardledoff", boardLedOff_command);     // Turns HackEEG ADS1299 GPIO4 LED off
@@ -113,20 +150,30 @@ void setup() {
   serialCommand.addCommand("help", help_command);                   // Print list of commands
   serialCommand.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
+  jsonCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
+  jsonCommand.addCommand("ledon", ledOn_command);                 // Turns Arduino Due onboard LED on
+  jsonCommand.addCommand("ledoff", ledOff_command);               // Turns Arduino Due onboard LED off
+  jsonCommand.addCommand("boardledoff", boardLedOff_command);     // Turns HackEEG ADS1299 GPIO4 LED off
+  jsonCommand.addCommand("boardledon", boardLedOn_command);       // Turns HackEEG ADS1299 GPIO4 LED on
+
+  WiredSerial.println("Ready");
 }
 
 void loop() {
-  serialCommand.readSerial();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
-  sendSamples();
+  switch (protocol_mode) {
+    case TEXT_MODE: 
+      serialCommand.readSerial();
+      break;
+    case JSONLINES_MODE:
+      jsonCommand.readSerial();
+      break;
+    case MESSAGEPACK_MODE:
+      // TODO: not implemented
+      break;
+    default:
+      // do nothing 
+      ;
+  }
 }
 
 long hexToLong(char *digits) {
@@ -159,10 +206,31 @@ void encodeHex(char* output, char* input, int inputLen) {
   output[count] = 0;
 }
 
+void send_response_ok() {
+  send_response(RESPONSE_OK, "Ok");
+}
+
+void send_response(int status_code, const char *status_text) {
+  switch (protocol_mode) {
+    case TEXT_MODE: 
+      char response[128];
+      sprintf(response, "%d %s", status_code, status_text);  
+      WiredSerial.println(response);
+      break;
+    case JSONLINES_MODE:
+      jsonCommand.send_jsonlines_response(status_code, (char *)status_text);
+      break;
+    case MESSAGEPACK_MODE:
+      // TODO: not implemented yet 
+      break;
+    default:
+      // unknown protocol
+      ;
+  }
+}
+
 void version_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println(driverVersion);
-  WiredSerial.println();
+  send_response(RESPONSE_OK, driverVersion);
 }
 
 void status_command() {
@@ -184,26 +252,21 @@ void status_command() {
 }
 
 void nop_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void serialNumber_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Not implemented yet. ");
-  WiredSerial.println();
+  send_response(RESPONSE_OK, "Not implemented yet.");
 }
 
 void jsonlines_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Not implemented yet. ");
-  WiredSerial.println();
+  protocol_mode = JSONLINES_MODE;
+  send_response_ok();
 }
 
 void messagepack_command() {
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Not implemented yet. ");
-  WiredSerial.println();
+  protocol_mode = MESSAGEPACK_MODE;
+  send_response_ok();
 }
 
 void getdata_command() {
@@ -214,16 +277,12 @@ void getdata_command() {
 
 void ledOn_command() {
   digitalWrite(PIN_LED, HIGH);
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("LED on");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void ledOff_command() {
   digitalWrite(PIN_LED, LOW);
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("LED off");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void boardLedOn_command() {
@@ -231,18 +290,14 @@ void boardLedOn_command() {
   state = state & 0xF7;
   state = state | 0x80;
   adc_wreg(ADS129x::GPIO, state);
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Board GPIO LED on");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void boardLedOff_command() {
   int state = adc_rreg(ADS129x::GPIO);
   state = state & 0x77;
   adc_wreg(ADS129x::GPIO, state);
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("Board GPIO LED off");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void base64ModeOn_command() {
@@ -484,42 +539,6 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
       delay(500);
     } //while forever
   } //error mode
-  // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
-  adc_wreg(GPIO, 0);
-  adc_wreg(CONFIG3, PD_REFBUF | CONFIG3_const);
-  //FOR RLD: Power up the internal reference and wait for it to settle
-  // adc_wreg(CONFIG3, RLDREF_INT | PD_RLD | PD_REFBUF | VREF_4V | CONFIG3_const);
-  // delay(150);
-  // adc_wreg(RLD_SENSP, 0x01);	// only use channel IN1P and IN1N
-  // adc_wreg(RLD_SENSN, 0x01);	// for the RLD Measurement
-  adc_wreg(CONFIG1, HIGH_RES_500_SPS);
-  adc_wreg(CONFIG2, INT_TEST);	// generate internal test signals
-  // Set the first two channels to input signal
-  for (int i = 1; i <= 1; ++i) {
-    //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
-    //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
-    adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
-    //adc_wreg(CHnSET + i,SHORTED); //disable this channel
-  }
-  for (int i = 2; i <= 2; ++i) {
-    //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
-    //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
-    adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
-    //adc_wreg(CHnSET + i,SHORTED); //disable this channel
-  }
-  for (int i = 3; i <= 6; ++i) {
-    adc_wreg(CHnSET + i, SHORTED); //disable this channel
-  }
-  for (int i = 7; i <= 8; ++i) {
-    adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_1X); //report this channel with x12 gain
-    //adc_wreg(CHnSET + i, ELECTRODE_INPUT | GAIN_12X); //report this channel with x12 gain
-    //adc_wreg(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
-    //adc_wreg(CHnSET + i,SHORTED); //disable this channel
-  }
-
-
-
-  digitalWrite(PIN_START, HIGH);
 }
 
 void arduinoSetup() {
@@ -555,7 +574,7 @@ void arduinoSetup() {
   delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisecond
 
 
-} //setup()
+} 
 
 
 
