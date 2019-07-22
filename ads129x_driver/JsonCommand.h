@@ -39,6 +39,8 @@
 // Maximum length of a command excluding the terminating null
 #define JSONCOMMAND_MAXCOMMANDLENGTH 128
 
+#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+
 // Uncomment the next line to run the library in debug mode (verbose messages)
 //#define JSONCOMMAND_DEBUG
 

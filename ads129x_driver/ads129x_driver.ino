@@ -119,12 +119,14 @@ void setup() {
   WiredSerial.begin(BAUD_RATE);
   pinMode(PIN_LED, OUTPUT);     // Configure the onboard LED for output
   digitalWrite(PIN_LED, LOW);   // default to LED off
+
   protocol_mode = TEXT_MODE;
   arduinoSetup();
   adsSetup();
 
   // Setup callbacks for SerialCommand commands
   serialCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
+  serialCommand.addCommand("ping", ping_command);                   // Returns CPU clock time
   serialCommand.addCommand("version", version_command);             // Echos the driver version number
   serialCommand.addCommand("status", status_command);               // Echos the driver status
   serialCommand.addCommand("serialnumber", serialNumber_command);   // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
@@ -151,6 +153,7 @@ void setup() {
   serialCommand.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
   jsonCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
+  jsonCommand.addCommand("ping", ping_command);                   // Returns CPU clock time
   jsonCommand.addCommand("ledon", ledOn_command);                 // Turns Arduino Due onboard LED on
   jsonCommand.addCommand("ledoff", ledOff_command);               // Turns Arduino Due onboard LED off
   jsonCommand.addCommand("boardledoff", boardLedOff_command);     // Turns HackEEG ADS1299 GPIO4 LED off
@@ -252,6 +255,10 @@ void status_command() {
 }
 
 void nop_command() {
+  send_response_ok();
+}
+
+void ping_command() {
   send_response_ok();
 }
 
@@ -542,7 +549,6 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
 }
 
 void arduinoSetup() {
-  //Serial.begin(BAUD_RATE); // for debugging
   pinMode(PIN_LED, OUTPUT);
   using namespace ADS129x;
 

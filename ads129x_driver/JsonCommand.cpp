@@ -21,6 +21,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */ 
+
+// uncomment for debugging on Serial interface (programming port)
+// you must connect to Serial port first, then SerialUSB, since Serial will reset the Arduino Due
+// #define JSONCOMMAND_DEBUG 1
+
+
 #include "JsonCommand.h"
 
 static char COMMAND_KEY[] = "COMMAND";
@@ -39,10 +45,13 @@ JsonCommand::JsonCommand()
     commandCount(0),
     defaultHandler(NULL),
     term('\n'),           // default terminator for commands, newline character
-    last(NULL)
-{
+    last(NULL) {
+	    
   strcpy(delim, " "); // strtok_r needs a null-terminated string
   clearBuffer();
+  #ifdef JSONCOMMAND_DEBUG
+  Serial.begin(BAUD_RATE); // for debugging  
+  #endif
 }
 
 /**
@@ -52,16 +61,21 @@ JsonCommand::JsonCommand()
  */
 void JsonCommand::addCommand(const char *command, void (*function)()) {
   #ifdef JSONCOMMAND_DEBUG
-    SerialUSB.print("Adding command (");
-    SerialUSB.print(commandCount);
-    SerialUSB.print("): ");
-    SerialUSB.println(command);
+    Serial.print("Adding command (");
+    Serial.print(commandCount);
+    Serial.print("): ");
+    Serial.println(command);
   #endif
 
   commandList = (JsonCommandCallback *) realloc(commandList, (commandCount + 1) * sizeof(JsonCommandCallback));
   strncpy(commandList[commandCount].command, command, JSONCOMMAND_MAXCOMMANDLENGTH);
   commandList[commandCount].function = function;
   commandCount++;
+
+  #ifdef JSONCOMMAND_DEBUG
+  Serial.begin(BAUD_RATE); // for debugging
+  Serial.println("Debug serial logging ready.");
+  #endif
 }
 
 /**
@@ -87,29 +101,33 @@ void JsonCommand::readSerial() {
   while (SerialUSB.available() > 0) {
     char inChar = SerialUSB.read();   // Read single available character, there may be more waiting
     #ifdef JSONCOMMAND_DEBUG
-      SerialUSB.print(inChar);   // Echo back to serial stream
+      Serial.print(inChar);   // Echo back to serial stream
     #endif
     
     if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
       #ifdef JSONCOMMAND_DEBUG
-        SerialUSB.print("Received: ");
-        SerialUSB.println(buffer);
+        Serial.print("Received: ");
+        Serial.println(buffer);
       #endif
-       //SerialUSB.println("about to deserialize.");
+       //Serial.println("about to deserialize.");
        DeserializationError error = deserializeJson(json_command, buffer);
 
       if (error) {
         #ifdef JSONCOMMAND_DEBUG
-          SerialUSB.print(F("deserializeJson() failed: "));
-	  SerialUSB.println(error.c_str());
+          Serial.print(F("deserializeJson() failed: "));
+	  Serial.println(error.c_str());
         #endif
         return;
       }
 
       const char* command = json_command[COMMAND_KEY];
-      send_jsonlines_response(200, "Ok");
       int command_num = find_command(command);
-      SerialUSB.println(commandList[command_num].command);
+      #ifdef JSONCOMMAND_DEBUG
+      // Serial.println(commandList[command_num].command);
+      #endif
+      // Execute the stored handler function for the command
+      (*commandList[command_num].function)();
+      //send_jsonlines_response(200, "Ok");
 
       clearBuffer();
     }
@@ -119,7 +137,7 @@ void JsonCommand::readSerial() {
         buffer[bufPos] = '\0';      // Null terminate
       } else {
         #ifdef JSONCOMMAND_DEBUG
-          SerialUSB.println("Line buffer is full - increase JSONCOMMAND_BUFFER");
+          Serial.println("Line buffer is full - increase JSONCOMMAND_BUFFER");
         #endif
       }
     }
