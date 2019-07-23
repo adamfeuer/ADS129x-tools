@@ -58,7 +58,8 @@
 #define WREG_COMMAND 20
 #define BASE64_COMMAND 21
 #define HEX_COMMAND 22
-#define HELP_COMMAND 23
+#define MICROS_COMMAND 23
+#define HELP_COMMAND 24
 
 #define TEXT_MODE 0
 #define JSONLINES_MODE 1
@@ -126,7 +127,7 @@ void setup() {
 
   // Setup callbacks for SerialCommand commands
   serialCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
-  serialCommand.addCommand("ping", ping_command);                   // Returns CPU clock time
+  serialCommand.addCommand("micros", micros_command);               // Returns number of microseconds since the program began executing
   serialCommand.addCommand("version", version_command);             // Echos the driver version number
   serialCommand.addCommand("status", status_command);               // Echos the driver status
   serialCommand.addCommand("serialnumber", serialNumber_command);   // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
@@ -153,7 +154,7 @@ void setup() {
   serialCommand.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
   jsonCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
-  jsonCommand.addCommand("ping", ping_command);                   // Returns CPU clock time
+  jsonCommand.addCommand("micros", micros_command);               // Returns number of microseconds since the program began executing
   jsonCommand.addCommand("ledon", ledOn_command);                 // Turns Arduino Due onboard LED on
   jsonCommand.addCommand("ledoff", ledOff_command);               // Turns Arduino Due onboard LED off
   jsonCommand.addCommand("boardledoff", boardLedOff_command);     // Turns HackEEG ADS1299 GPIO4 LED off
@@ -258,8 +259,14 @@ void nop_command() {
   send_response_ok();
 }
 
-void ping_command() {
-  send_response_ok();
+void micros_command() {
+  long microseconds = micros();
+  StaticJsonDocument<1024> doc;
+  JsonObject root = doc.to<JsonObject>();
+  root[STATUS_CODE_KEY] = STATUS_OK; 
+  root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
+  root[DATA_KEY] = microseconds;
+  jsonCommand.send_jsonlines_doc_response(doc);
 }
 
 void serialNumber_command() {

@@ -24,18 +24,19 @@
 
 // uncomment for debugging on Serial interface (programming port)
 // you must connect to Serial port first, then SerialUSB, since Serial will reset the Arduino Due
-// #define JSONCOMMAND_DEBUG 1
+//#define JSONCOMMAND_DEBUG 1
 
 
 #include "JsonCommand.h"
 
-static char COMMAND_KEY[] = "COMMAND";
-static char PARAMETERS_KEY[] = "PARAMETERS";
+const char *COMMAND_KEY = "COMMAND";
+const char *PARAMETERS_KEY = "PARAMETERS";
+const char *STATUS_CODE_KEY = "STATUS_CODE";
+const char *STATUS_TEXT_KEY = "STATUS_TEXT";
+const char *HEADERS_KEY = "HEADERS";
+const char *DATA_KEY = "DATA";
 
-static char STATUS_CODE_KEY[] = "STATUS_CODE";
-static char STATUS_TEXT_KEY[] = "STATUS_TEXT";
-static char HEADERS_KEY[] = "HEADERS";
-static char DATA_KEY[] = "DATA";
+const char *STATUS_TEXT_OK = "Ok";
 
 /**
  * Constructor makes sure some things are set.
@@ -98,6 +99,7 @@ void JsonCommand::setDefaultHandler(void (*function)(const char *)) {
  */
 void JsonCommand::readSerial() {
   StaticJsonDocument<1024> json_command;
+  json_command.clear();
   while (SerialUSB.available() > 0) {
     char inChar = SerialUSB.read();   // Read single available character, there may be more waiting
     #ifdef JSONCOMMAND_DEBUG
@@ -117,6 +119,8 @@ void JsonCommand::readSerial() {
           Serial.print(F("deserializeJson() failed: "));
 	  Serial.println(error.c_str());
         #endif
+	json_command.clear();
+	clearBuffer();
         return;
       }
 
@@ -127,9 +131,8 @@ void JsonCommand::readSerial() {
       #endif
       // Execute the stored handler function for the command
       (*commandList[command_num].function)();
-      //send_jsonlines_response(200, "Ok");
-
       clearBuffer();
+      json_command.clear();
     }
     else {
       if (bufPos < JSONCOMMAND_BUFFER) {
@@ -159,10 +162,17 @@ int JsonCommand::find_command(const char *command) {
 void JsonCommand::send_jsonlines_response(int status_code, char *status_text) {
   StaticJsonDocument<1024> doc;
   JsonObject root = doc.to<JsonObject>();
-  root["STATUS_CODE"] = status_code;
-  root["STATUS_TEXT"] = status_text;
+  root[STATUS_CODE_KEY] = status_code;
+  root[STATUS_TEXT_KEY] = status_text;
   serializeJson(doc, SerialUSB);
   SerialUSB.println();
+  doc.clear();
+}
+
+void JsonCommand::send_jsonlines_doc_response(JsonDocument &doc) {
+  serializeJson(doc, SerialUSB);
+  SerialUSB.println();
+  doc.clear();
 }
 
 /**

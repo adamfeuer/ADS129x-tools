@@ -44,6 +44,16 @@
 // Uncomment the next line to run the library in debug mode (verbose messages)
 //#define JSONCOMMAND_DEBUG
 
+#define STATUS_OK 200
+
+extern const char *COMMAND_KEY;
+extern const char *PARAMETERS_KEY;
+extern const char *STATUS_CODE_KEY;
+extern const char *STATUS_TEXT_KEY;
+extern const char *HEADERS_KEY;
+extern const char *DATA_KEY;
+extern const char *STATUS_TEXT_OK;
+
 class JsonCommand {
   public:
     JsonCommand();      // Constructor
@@ -51,10 +61,11 @@ class JsonCommand {
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
     void readSerial();    // Main entry point.
-    void send_jsonlines_response(int status_code, char *status_text); // send a JSONLines response
     void clearBuffer();   // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
     char *next();         // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    void send_jsonlines_response(int status_code, char *status_text); // send a simple JSONLines response
+    void send_jsonlines_doc_response(JsonDocument &doc); // send a JsonDocument as a JSONLines response
 
   private:
     // Command/handler dictionary
