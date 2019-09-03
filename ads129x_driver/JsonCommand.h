@@ -52,12 +52,13 @@ extern const char *STATUS_CODE_KEY;
 extern const char *STATUS_TEXT_KEY;
 extern const char *HEADERS_KEY;
 extern const char *DATA_KEY;
-extern const char *STATUS_TEXT_OK;
+
+typedef void (*command_func)(unsigned char, unsigned char);
 
 class JsonCommand {
   public:
     JsonCommand();      // Constructor
-    void addCommand(const char *command, void(*function)());  // Add a command to the processing dictionary.
+    void addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
     void readSerial();    // Main entry point.
@@ -71,7 +72,7 @@ class JsonCommand {
     // Command/handler dictionary
     struct JsonCommandCallback {
       char command[JSONCOMMAND_MAXCOMMANDLENGTH + 1];
-      void (*function)();
+      command_func command_function;
     };                                    // Data structure to hold Command/Handler function key-value pairs
     JsonCommandCallback *commandList;   // Actual definition for command/handler array
     byte commandCount;

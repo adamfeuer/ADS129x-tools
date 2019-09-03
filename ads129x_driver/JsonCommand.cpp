@@ -24,8 +24,7 @@
 
 // uncomment for debugging on Serial interface (programming port)
 // you must connect to Serial port first, then SerialUSB, since Serial will reset the Arduino Due
-//#define JSONCOMMAND_DEBUG 1
-
+#define JSONCOMMAND_DEBUG 1
 
 #include "JsonCommand.h"
 
@@ -35,8 +34,6 @@ const char *STATUS_CODE_KEY = "STATUS_CODE";
 const char *STATUS_TEXT_KEY = "STATUS_TEXT";
 const char *HEADERS_KEY = "HEADERS";
 const char *DATA_KEY = "DATA";
-
-const char *STATUS_TEXT_OK = "Ok";
 
 /**
  * Constructor makes sure some things are set.
@@ -60,7 +57,7 @@ JsonCommand::JsonCommand()
  * This is used for matching a found token in the buffer, and gives the pointer
  * to the handler function to deal with it.
  */
-void JsonCommand::addCommand(const char *command, void (*function)()) {
+void JsonCommand::addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)) {
   #ifdef JSONCOMMAND_DEBUG
     Serial.print("Adding command (");
     Serial.print(commandCount);
@@ -70,7 +67,7 @@ void JsonCommand::addCommand(const char *command, void (*function)()) {
 
   commandList = (JsonCommandCallback *) realloc(commandList, (commandCount + 1) * sizeof(JsonCommandCallback));
   strncpy(commandList[commandCount].command, command, JSONCOMMAND_MAXCOMMANDLENGTH);
-  commandList[commandCount].function = function;
+  commandList[commandCount].command_function = func;
   commandCount++;
 
   #ifdef JSONCOMMAND_DEBUG
@@ -83,8 +80,8 @@ void JsonCommand::addCommand(const char *command, void (*function)()) {
  * This sets up a handler to be called in the event that the receveived command string
  * isn't in the list of commands.
  */
-void JsonCommand::setDefaultHandler(void (*function)(const char *)) {
-  defaultHandler = function;
+void JsonCommand::setDefaultHandler(void (*func)(const char*)) {
+  defaultHandler = func;
 }
 
 
@@ -99,7 +96,6 @@ void JsonCommand::setDefaultHandler(void (*function)(const char *)) {
  */
 void JsonCommand::readSerial() {
   StaticJsonDocument<1024> json_command;
-  json_command.clear();
   while (SerialUSB.available() > 0) {
     char inChar = SerialUSB.read();   // Read single available character, there may be more waiting
     #ifdef JSONCOMMAND_DEBUG
@@ -111,28 +107,52 @@ void JsonCommand::readSerial() {
         Serial.print("Received: ");
         Serial.println(buffer);
       #endif
-       //Serial.println("about to deserialize.");
        DeserializationError error = deserializeJson(json_command, buffer);
 
       if (error) {
         #ifdef JSONCOMMAND_DEBUG
           Serial.print(F("deserializeJson() failed: "));
-	  Serial.println(error.c_str());
+	        Serial.println(error.c_str());
         #endif
-	json_command.clear();
-	clearBuffer();
+        clearBuffer();
         return;
       }
 
-      const char* command = json_command[COMMAND_KEY];
+      JsonObject command_object = json_command.as<JsonObject>();
+      JsonVariant command_name_variant = command_object.getMember(COMMAND_KEY);
+      if (command_name_variant.isNull()) {
+        #ifdef JSONCOMMAND_DEBUG
+          Serial.println(F("Error: no command"));
+        #endif
+        clearBuffer();
+        return;
+      } 
+      const char* command = command_name_variant.as<const char*>();
       int command_num = find_command(command);
       #ifdef JSONCOMMAND_DEBUG
-      // Serial.println(commandList[command_num].command);
+        Serial.println(commandList[command_num].command);
+      #endif
+      JsonVariant parameters_variant = json_command.getMember(PARAMETERS_KEY);
+      unsigned char register_number = 0;
+      unsigned char register_value = 0;
+      #ifdef JSONCOMMAND_DEBUG
+        if (!parameters_variant.isNull()) {
+          JsonArray params_array = parameters_variant.as<JsonArray>();
+          size_t number_of_params = params_array.size();
+          #ifdef JSONCOMMAND_DEBUG
+            Serial.println(number_of_params);
+          #endif
+          if (number_of_params > 0) {
+            register_number = params_array[0];
+          }
+          if (number_of_params > 1) {
+            register_value =  params_array[1];
+          }
+        }
       #endif
       // Execute the stored handler function for the command
-      (*commandList[command_num].function)();
+      (*commandList[command_num].command_function)(register_number, register_value);
       clearBuffer();
-      json_command.clear();
     }
     else {
       if (bufPos < JSONCOMMAND_BUFFER) {
@@ -147,6 +167,7 @@ void JsonCommand::readSerial() {
   }
 
 }
+
 
 int JsonCommand::find_command(const char *command) {
   int result = -1;

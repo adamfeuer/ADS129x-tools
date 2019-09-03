@@ -41,7 +41,7 @@ SerialCommand::SerialCommand()
  * This is used for matching a found token in the buffer, and gives the pointer
  * to the handler function to deal with it.
  */
-void SerialCommand::addCommand(const char *command, void (*function)()) {
+void SerialCommand::addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)) {
   #ifdef SERIALCOMMAND_DEBUG
     SerialUSB.print("Adding command (");
     SerialUSB.print(commandCount);
@@ -51,7 +51,7 @@ void SerialCommand::addCommand(const char *command, void (*function)()) {
 
   commandList = (SerialCommandCallback *) realloc(commandList, (commandCount + 1) * sizeof(SerialCommandCallback));
   strncpy(commandList[commandCount].command, command, SERIALCOMMAND_MAXCOMMANDLENGTH);
-  commandList[commandCount].function = function;
+  commandList[commandCount].command_function = func;
   commandCount++;
 }
 
@@ -86,6 +86,7 @@ void SerialCommand::readSerial() {
       char *command = strtok_r(buffer, delim, &last);   // Search for command at start of buffer
       if (command != NULL) {
         boolean matched = false;
+
         for (int i = 0; i < commandCount; i++) {
           #ifdef SERIALCOMMAND_DEBUG
             SerialUSB.print("Comparing [");
@@ -103,7 +104,9 @@ void SerialCommand::readSerial() {
             #endif
 
             // Execute the stored handler function for the command
-            (*commandList[i].function)();
+            unsigned char unused1 = 0;
+            unsigned char unused2 = 0;
+            (*commandList[i].command_function)(unused1, unused2);
             matched = true;
             break;
           }
@@ -126,6 +129,7 @@ void SerialCommand::readSerial() {
     }
   }
 }
+
 
 /**
  * Clear the input buffer.
