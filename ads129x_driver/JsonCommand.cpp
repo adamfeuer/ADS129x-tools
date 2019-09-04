@@ -115,6 +115,7 @@ void JsonCommand::readSerial() {
 	        Serial.println(error.c_str());
         #endif
         clearBuffer();
+        send_jsonlines_response(400, "Bad Request");
         return;
       }
 

@@ -3,7 +3,7 @@ import time
 
 import serial
 
-from hackeeg import ads1299
+from . import ads1299
 
 # TODO
 # - MessagePack
@@ -12,20 +12,9 @@ NUMBER_OF_SAMPLES = 10000
 DEFAULT_BAUDRATE = 115200
 SAMPLE_LENGTH_IN_BYTES = 38  # 216 bits encoded with base64 + '\r\n\'
 
-COMMAND = "COMMAND"
-PARAMETERS = "PARAMETERS"
-HEADERS = "HEADERS"
-DATA = "DATA"
-
 
 class Status:
-    OK = 200
-
-
-class Mode:
-    TEXT = 0
-    JSONLINES = 1
-    MESSAGEPACK = 2
+    Ok = 200
 
 
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
@@ -37,17 +26,32 @@ SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           16384: ads1299.HIGH_RES_16k_SPS}
 
 
-class HackEegException(Exception):
+class HackEEGException(Exception):
     pass
 
 
-class HackEegBoard():
-    def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE):
+class HackEEGBoard():
+    TextMode = 0
+    JsonLinesMode = 1
+    MessagePackMode = 2
+
+    Command = "COMMAND"
+    Parameters = "PARAMETERS"
+    Headers = "HEADERS"
+    Data = "DATA"
+    StatusCode ="STATUS_CODE"
+    StatusText ="STATUS_TEXT"
+
+    def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE, debug=False):
+        self.mode = None
+        self.debug = debug
+        self.baudrate = baudrate
         self.rdatac_mode = False
-        self.protocol_mode = Mode.TEXT
         self.serialPortPath = serialPortPath
         if serialPortPath:
-            self.serialPort = serial.serial_for_url(serialPortPath, baudrate=baudrate, timeout=0.1)
+            self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
+        self.mode = self._sense_protocol_mode()
+        if self.mode == self.TextMode:
             self.jsonlines_mode()
 
     def _serial_write(self, command):
@@ -58,7 +62,8 @@ class HackEegBoard():
         line = self.serialPort.readline()
         line = line.decode("utf-8")
         line = line.strip()
-        print(f"line: {line}")
+        if self.debug:
+            print(f"line: {line}")
         return line
 
     def read_response(self):
@@ -67,19 +72,22 @@ class HackEegBoard():
         while line.startswith("#"):
             line = self._serial_readline()
         response_obj = json.loads(line)
-        print("json response:")
-        print(self.format_json(response_obj))
+        if self.debug:
+            print("json response:")
+            print(self.format_json(response_obj))
         return response_obj
 
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
 
     def send_command(self, command, parameters):
-        print(f"command: {command}  parameters: {parameters}")
-        new_command_obj = dict(COMMAND=command, PARAMETERS=parameters)
+        if self.debug:
+            print(f"command: {command}  parameters: {parameters}")
+        new_command_obj = {self.Command: command, self.Parameters: parameters}
         new_command = json.dumps(new_command_obj)
-        print("json command:")
-        print(self.format_json(new_command_obj))
+        if self.debug:
+            print("json command:")
+            print(self.format_json(new_command_obj))
         self._serial_write(new_command + '\n')
 
     def send_text_command(self, command):
@@ -92,8 +100,18 @@ class HackEegBoard():
         response = self.read_response()
         return response
 
+    def _sense_protocol_mode(self):
+        try:
+            result = self.execute_command("nop")
+            if result.get(self.StatusCode) == Status.Ok:
+                return self.JsonLinesMode
+        except Exception:
+            # TODO: MessagePack mode
+            self._serial_readline()
+            return self.TextMode
+
     def ok(self, response):
-        return response[COMMAND] == Status.OK
+        return response[self.Command] == Status.OK
 
     def wreg(self, register, value):
         command = "wreg"
@@ -108,18 +126,32 @@ class HackEegBoard():
         return response
 
     def text_mode(self):
-        self.execute_command("text")
-        response = self.read_response()
-        return response
+        return self.execute_command("text")
+
+    def nop(self):
+        return self.execute_command("nop")
+
+    def boardledon(self):
+        return self.execute_command("boardledon")
+
+    def boardledoff(self):
+        return self.execute_command("boardledoff")
+
+    def micros(self):
+        return self.execute_command("micros")
 
     def jsonlines_mode(self):
-        self.send_text_command("jsonlines")
-        self.protocol_mode = Mode.JSONLINES
-        response = self.read_response()
-        return response
+        self.protocol_mode = self.JsonLinesMode
+        if self.mode == self.TextMode:
+            return self.send_text_command("jsonlines")
+        if self.mode == self.JsonLinesMode:
+            return self.execute_command("jsonlines")
 
     def messagepack_mode(self):
-        return self.send_text_command("messagepack")
+        if self.mode == self.TextMode:
+            return self.send_text_command("messagepack")
+        if self.mode == self.JsonLinesMode:
+            return self.execute_command("messagepack")
 
     def rdatac(self):
         result = self.execute_command("rdatac")
