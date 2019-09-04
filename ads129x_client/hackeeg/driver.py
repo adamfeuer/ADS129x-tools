@@ -15,6 +15,8 @@ SAMPLE_LENGTH_IN_BYTES = 38  # 216 bits encoded with base64 + '\r\n\'
 
 class Status:
     Ok = 200
+    BadRequest = 400
+    Error = 500
 
 
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
@@ -39,8 +41,8 @@ class HackEEGBoard():
     Parameters = "PARAMETERS"
     Headers = "HEADERS"
     Data = "DATA"
-    StatusCode ="STATUS_CODE"
-    StatusText ="STATUS_TEXT"
+    StatusCode = "STATUS_CODE"
+    StatusText = "STATUS_TEXT"
 
     def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE, debug=False):
         self.mode = None
@@ -148,10 +150,12 @@ class HackEEGBoard():
             return self.execute_command("jsonlines")
 
     def messagepack_mode(self):
-        if self.mode == self.TextMode:
-            return self.send_text_command("messagepack")
-        if self.mode == self.JsonLinesMode:
-            return self.execute_command("messagepack")
+        pass
+        # self.protocol_mode = self.MessagePackMode
+        # if self.mode == self.TextMode:
+        #     return self.send_text_command("messagepack")
+        # if self.mode == self.JsonLinesMode:
+        #     return self.execute_command("messagepack")
 
     def rdatac(self):
         result = self.execute_command("rdatac")
