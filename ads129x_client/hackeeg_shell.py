@@ -12,7 +12,7 @@ import hackeeg
 # - JSONLines
 # -MessagePack
 
-class HackEEGCommandLine(cmd.Cmd):
+class HackEEGShell(cmd.Cmd):
     intro = 'Welcome to the HackEEG shell.   Type help or ? to list commands.\n'
     prompt = '(hackeeg) '
     file = None
@@ -40,11 +40,11 @@ class HackEEGCommandLine(cmd.Cmd):
 
     def do_version(self, arg):
         'Returns HackEEG driver version number.'
-        self._format_response(self.hackeeg.nop())
+        self._format_response(self.hackeeg.version())
 
     def do_status(self, arg):
         'Returns HackEEG driver status. (Not implemented yet.)'
-        self._format_response(self.hackeeg.nop())
+        self._format_response(self.hackeeg.status())
 
     def do_text(self, arg):
         'Sets driver communication protocol to text and exits the HackEEG command shell. Useful if you want to communicate directly with the driver using text mode. (Not implemented yet.)'
@@ -56,7 +56,7 @@ class HackEEGCommandLine(cmd.Cmd):
 
     def do_messagepack(self, arg):
         'Sets driver communication protocol to MessagePack. (Not implemented yet.)'
-        self._format_response(self.hackeeg.())
+        self._format_response(self.hackeeg.messagepack())
 
     def do_micros(self, arg):
         'Returns microseconds since the Arduino booted up.'
@@ -182,4 +182,4 @@ def parse(arg):
 
 
 if __name__ == "__main__":
-    HackEEGCommandLine().main()
+    HackEEGShell().main()

@@ -127,9 +127,6 @@ class HackEEGBoard():
         response = self.read_response()
         return response
 
-    def text_mode(self):
-        return self.execute_command("text")
-
     def nop(self):
         return self.execute_command("nop")
 
@@ -139,18 +136,29 @@ class HackEEGBoard():
     def boardledoff(self):
         return self.execute_command("boardledoff")
 
+    def ledon(self):
+        return self.execute_command("ledon")
+
+    def ledoff(self):
+        return self.execute_command("ledoff")
+
     def micros(self):
         return self.execute_command("micros")
 
+    def text_mode(self):
+        return self.send_command("text")
+
     def jsonlines_mode(self):
-        self.protocol_mode = self.JsonLinesMode
-        if self.mode == self.TextMode:
+        old_mode = self.mode
+        self.mode = self.JsonLinesMode
+        if old_mode == self.TextMode:
             return self.send_text_command("jsonlines")
-        if self.mode == self.JsonLinesMode:
+        if old_mode == self.JsonLinesMode:
             return self.execute_command("jsonlines")
 
     def messagepack_mode(self):
         pass
+        # TODO: implement MessagePack protocol
         # self.protocol_mode = self.MessagePackMode
         # if self.mode == self.TextMode:
         #     return self.send_text_command("messagepack")
@@ -164,14 +172,18 @@ class HackEEGBoard():
         return result
 
     def sdatac(self):
-        self.execute_command("sdatac")
+        result = self.execute_command("sdatac")
         self.rdatac_mode = False
+        return result
 
     def start(self):
-        self.execute_command("start")
+        return self.execute_command("start")
 
     def stop(self):
-        self.execute_command("stop")
+        return self.execute_command("stop")
+
+    def status(self):
+        return self.execute_command("status")
 
     def enable_channel(self, channel, gain=None):
         if gain is None:

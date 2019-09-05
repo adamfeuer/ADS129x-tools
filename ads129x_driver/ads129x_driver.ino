@@ -78,8 +78,8 @@ const char *STATUS_TEXT_ERROR = "Error";
 const char *STATUS_TEXT_NOT_IMPLEMENTED = "Not Implemented";
 
 int protocol_mode = TEXT_MODE;
-int maxChannels = 0;
-int numActiveChannels = 0;
+int max_channels = 0;
+int num_active_channels= 0;
 boolean gActiveChan[9]; // reports whether channels 1..9 are active
 boolean isRdatac = false;
 boolean base64Mode = true;
@@ -88,10 +88,10 @@ char hexDigits[] = "0123456789ABCDEF";
 uint8_t serialBytes[200];
 char sampleBuffer[1000];
 
-const char *hardwareType = "unknown";
-const char *boardName = "HackEEG";
-const char *makerName = "Starcat LLC";
-const char *driverVersion = "ADS129x driver v0.3.0";
+const char *hardware_type = "unknown";
+const char *board_name = "HackEEG";
+const char *maker_name = "Starcat LLC";
+const char *driver_version = "v0.3.0";
 
 SerialCommand serialCommand;
 JsonCommand jsonCommand;
@@ -269,25 +269,50 @@ void send_jsonlines_data(int status_code, char data, char *status_text) {
 }
 
 void version_command(unsigned char unused1, unsigned char unused2) {
-  send_response(RESPONSE_OK, driverVersion);
+  send_response(RESPONSE_OK, driver_version);
 }
 
 void status_command(unsigned char unused1, unsigned char unused2) {
-  WiredSerial.println("200 Ok");
-  WiredSerial.print("Board name: ");
-  WiredSerial.println(boardName);
-  WiredSerial.print("Board maker: ");
-  WiredSerial.println(makerName);
-  WiredSerial.print("Hardware type: ");
-  WiredSerial.println(hardwareType);
-  WiredSerial.print("Max channels: ");
-  WiredSerial.println(maxChannels);
   detect_active_channels();
-  WiredSerial.print("Number of active channels: ");
-  WiredSerial.println(numActiveChannels);
-  WiredSerial.print("Driver version: ");
-  WiredSerial.println(driverVersion);
-  WiredSerial.println();
+  if (protocol_mode == TEXT_MODE) {
+      WiredSerial.println("200 Ok");
+      WiredSerial.print("Driver version: ");
+      WiredSerial.println(driver_version);
+      WiredSerial.print("Board name: ");
+      WiredSerial.println(board_name);
+      WiredSerial.print("Board maker: ");
+      WiredSerial.println(maker_name);
+      WiredSerial.print("Hardware type: ");
+      WiredSerial.println(hardware_type);
+      WiredSerial.print("Max channels: ");
+      WiredSerial.println(max_channels);
+      WiredSerial.print("Number of active channels: ");
+      WiredSerial.println(num_active_channels);
+      WiredSerial.println();
+      return;
+  }
+  StaticJsonDocument<1024> doc;
+  JsonObject root = doc.to<JsonObject>();
+  root[STATUS_CODE_KEY] = STATUS_OK; 
+  root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
+  JsonObject status_info = root.createNestedObject(DATA_KEY);
+  status_info["driver_version"] = driver_version;
+  status_info["board_name"] = board_name;
+  status_info["maker_name"] = maker_name;
+  status_info["hardware_type"] = hardware_type;
+  status_info["max_channels"] = max_channels;
+  status_info["active_channels"] = num_active_channels;
+  switch (protocol_mode) {
+    case JSONLINES_MODE:
+      jsonCommand.send_jsonlines_doc_response(doc);
+      break;
+    case MESSAGEPACK_MODE:
+      // TODO: not implemented yet 
+      break;
+    default:
+      // unknown protocol
+      ;
+  }
 }
 
 void nop_command(unsigned char unused1, unsigned char unused2) {
@@ -303,11 +328,11 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
   }
   StaticJsonDocument<1024> doc;
   JsonObject root = doc.to<JsonObject>();
+  root[STATUS_CODE_KEY] = STATUS_OK; 
+  root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
+  root[DATA_KEY] = microseconds;
   switch (protocol_mode) {
     case JSONLINES_MODE:
-      root[STATUS_CODE_KEY] = STATUS_OK; 
-      root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
-      root[DATA_KEY] = microseconds;
       jsonCommand.send_jsonlines_doc_response(doc);
       break;
     case MESSAGEPACK_MODE:
@@ -525,7 +550,7 @@ void rdata_command(unsigned char unused1, unsigned char unused2) {
 void rdatac_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   detect_active_channels();
-  if (numActiveChannels > 0) {
+  if (num_active_channels > 0) {
     isRdatac = true;
     adc_send_command(RDATAC);
     WiredSerial.println("200 Ok");
@@ -554,15 +579,15 @@ void unrecognized(const char *command) {
 
 
 void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
-  if ((isRdatac) ||  (maxChannels < 1)) return; //we can not read registers when in RDATAC mode
+  if ((isRdatac) ||  (max_channels < 1)) return; //we can not read registers when in RDATAC mode
   //Serial.println("Detect active channels: ");
   using namespace ADS129x;
-  numActiveChannels = 0;
-  for (int i = 1; i <= maxChannels; i++) {
+  num_active_channels = 0;
+  for (int i = 1; i <= max_channels; i++) {
     delayMicroseconds(1);
     int chSet = adc_rreg(CHnSET + i);
     gActiveChan[i] = ((chSet & 7) != SHORTED);
-    if ( (chSet & 7) != SHORTED) numActiveChannels ++;
+    if ( (chSet & 7) != SHORTED) num_active_channels ++;
   }
 }
 
@@ -574,7 +599,7 @@ byte testMSB, testLSB;
 #endif
 
 inline void sendSamples(void) {
-  if ((!isRdatac) || (numActiveChannels < 1) )  return;
+  if ((!isRdatac) || (num_active_channels < 1) )  return;
   if (digitalRead(IPIN_DRDY) == HIGH) return;
   sendSample();
 }
@@ -582,7 +607,7 @@ inline void sendSamples(void) {
 // Use SAM3X DMA
 inline void sendSample(void) {
   digitalWrite(PIN_CS, LOW);
-  register int numSerialBytes = (3 * (maxChannels + 1)); //24-bits header plus 24-bits per channel
+  register int numSerialBytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
   uint8_t returnCode = spiRec(serialBytes, numSerialBytes);
   digitalWrite(PIN_CS, HIGH);
   register unsigned int count = 0;
@@ -605,26 +630,26 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
   int val = adc_rreg(ID) ;
   switch (val & B00011111 ) { //least significant bits reports channels
     case  B10000: //16
-      hardwareType = "ADS1294";
-      maxChannels = 4;
+      hardware_type = "ADS1294";
+      max_channels = 4;
       break;
     case B10001: //17
-      hardwareType = "ADS1296";
-      maxChannels = 6;
+      hardware_type = "ADS1296";
+      max_channels = 6;
       break;
     case B10010: //18
-      hardwareType = "ADS1298";
-      maxChannels = 8;
+      hardware_type = "ADS1298";
+      max_channels = 8;
       break;
     case B11110: //30
-      hardwareType = "ADS1299";
-      maxChannels = 8;
+      hardware_type = "ADS1299";
+      max_channels = 8;
       break;
     default:
-      maxChannels = 0;
+      max_channels = 0;
   }
-  WiredSerial.println("Max channels: " + maxChannels);
-  if (maxChannels == 0) { //error mode
+  WiredSerial.println("Max channels: " + max_channels);
+  if (max_channels == 0) { //error mode
     while (1) { //loop forever
       digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
       delay(500);               // wait for a second`
