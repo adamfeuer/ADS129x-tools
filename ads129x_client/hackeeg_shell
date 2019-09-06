@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# MacOS only for now
+PORT=$(ioreg -p IOUSB -w0 |grep 'Arduino Due@'|sed 's/^.*@//g'|sed 's/[0..9] .*<class.*$//g' | xargs -Ifoo find /dev -iname "cu.usbmodemfoo*" 2>/dev/null)
+./hackeeg_shell.py $PORT
+
