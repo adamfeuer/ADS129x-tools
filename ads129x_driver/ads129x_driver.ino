@@ -69,6 +69,7 @@
 
 #define RESPONSE_OK 200
 #define RESPONSE_BAD_REQUEST 400
+#define UNRECOGNIZED_COMMAND 406
 #define RESPONSE_ERROR 500
 #define RESPONSE_NOT_IMPLEMENTED 501
 
@@ -177,8 +178,9 @@ void setup() {
   jsonCommand.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
   jsonCommand.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines 
   jsonCommand.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
-//  jsonCommand.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
-//  jsonCommand.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
+  jsonCommand.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
+  jsonCommand.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
+  jsonCommand.setDefaultHandler(unrecognized_jsonlines);            // Handler for any command that isn't matched
 
   WiredSerial.println("Ready");
 }
@@ -441,9 +443,9 @@ void read_register_command(unsigned char unused1, unsigned char unused2) {
   WiredSerial.println();
 }
 
-void read_register_command_direct(unsigned char register_number) {
+void read_register_command_direct(unsigned char register_number, unsigned char unused1) {
   using namespace ADS129x;
-  if (register_number >= 0) {
+  if (register_number >= 0 and register_number <= 255 ) {
     unsigned char result = adc_rreg(register_number);
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
@@ -577,6 +579,14 @@ void unrecognized(const char *command) {
   WiredSerial.println();
 }
 
+// This gets set as the default handler for jsonlines and messagepack, and gets called when no other command matches.
+void unrecognized_jsonlines(const char *command) {
+  StaticJsonDocument<1024> doc;
+  JsonObject root = doc.to<JsonObject>();
+  root[STATUS_CODE_KEY] = UNRECOGNIZED_COMMAND; 
+  root[STATUS_TEXT_KEY] = "Unrecognized command";
+  jsonCommand.send_jsonlines_doc_response(doc);
+}
 
 void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
   if ((isRdatac) ||  (max_channels < 1)) return; //we can not read registers when in RDATAC mode

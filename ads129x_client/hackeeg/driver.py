@@ -32,7 +32,7 @@ class HackEEGException(Exception):
     pass
 
 
-class HackEEGBoard():
+class HackEEGBoard:
     TextMode = 0
     JsonLinesMode = 1
     MessagePackMode = 2
@@ -68,11 +68,13 @@ class HackEEGBoard():
             print(f"line: {line}")
         return line
 
+    def set_debug(self, debug):
+        self.debug = debug
+
     def read_response(self):
         line = self._serial_readline()
-        # TODO remove comment ignorer
-        while line.startswith("#"):
-            line = self._serial_readline()
+        if self.debug:
+            print(f"read_response line: {line}")
         response_obj = json.loads(line)
         if self.debug:
             print("json response:")
@@ -109,22 +111,21 @@ class HackEEGBoard():
                 return self.JsonLinesMode
         except Exception:
             # TODO: MessagePack mode
-            self._serial_readline()
+            #self._serial_readline()  # discard
             return self.TextMode
 
     def ok(self, response):
-        return response[self.Command] == Status.OK
+        return response[self.Command] == Status.Ok
 
     def wreg(self, register, value):
         command = "wreg"
         parameters = [register, value]
-        self.execute_command(command, parameters)
+        return self.execute_command(command, parameters)
 
     def rreg(self, register):
         command = "rreg"
         parameters = [register]
-        self.execute_command(command)
-        response = self.read_response()
+        response = self.execute_command(command, parameters)
         return response
 
     def nop(self):
@@ -152,9 +153,10 @@ class HackEEGBoard():
         old_mode = self.mode
         self.mode = self.JsonLinesMode
         if old_mode == self.TextMode:
-            return self.send_text_command("jsonlines")
+            self.send_text_command("jsonlines")
+            return self.read_response()
         if old_mode == self.JsonLinesMode:
-            return self.execute_command("jsonlines")
+            self.execute_command("jsonlines")
 
     def messagepack_mode(self):
         pass

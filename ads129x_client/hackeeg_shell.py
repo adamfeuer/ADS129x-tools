@@ -13,16 +13,19 @@ import hackeeg
 # -MessagePack
 
 class HackEEGShell(cmd.Cmd):
-    intro = 'Welcome to the HackEEG shell.   Type help or ? to list commands.\n'
+    intro = 'Welcome to the HackEEG shell. Type help or ? to list commands.\n'
     prompt = '(hackeeg) '
     file = None
 
     def __init__(self):
         super().__init__()
-        self.serialPortName = None
+        self.serial_port_name = None
         self.hackeeg = None
+        self.debug = False
 
     def _format_response(self, response):
+        if self.debug:
+            print(f"_format_response: {response}")
         status_code = response.get(self.hackeeg.StatusCode)
         status_text = response.get(self.hackeeg.StatusText)
         data = response.get(self.hackeeg.Data)
@@ -34,124 +37,146 @@ class HackEEGShell(cmd.Cmd):
         else:
             print("Error")
 
+    def do_debug(self, arg):
+        """Enables debugging output in the client software. Usage: debug <on|off>"""
+        usage = "Usage: debug [on|off]"
+        if arg == "on":
+            self.debug = True
+        elif arg == "off":
+            self.debug = False
+        else:
+            print(f"debug flag is currently set to {self.debug}.")
+        self.hackeeg.set_debug(self.debug)
+        return
+
     def do_nop(self, arg):
-        'No operation – does nothing.'
+        """No operation – does nothing."""
         self._format_response(self.hackeeg.nop())
 
     def do_version(self, arg):
-        'Returns HackEEG driver version number.'
+        """Returns HackEEG driver version number."""
         self._format_response(self.hackeeg.version())
 
     def do_status(self, arg):
-        'Returns HackEEG driver status. (Not implemented yet.)'
+        """Returns HackEEG driver status."""
         self._format_response(self.hackeeg.status())
 
     def do_text(self, arg):
-        'Sets driver communication protocol to text and exits the HackEEG command shell. Useful if you want to communicate directly with the driver using text mode. (Not implemented yet.)'
+        """Sets driver communication protocol to text and exits the HackEEG command shell. 
+           Useful if you want to communicate directly with the driver using text mode. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_jsonlines(self, arg):
-        'Sets driver communication protocol to jsonlines. (Not implemented yet.)'
+        """Sets driver communication protocol to jsonlines. (Not implemented yet.)"""
         self._format_response(self.hackeeg.jsonlines_mode())
 
     def do_messagepack(self, arg):
-        'Sets driver communication protocol to MessagePack. (Not implemented yet.)'
+        """Sets driver communication protocol to MessagePack. (Not implemented yet.)"""
         self._format_response(self.hackeeg.messagepack())
 
     def do_micros(self, arg):
-        'Returns microseconds since the Arduino booted up.'
+        """Returns microseconds since the Arduino booted up."""
         self._format_response(self.hackeeg.micros())
 
     def do_serialnumber(self, arg):
-        'Returns board serial number. (Not implemented yet.)'
+        """Returns board serial number. (Not implemented yet.)"""
         self._format_response(self.hackeeg.serialnumber())
 
     def do_boardledon(self, arg):
-        'Turns the HackEEG board LED on.'
+        """Turns the HackEEG board LED on."""
         self._format_response(self.hackeeg.boardledon())
 
     def do_boardledoff(self, arg):
-        'Turns the HackEEG board LED off.'
+        """Turns the HackEEG board LED off."""
         self._format_response(self.hackeeg.boardledoff())
 
     def do_ledon(self, arg):
-        'Turns the Arduino LED on.'
+        """Turns the Arduino LED on."""
         self._format_response(self.hackeeg.ledon())
 
     def do_ledoff(self, arg):
-        'Turns the Arduino LED off.'
+        """Turns the Arduino LED off."""
         self._format_response(self.hackeeg.ledoff())
 
     def do_blink(self, arg):
-        'Turns the HackEEG board LED off, then on, then off.'
+        """Turns the HackEEG board LED off, then on, then off."""
         self.hackeeg.boardledoff()
         self.hackeeg.boardledon()
         time.sleep(0.2)
         self._format_response(self.hackeeg.boardledoff())
 
     def do_rreg(self, arg):
-        'Reads an ADS1299 register and returns the value.'
-        arglist = parse(arg)
+        """Reads an ADS1299 register and returns the value."""
+        usage = "rreg [register_number]"
+        arglist = parse_registers(arg)
         if len(arglist) == 0:
-            raise HackEEGArgumentException("No register number given.")
-        if len(arglist) > 1:
-            raise HackEEGArgumentException("Too many arguments.")
-        self._format_response(self.hackeeg.rreg(arglist[0]))
+            print("No register number given.")
+            print(usage)
+        elif len(arglist) > 1:
+            print("Too many arguments.")
+            print(usage)
+        else:
+            self._format_response(self.hackeeg.rreg(arglist[0]))
 
     def do_wreg(self, arg):
-        'Writees an ADS1299 register.'
-        arglist = parse(arg)
+        """Writees an ADS1299 register."""
+        arglist = parse_registers(arg)
         if len(arglist) == 0:
-            raise HackEEGArgumentException("No register number given.")
-        if len(arglist) == 1:
-            raise HackEEGArgumentException("No register value given.")
-        if len(arglist) > 2:
-            raise HackEEGArgumentException("Too many arguments.")
-        self._format_response(self.hackeeg.wreg(arglist[0], arglist[1]))
+            print("No register number given.")
+        elif len(arglist) == 1:
+            print("No register value given.")
+        elif len(arglist) > 2:
+            print("Too many arguments.")
+        else:
+            self._format_response(self.hackeeg.wreg(arglist[0], arglist[1]))
 
     def do_wakeup(self, arg):
-        'Sends the WAKEUP command to the ADS1299. (Not implemented yet.)'
+        """Sends the WAKEUP command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_standby(self, arg):
-        'Sends the STANDBY command to the ADS1299. (Not implemented yet.)'
+        """Sends the STANDBY command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_reset(self, arg):
-        'Sends the RESET command to the ADS1299. (Not implemented yet.)'
+        """Sends the RESET command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_start(self, arg):
-        'Sends the START command to the ADS1299. (Not implemented yet.)'
+        """Sends the START command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_stop(self, arg):
-        'Sends the STOP command to the ADS1299. (Not implemented yet.)'
+        """Sends the STOP command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_rdatac(self, arg):
-        'Sends the RDATAC command to the ADS1299. (Not implemented yet.)'
+        """Sends the RDATAC command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_sdatac(self, arg):
-        'Sends the SDATAC command to the ADS1299. (Not implemented yet.)'
+        """Sends the SDATAC command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_rdata(self, arg):
-        'Sends the RDATA command to the ADS1299. (Not implemented yet.)'
+        """Sends the RDATA command to the ADS1299. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_getdata(self, arg):
-        "Gets data from the HackEEG driver's ringbuffer. (Not implemented yet.)"
+        """Gets data from the HackEEG driver's ringbuffer. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
 
     def do_exit(self, arg):
-        'Exit the HackEEG commandline.'
+        """Exit the HackEEG commandline."""
         sys.exit(0)
 
     def do_quit(self, arg):
-        'Exit the HackEEG commandline.'
+        """Exit the HackEEG commandline."""
         sys.exit(0)
+
+    def default(self, line):
+        if line == 'EOF':
+            sys.exit(0)
 
     def setup(self, samplesPerSecond=500):
         if samplesPerSecond not in hackeeg.SPEEDS.keys():
@@ -165,15 +190,25 @@ class HackEEGShell(cmd.Cmd):
         return
 
     def main(self):
-        self.serialPortName = sys.argv[1]
-        self.hackeeg = hackeeg.HackEEGBoard(self.serialPortName, debug=False)
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument("serial_port", help="serial port device path",
+                            type=str)
+        parser.add_argument("--debug", "-d", help="enable debugging output",
+                            action="store_true")
+        args = parser.parse_args()
+        if args.debug:
+            self.debug = True
+            print("debug mode on")
+        self.serial_port_name = args.serial_port
+        self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
         self.cmdloop()
 
 class HackEEGArgumentException(Exception):
     pass
 
-def parse(arg):
-    'Convert a series of zero or more numbers to an argument tuple'
+def parse_registers(arg):
+    """Convert a series of zero or more numbers to an argument tuple"""
     result = tuple(map(int, arg.split()))
     for item in result:
         if item > 255 or item < 0:
