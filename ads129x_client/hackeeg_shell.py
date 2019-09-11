@@ -22,6 +22,7 @@ class HackEEGShell(cmd.Cmd):
         self.serial_port_name = None
         self.hackeeg = None
         self.debug = False
+        self.hex = True
 
     def _format_response(self, response):
         if self.debug:
@@ -31,11 +32,29 @@ class HackEEGShell(cmd.Cmd):
         data = response.get(self.hackeeg.Data)
         if status_code and status_code == hackeeg.Status.Ok:
             print("Ok", end='')
-            if data: 
-                print(f"  Data: {data}", end='')
+            if data:
+                print(f"  Data: ", end='')
+                print(type(data))
+                if isinstance(data, list):
+                    self._format_list(data)
+                elif isinstance(data, int):
+                    self._format_int(data)
+                else:
+                    print(f"{data}", end='')
             print()
         else:
             print("Error")
+
+    def _format_list(self, data):
+        for item in data:
+            self._format_int(data)
+
+    def _format_int(self, item):
+        if self.hex:
+            print(f"{item:02x} ", end='')
+        else:
+            print(f"{item:02d} ", end='')
+        print()
 
     def do_debug(self, arg):
         """Enables debugging output in the client software. Usage: debug <on|off>"""
@@ -48,6 +67,19 @@ class HackEEGShell(cmd.Cmd):
             print(f"debug flag is currently set to {self.debug}.")
         self.hackeeg.set_debug(self.debug)
         return
+
+    def do_hex(self, arg):
+        """Sets numerical output format to hexidecimal or decimal. Defaults to hexidecimal. Usage: hex <on|off>"""
+        usage = "Usage: hexmode [on|off]"
+        if arg == "on":
+            self.hex = True
+        elif arg == "off":
+            self.hex = False
+        print(self._hex_mode_string())
+        return
+
+    def _hex_mode_string(self):
+        return f"Numerical output is currently set to {'hexidecimal' if self.hex else 'decimal'}."
 
     def do_nop(self, arg):
         """No operation – does nothing."""
@@ -108,7 +140,11 @@ class HackEEGShell(cmd.Cmd):
     def do_rreg(self, arg):
         """Reads an ADS1299 register and returns the value."""
         usage = "rreg [register_number]"
-        arglist = parse_registers(arg)
+        arglist = []
+        try:
+            arglist = parse_registers(arg)
+        except HackEEGArgumentException as e:
+            pass
         if len(arglist) == 0:
             print("No register number given.")
             print(usage)
@@ -202,7 +238,9 @@ class HackEEGShell(cmd.Cmd):
             print("debug mode on")
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
-        self.cmdloop()
+        intro_message = "Welcome to the HackEEG shell. Type help or ? to list commands.\n"
+        intro_message += self._hex_mode_string() + '\n'
+        self.cmdloop(intro_message)
 
 class HackEEGArgumentException(Exception):
     pass
