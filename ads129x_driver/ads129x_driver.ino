@@ -81,9 +81,9 @@ const char *STATUS_TEXT_NOT_IMPLEMENTED = "Not Implemented";
 int protocol_mode = TEXT_MODE;
 int max_channels = 0;
 int num_active_channels= 0;
-boolean gActiveChan[9]; // reports whether channels 1..9 are active
-boolean isRdatac = false;
-boolean base64Mode = true;
+boolean active_channels[9]; // reports whether channels 1..9 are active
+boolean is_rdatac = false;
+boolean base64_mode = true;
 
 char hexDigits[] = "0123456789ABCDEF";
 uint8_t serialBytes[200];
@@ -97,8 +97,8 @@ const char *driver_version = "v0.3.0";
 SerialCommand serialCommand;
 JsonCommand jsonCommand;
 
-void arduinoSetup();
-void adsSetup();
+void arduino_setup();
+void ads_setup();
 void detect_active_channels();
 void unrecognized(const char*);
 void nop_command(unsigned char unused1, unsigned char unused2);
@@ -136,8 +136,8 @@ void setup() {
   digitalWrite(PIN_LED, LOW);   // default to LED off
 
   protocol_mode = TEXT_MODE;
-  arduinoSetup();
-  adsSetup();
+  arduino_setup();
+  ads_setup();
 
   // Setup callbacks for SerialCommand commands
   serialCommand.addCommand("nop", nop_command);                     // No operation (does nothing)
@@ -202,7 +202,7 @@ void loop() {
   }
 }
 
-long hexToLong(char *digits) {
+long hex_to_long(char *digits) {
   using namespace std;
   char *error;
   long n = strtol(digits, &error, 16);
@@ -214,20 +214,20 @@ long hexToLong(char *digits) {
   }
 }
 
-void outputHexByte(int value) {
+void output_hex_byte(int value) {
   int clipped = value & 0xff;
   char charValue[3];
   sprintf(charValue, "%02X", clipped);
   WiredSerial.print(charValue);
 }
 
-void encodeHex(char* output, char* input, int inputLen) {
+void encode_hex(char* output, char* input, int input_len) {
   register int count = 0;
-  for (register int i = 0; i < inputLen; i++) {
-    register uint8_t lowNybble = input[i] & 0x0f;
+  for (register int i = 0; i < input_len; i++) {
+    register uint8_t low_nybble = input[i] & 0x0f;
     register uint8_t highNybble = input[i] >> 4;
     output[count++] = hexDigits[highNybble];
-    output[count++] = hexDigits[lowNybble];
+    output[count++] = hexDigits[low_nybble];
   }
   output[count] = 0;
 }
@@ -397,14 +397,14 @@ void board_led_off_command(unsigned char unused1, unsigned char unused2) {
 }
 
 void base64_mode_on_command(unsigned char unused1, unsigned char unused2) {
-  base64Mode = true;
+  base64_mode = true;
   WiredSerial.println("200 Ok");
   WiredSerial.println("Base64 mode on - rdata command will respond with base64 encoded data.");
   WiredSerial.println();
 }
 
 void hex_mode_on_command(unsigned char unused1, unsigned char unused2) {
-  base64Mode = false;
+  base64_mode = false;
   WiredSerial.println("200 Ok");
   WiredSerial.println("Hex mode on - rdata command will respond with hex encoded data");
   WiredSerial.println();
@@ -422,15 +422,15 @@ void read_register_command(unsigned char unused1, unsigned char unused2) {
   char *arg1;
   arg1 = serialCommand.next();
   if (arg1 != NULL) {
-    long registerNumber = hexToLong(arg1);
+    long registerNumber = hex_to_long(arg1);
     if (registerNumber >= 0) {
       int result = adc_rreg(registerNumber);
       WiredSerial.print("200 Ok");
       WiredSerial.print(" (Read Register ");
-      outputHexByte(registerNumber);
+      output_hex_byte(registerNumber);
       WiredSerial.print(") ");
       WiredSerial.println();
-      outputHexByte(result);
+      output_hex_byte(result);
       WiredSerial.println();
     }
     else {
@@ -464,15 +464,15 @@ void write_register_command(unsigned char unused1, unsigned char unused2) {
   arg2 = serialCommand.next();
   if (arg1 != NULL) {
     if (arg2 != NULL) {
-      long registerNumber = hexToLong(arg1);
-      long registerValue = hexToLong(arg2);
+      long registerNumber = hex_to_long(arg1);
+      long registerValue = hex_to_long(arg2);
       if (registerNumber >= 0 && registerValue >= 0) {
         adc_wreg(registerNumber, registerValue);
         WiredSerial.print("200 Ok");
         WiredSerial.print(" (Write Register ");
-        outputHexByte(registerNumber);
+        output_hex_byte(registerNumber);
         WiredSerial.print(" ");
-        outputHexByte(registerValue);
+        output_hex_byte(registerValue);
         WiredSerial.print(") ");
         WiredSerial.println();
       }
@@ -545,7 +545,7 @@ void rdata_command(unsigned char unused1, unsigned char unused2) {
   while (digitalRead(IPIN_DRDY) == HIGH);
   adc_send_command_leave_cs_active(RDATA);
   WiredSerial.println("200 Ok ");
-  sendSample();
+  send_sample();
   WiredSerial.println();
 }
 
@@ -553,7 +553,7 @@ void rdatac_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   detect_active_channels();
   if (num_active_channels > 0) {
-    isRdatac = true;
+    is_rdatac = true;
     adc_send_command(RDATAC);
     WiredSerial.println("200 Ok");
     WiredSerial.println("RDATAC mode on.");
@@ -565,7 +565,7 @@ void rdatac_command(unsigned char unused1, unsigned char unused2) {
 
 void sdatac_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
-  isRdatac = false;
+  is_rdatac = false;
   adc_send_command(SDATAC);
   using namespace ADS129x;
   WiredSerial.println("200 Ok");
@@ -589,14 +589,14 @@ void unrecognized_jsonlines(const char *command) {
 }
 
 void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
-  if ((isRdatac) ||  (max_channels < 1)) return; //we can not read registers when in RDATAC mode
+  if ((is_rdatac) ||  (max_channels < 1)) return; //we can not read registers when in RDATAC mode
   //Serial.println("Detect active channels: ");
   using namespace ADS129x;
   num_active_channels = 0;
   for (int i = 1; i <= max_channels; i++) {
     delayMicroseconds(1);
     int chSet = adc_rreg(CHnSET + i);
-    gActiveChan[i] = ((chSet & 7) != SHORTED);
+    active_channels[i] = ((chSet & 7) != SHORTED);
     if ( (chSet & 7) != SHORTED) num_active_channels ++;
   }
 }
@@ -608,29 +608,29 @@ int testPeriod = 100;
 byte testMSB, testLSB;
 #endif
 
-inline void sendSamples(void) {
-  if ((!isRdatac) || (num_active_channels < 1) )  return;
+inline void send_samples(void) {
+  if ((!is_rdatac) || (num_active_channels < 1) )  return;
   if (digitalRead(IPIN_DRDY) == HIGH) return;
-  sendSample();
+  send_sample();
 }
 
 // Use SAM3X DMA
-inline void sendSample(void) {
+inline void send_sample(void) {
   digitalWrite(PIN_CS, LOW);
   register int numSerialBytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
   uint8_t returnCode = spiRec(serialBytes, numSerialBytes);
   digitalWrite(PIN_CS, HIGH);
   register unsigned int count = 0;
-  if (base64Mode == true) {
+  if (base64_mode == true) {
     base64_encode(sampleBuffer, (char *)serialBytes, numSerialBytes);
   }
   else {
-    encodeHex(sampleBuffer, (char *)serialBytes, numSerialBytes);
+    encode_hex(sampleBuffer, (char *)serialBytes, numSerialBytes);
   }
   WiredSerial.println(sampleBuffer);
 }
 
-void adsSetup() { //default settings for ADS1298 and compatible chips
+void ads_setup() { //default settings for ADS1298 and compatible chips
   using namespace ADS129x;
   // Send SDATAC Command (Stop Read Data Continuously mode)
   delay(1000); //pause to provide ads129n enough time to boot up...
@@ -669,7 +669,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
   } //error mode
 }
 
-void arduinoSetup() {
+void arduino_setup() {
   pinMode(PIN_LED, OUTPUT);
   using namespace ADS129x;
   //prepare pins to be outputs or inputs
