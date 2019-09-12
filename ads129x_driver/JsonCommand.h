@@ -4,9 +4,6 @@
  * over a serial port.
  *
  * Copyright (C) 2013-2019 Adam Feuer <adam@adamfeuer.com>
- * Copyright (C) 2012 Stefan Rado
- * Copyright (C) 2011 Steven Cogswell <steven.cogswell@gmail.com>
- *                    http://husks.wordpress.com
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
