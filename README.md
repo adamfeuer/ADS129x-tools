@@ -164,7 +164,7 @@ might be useful. It is designed for the ADS1298, but should also work with the A
 
 ## Credits
 
-This software would not be possible without the help of many people. The following people contributed software to this driver:
+This software would not be possible without the help of many people. The following people helped with this driver:
 
 * Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver from the [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG)
 * Chris Rorden (some parts of the ADS1298 driver)
