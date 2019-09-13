@@ -18,6 +18,9 @@
  *
  */
 
+#ifndef _ADS_COMMAND_H
+#define _ADS_COMMAND_H
+
 #include "Arduino.h"
 
 // constants define pins on Arduino 
@@ -40,3 +43,5 @@ void adc_wreg(int reg, int val); //write register
 void adc_send_command(int cmd); 
 void adc_send_command_leave_cs_active(int cmd); 
 int adc_rreg(int reg); //read register
+
+#endif // _ADS_COMMAND_H

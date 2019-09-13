@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-#ifndef SerialCommand_h
-#define SerialCommand_h
+#ifndef SERIALCOMMAND_H
+#define SERIALCOMMAND_H
 
 #if defined(WIRING) && WIRING >= 100
   #include <Wiring.h>
@@ -45,10 +45,10 @@ class SerialCommand {
     void addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
-    void readSerial();    // Main entry point.
-    void clearBuffer();   // Clears the input buffer.
+    void readSerial();      // Main entry point.
+    void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *next();         // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    char *next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
 
   private:
     // Command/handler dictionary
@@ -70,4 +70,4 @@ class SerialCommand {
     char *last;                         // State variable used by strtok_r during processing
 };
 
-#endif //SerialCommand_h
+#endif // SERIALCOMMAND_H

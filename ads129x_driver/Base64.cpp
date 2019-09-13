@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2013 Adam Rudd.
+ * MIT License
+ */
+
 #include "Base64.h"
 
 const char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

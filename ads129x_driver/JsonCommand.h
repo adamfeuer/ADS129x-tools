@@ -18,8 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */ 
-#ifndef JsonCommand_h
-#define JsonCommand_h
+#ifndef JSONCOMMAND_H
+#define JSONCOMMAND_H
 
 #if defined(WIRING) && WIRING >= 100
   #include <Wiring.h>
@@ -58,10 +58,10 @@ class JsonCommand {
     void addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
-    void readSerial();    // Main entry point.
-    void clearBuffer();   // Clears the input buffer.
+    void readSerial();      // Main entry point.
+    void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *next();         // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    char *next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
     void send_jsonlines_response(int status_code, char *status_text); // send a simple JSONLines response
     void send_jsonlines_doc_response(JsonDocument &doc); // send a JsonDocument as a JSONLines response
 
@@ -87,4 +87,4 @@ class JsonCommand {
     int find_command(const char *command);
 };
 
-#endif //JsonCommand_h
+#endif  // JSONCOMMAND_H

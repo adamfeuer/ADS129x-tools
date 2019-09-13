@@ -16,8 +16,8 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef SPI_DMA_H_ 
-#define SPI_DMA_H_
+#ifndef SPI_DMA_H
+#define SPI_DMA_H
 
 // SPI clock divider - 1-255, divides 84Mhz system clock 
 // 21 = 4 Mhz
@@ -37,4 +37,4 @@ uint8_t spiRec(uint8_t* buf, size_t len);
 void spiSend(uint8_t b);
 void spiSend(const uint8_t* buf, size_t len);
 
-#endif
+#endif  // SPI_DMA_H

@@ -1,6 +1,5 @@
-/* adsCommand.cpp
- *
- * send and receive commands from TI ADS129x chips. 
+/**
+ * send and receive commands from TI ADS129x chips.
  *
  * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
  *
@@ -19,7 +18,7 @@
  *
  */
 
-#include "Arduino.h"   // use: Wprogram.h for Arduino versions prior to 1.0
+#include "Arduino.h"
 #include "adsCommand.h"
 #include "ads129x.h"
 #include "SpiDma.h"
