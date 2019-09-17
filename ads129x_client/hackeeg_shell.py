@@ -183,16 +183,16 @@ class HackEEGShell(cmd.Cmd):
         self._format_response(self.hackeeg.nop())
 
     def do_stop(self, arg):
-        """Sends the STOP command to the ADS1299. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+        """Sends the STOP command to the ADS1299."""
+        self._format_response(self.hackeeg.stop())
 
     def do_rdatac(self, arg):
-        """Sends the RDATAC command to the ADS1299. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+        """Sends the RDATAC command to the ADS1299."""
+        self._format_response(self.hackeeg.rdatac())
 
     def do_sdatac(self, arg):
-        """Sends the SDATAC command to the ADS1299. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+        """Sends the SDATAC command to the ADS1299."""
+        self._format_response(self.hackeeg.sdatac())
 
     def do_rdata(self, arg):
         """Sends the RDATA command to the ADS1299. (Not implemented yet.)"""
