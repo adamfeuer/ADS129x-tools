@@ -74,11 +74,13 @@
 #define UNRECOGNIZED_COMMAND 406
 #define RESPONSE_ERROR 500
 #define RESPONSE_NOT_IMPLEMENTED 501
+#define RESPONSE_NO_ACTIVE_CHANNELS 502
 
 const char *STATUS_TEXT_OK = "Ok";
 const char *STATUS_TEXT_BAD_REQUEST = "Bad request";
 const char *STATUS_TEXT_ERROR = "Error";
 const char *STATUS_TEXT_NOT_IMPLEMENTED = "Not Implemented";
+const char *STATUS_TEXT_NO_ACTIVE_CHANNELS = "No Active Channels";
 
 int protocol_mode = TEXT_MODE;
 int max_channels = 0;
@@ -103,6 +105,7 @@ void arduino_setup();
 void ads_setup();
 void detect_active_channels();
 void unrecognized(const char*);
+void unrecognized_jsonlines(const char*);
 void nop_command(unsigned char unused1, unsigned char unused2);
 void version_command(unsigned char unused1, unsigned char unused2);
 void status_command(unsigned char unused1, unsigned char unused2);
@@ -165,8 +168,8 @@ void setup() {
   serial_command.addCommand("rdata", rdata_command);                 // Read one sample of data from each active channel
   serial_command.addCommand("rreg", read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
   serial_command.addCommand("wreg", write_register_command);         // Write ADS129x register, arguments in hex
-  serial_command.addCommand("base64", base64_mode_on_command);         // RDATA commands send base64 encoded data - default
-  serial_command.addCommand("hex", hex_mode_on_command);               // RDATA commands send hex encoded data
+  serial_command.addCommand("base64", base64_mode_on_command);       // RDATA commands send base64 encoded data - default
+  serial_command.addCommand("hex", hex_mode_on_command);             // RDATA commands send hex encoded data
   serial_command.addCommand("help", help_command);                   // Print list of commands
   serial_command.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
@@ -177,6 +180,11 @@ void setup() {
   json_command.addCommand("boardledoff", board_led_off_command);     // Turns HackEEG ADS1299 GPIO4 LED off
   json_command.addCommand("boardledon", board_led_on_command);       // Turns HackEEG ADS1299 GPIO4 LED on
   json_command.addCommand("status", status_command);                 // Returns the driver status
+  json_command.addCommand("reset", reset_command);                   // Reset the ADS1299
+  json_command.addCommand("start", start_command);                   // Send START command
+  json_command.addCommand("stop", stop_command);                     // Send STOP command
+  json_command.addCommand("rdatac", rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+  json_command.addCommand("sdatac", sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
   json_command.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
   json_command.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines
   json_command.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
@@ -369,8 +377,7 @@ void messagepack_command(unsigned char unused1, unsigned char unused2) {
 
 void getdata_command(unsigned char unused1, unsigned char unused2) {
   WiredSerial.println("200 Ok");
-  WiredSerial.println("Not implemented yet. ");
-  WiredSerial.println();
+  send_response(RESPONSE_NOT_IMPLEMENTED, STATUS_TEXT_NOT_IMPLEMENTED);
 }
 
 void led_on_command(unsigned char unused1, unsigned char unused2) {
@@ -505,41 +512,31 @@ void write_register_command_direct(unsigned char register_number, unsigned char 
 void wakeup_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   adc_send_command(WAKEUP);
-  WiredSerial.println("200 Ok ");
-  WiredSerial.println("Wakeup command sent.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void standby_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   adc_send_command(STANDBY);
-  WiredSerial.println("200 Ok ");
-  WiredSerial.println("Standby command sent.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void reset_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   adc_send_command(RESET);
-  WiredSerial.println("200 Ok ");
-  WiredSerial.println("Reset command sent.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void start_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   adc_send_command(START);
-  WiredSerial.println("200 Ok ");
-  WiredSerial.println("Start command sent.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void stop_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   adc_send_command(STOP);
-  WiredSerial.println("200 Ok ");
-  WiredSerial.println("Stop command sent.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 void rdata_command(unsigned char unused1, unsigned char unused2) {
@@ -557,12 +554,10 @@ void rdatac_command(unsigned char unused1, unsigned char unused2) {
   if (num_active_channels > 0) {
     is_rdatac = true;
     adc_send_command(RDATAC);
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("RDATAC mode on.");
+    send_response_ok();
   } else {
-    WiredSerial.println("405 Error: no active channels.");
+    send_response(RESPONSE_NO_ACTIVE_CHANNELS, STATUS_TEXT_NO_ACTIVE_CHANNELS);
   }
-  WiredSerial.println();
 }
 
 void sdatac_command(unsigned char unused1, unsigned char unused2) {

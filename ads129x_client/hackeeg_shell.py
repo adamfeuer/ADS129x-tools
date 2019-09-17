@@ -5,6 +5,7 @@ import sys
 import time
 
 import hackeeg
+from hackeeg import ads1299
 
 
 # TODO
@@ -34,7 +35,6 @@ class HackEEGShell(cmd.Cmd):
             print("Ok", end='')
             if data:
                 print(f"  Data: ", end='')
-                print(type(data))
                 if isinstance(data, list):
                     self._format_list(data)
                 elif isinstance(data, int):
@@ -175,8 +175,8 @@ class HackEEGShell(cmd.Cmd):
         self._format_response(self.hackeeg.nop())
 
     def do_reset(self, arg):
-        """Sends the RESET command to the ADS1299. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+        """Sends the RESET command to the ADS1299."""
+        self._format_response(self.hackeeg.reset())
 
     def do_start(self, arg):
         """Sends the START command to the ADS1299. (Not implemented yet.)"""
@@ -201,6 +201,36 @@ class HackEEGShell(cmd.Cmd):
     def do_getdata(self, arg):
         """Gets data from the HackEEG driver's ringbuffer. (Not implemented yet.)"""
         self._format_response(self.hackeeg.nop())
+
+    def do_setup(self, arg):
+        """Sets up the ADS1299."""
+        self.hackeeg.blink_board_led()
+        self.hackeeg.reset()
+        sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
+        self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
+        self.hackeeg.disable_channel(1)
+        self.hackeeg.disable_channel(2)
+        self.hackeeg.disable_channel(3)
+        self.hackeeg.disable_channel(4)
+        #self.hackeeg.disable_channel(5)
+        self.hackeeg.disable_channel(6)
+        #self.hackeeg.disable_channel(7)
+        self.hackeeg.disable_channel(8)
+        self.hackeeg.wreg(ads1299.CH5SET, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+        #self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEMP | ads1299.GAIN_12X)
+        self.hackeeg.rreg(ads1299.CH5SET)
+        #self.hackeeg.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        self.hackeeg.wreg(ads1299.CH7SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_2X)
+        #self.hackeeg.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        self.hackeeg.rreg(ads1299.CH8SET)
+        #self.hackeeg.rreg(ads1299.CH2SET)
+        self.hackeeg.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
+        self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
+        # add channels into bias generation
+        self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
+        self.hackeeg.rdatac()
+        return
 
     def do_exit(self, arg):
         """Exit the HackEEG commandline."""

@@ -115,7 +115,7 @@ class HackEEGBoard:
             return self.TextMode
 
     def ok(self, response):
-        return response[self.Command] == Status.Ok
+        return response.get(self.StatusCode) == Status.Ok
 
     def wreg(self, register, value):
         command = "wreg"
@@ -149,6 +149,18 @@ class HackEEGBoard:
     def text_mode(self):
         return self.send_command("text")
 
+    def reset(self):
+        return self.execute_command("reset")
+
+    def start(self):
+        return self.execute_command("start")
+
+    def stop(self):
+        return self.execute_command("stop")
+
+    def status(self):
+        return self.execute_command("status")
+
     def jsonlines_mode(self):
         old_mode = self.mode
         self.mode = self.JsonLinesMode
@@ -171,21 +183,15 @@ class HackEEGBoard:
         result = self.execute_command("rdatac")
         if self.ok(result):
             self.rdatac_mode = True
+            print("rdatac mode on.")
+        else:
+            print("rdatac failed to turn on.")
         return result
 
     def sdatac(self):
         result = self.execute_command("sdatac")
         self.rdatac_mode = False
         return result
-
-    def start(self):
-        return self.execute_command("start")
-
-    def stop(self):
-        return self.execute_command("stop")
-
-    def status(self):
-        return self.execute_command("status")
 
     def enable_channel(self, channel, gain=None):
         if gain is None:
@@ -200,9 +206,6 @@ class HackEEGBoard:
             self.rdatac()
 
     def disable_channel(self, channel):
-        self._disable_channel(channel)
-
-    def _disable_channel(self, channel):
         command = "wreg"
         parameters = [ads1299.CHnSET + channel, ads1299.PDn]
         self.execute_command(command, parameters)

@@ -122,11 +122,17 @@ void JsonCommand::readSerial() {
         #ifdef JSONCOMMAND_DEBUG
           Serial.println(F("Error: no command"));
         #endif
+        (*defaultHandler)("");
         clearBuffer();
         return;
-      } 
+      }
       const char* command = command_name_variant.as<const char*>();
       int command_num = find_command(command);
+      if (command_num < 0) {
+          (*defaultHandler)(command);
+          clearBuffer();
+          return;
+      }
       #ifdef JSONCOMMAND_DEBUG
         Serial.println(commandList[command_num].command);
       #endif
