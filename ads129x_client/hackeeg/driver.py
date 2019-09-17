@@ -1,7 +1,10 @@
+import sys
 import json
 import time
+from json import JSONDecodeError
 
 import serial
+import sh
 
 from . import ads1299
 
@@ -44,6 +47,9 @@ class HackEEGBoard:
     StatusCode = "STATUS_CODE"
     StatusText = "STATUS_TEXT"
 
+    MaxConnectionAttempts = 10
+    ConnectionSleepTime = 0.1
+
     def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE, debug=False):
         self.mode = None
         self.debug = debug
@@ -54,7 +60,23 @@ class HackEEGBoard:
             self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
         self.mode = self._sense_protocol_mode()
         if self.mode == self.TextMode:
-            self.jsonlines_mode()
+            attempts = 0
+            connected = False
+            while attempts < self.MaxConnectionAttempts:
+                try:
+                    self.jsonlines_mode()
+                    connected = True
+                    break;
+                except JSONDecodeError:
+                    if attempts == 0:
+                        print("Connecting...", end='')
+                    elif attempts > 0:
+                        print('.', end='')
+                    sys.stdout.flush()
+                    attempts += 1
+                    time.sleep(self.ConnectionSleepTime)
+            if attempts > 0:
+                print()
 
     def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
