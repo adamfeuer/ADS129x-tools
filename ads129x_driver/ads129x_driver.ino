@@ -37,6 +37,7 @@
 
 #define SPI_BUFFER_SIZE 200
 #define OUTPUT_BUFFER_SIZE 1000
+#define CIRCULAR_BUFFER_SIZE 10000
 
 #define NOP_COMMAND 0
 #define VERSION_COMMAND 1
@@ -84,8 +85,10 @@ const char *STATUS_TEXT_NO_ACTIVE_CHANNELS = "No Active Channels";
 
 int protocol_mode = TEXT_MODE;
 int max_channels = 0;
-int num_active_channels= 0;
+int num_active_channels = 0;
 boolean active_channels[9]; // reports whether channels 1..9 are active
+int num_spi_bytes = 0;
+int num_timestamped_spi_bytes = 0;
 boolean is_rdatac = false;
 boolean base64_mode = true;
 
@@ -223,6 +226,7 @@ void loop() {
       // do nothing 
       ;
   }
+  send_samples();
 }
 
 long hex_to_long(char *digits) {
@@ -556,6 +560,9 @@ void rdata_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   while (digitalRead(IPIN_DRDY) == HIGH);
   adc_send_command_leave_cs_active(RDATA);
+  if (protocol_mode == TEXT_MODE) {
+      send_response_ok();
+  }
   send_sample();
 }
 
@@ -616,27 +623,28 @@ int testPeriod = 100;
 byte testMSB, testLSB;
 #endif
 
+
 inline void send_samples(void) {
   if ((!is_rdatac) || (num_active_channels < 1) )  return;
   if (digitalRead(IPIN_DRDY) == HIGH) return;
   send_sample();
 }
 
+inline void receive_sample() {
+    digitalWrite(PIN_CS, LOW);
+    timestamp_union.timestamp = micros();
+    spi_bytes[0] = timestamp_union.timestamp_bytes[0];
+    spi_bytes[1] = timestamp_union.timestamp_bytes[1];
+    spi_bytes[2] = timestamp_union.timestamp_bytes[2];
+    spi_bytes[3] = timestamp_union.timestamp_bytes[3];
+    uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES, num_spi_bytes);
+    digitalWrite(PIN_CS, HIGH);
+}
+
 // Use SAM3X DMA
 inline void send_sample(void) {
-  digitalWrite(PIN_CS, LOW);
-  int num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
-  timestamp_union.timestamp = micros();
-  spi_bytes[0] = timestamp_union.timestamp_bytes[0];
-  spi_bytes[1] = timestamp_union.timestamp_bytes[1];
-  spi_bytes[2] = timestamp_union.timestamp_bytes[2];
-  spi_bytes[3] = timestamp_union.timestamp_bytes[3];
-  uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES, num_spi_bytes);
-  int num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES;
-  digitalWrite(PIN_CS, HIGH);
-  register unsigned int count = 0;
+  receive_sample();
   if (protocol_mode == TEXT_MODE) {
-      send_response_ok();
       if (base64_mode == true) {
           base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
       } else {
@@ -698,7 +706,8 @@ void ads_setup() { //default settings for ADS1298 and compatible chips
     default:
       max_channels = 0;
   }
-  WiredSerial.println("Max channels: " + max_channels);
+  num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
+  num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES;
   if (max_channels == 0) { //error mode
     while (1) { //loop forever
       digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
