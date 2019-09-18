@@ -35,8 +35,8 @@
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB // use Due's Native USB port
 
-#define SERIAL_BUFFER_SIZE 200
-#define SAMPLE_BUFFER_SIZE 1000
+#define SPI_BUFFER_SIZE 200
+#define OUTPUT_BUFFER_SIZE 1000
 
 #define NOP_COMMAND 0
 #define VERSION_COMMAND 1
@@ -99,10 +99,10 @@ union {
 } timestamp_union;
 
 // SPI input buffer
-uint8_t serial_bytes[SERIAL_BUFFER_SIZE];
+uint8_t spi_bytes[SPI_BUFFER_SIZE];
 
 // char buffer to send via USB
-char sample_buffer[SAMPLE_BUFFER_SIZE];
+char output_buffer[OUTPUT_BUFFER_SIZE];
 
 const char *hardware_type = "unknown";
 const char *board_name = "HackEEG";
@@ -625,26 +625,26 @@ inline void send_samples(void) {
 // Use SAM3X DMA
 inline void send_sample(void) {
   digitalWrite(PIN_CS, LOW);
-  int num_serial_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
+  int num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
   timestamp_union.timestamp = micros();
-  serial_bytes[0] = timestamp_union.timestamp_bytes[0];
-  serial_bytes[1] = timestamp_union.timestamp_bytes[1];
-  serial_bytes[2] = timestamp_union.timestamp_bytes[2];
-  serial_bytes[3] = timestamp_union.timestamp_bytes[3];
-  uint8_t returnCode = spiRec(serial_bytes + TIMESTAMP_SIZE_IN_BYTES, num_serial_bytes);
-  int num_timestamped_serial_bytes = num_serial_bytes + TIMESTAMP_SIZE_IN_BYTES;
+  spi_bytes[0] = timestamp_union.timestamp_bytes[0];
+  spi_bytes[1] = timestamp_union.timestamp_bytes[1];
+  spi_bytes[2] = timestamp_union.timestamp_bytes[2];
+  spi_bytes[3] = timestamp_union.timestamp_bytes[3];
+  uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES, num_spi_bytes);
+  int num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES;
   digitalWrite(PIN_CS, HIGH);
   register unsigned int count = 0;
   if (protocol_mode == TEXT_MODE) {
       send_response_ok();
       if (base64_mode == true) {
-          base64_encode(sample_buffer, (char *) serial_bytes, num_timestamped_serial_bytes);
+          base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
       } else {
-          encode_hex(sample_buffer, (char *) serial_bytes, num_timestamped_serial_bytes);
+          encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
       }
-      WiredSerial.println(sample_buffer);
+      WiredSerial.println(output_buffer);
   } else if (protocol_mode == JSONLINES_MODE || protocol_mode == MESSAGEPACK_MODE) {
-      send_sample_json(num_timestamped_serial_bytes);
+      send_sample_json(num_timestamped_spi_bytes);
   }
 }
 
@@ -654,7 +654,7 @@ inline void send_sample_json(int num_bytes) {
     root[STATUS_CODE_KEY] = STATUS_OK;
     root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
     JsonArray data = root.createNestedArray(DATA_KEY);
-    copyArray(serial_bytes, num_bytes, data);
+    copyArray(spi_bytes, num_bytes, data);
     switch (protocol_mode) {
         case JSONLINES_MODE:
             json_command.send_jsonlines_doc_response(doc);
