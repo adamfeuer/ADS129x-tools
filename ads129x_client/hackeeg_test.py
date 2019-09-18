@@ -3,8 +3,9 @@
 import sys
 import time
 
-from hackeeg.driver import HackEegBoard, SPEEDS
+import hackeeg
 from hackeeg import ads1299
+from hackeeg.driver import SPEEDS
 
 
 # TODO
@@ -12,25 +13,17 @@ from hackeeg import ads1299
 # - JSONLines, MessagePack
 
 
-class HackEegCommandLine:
+class HackEegTestApplication:
     def __init__(self):
         self.serialPortName = None
         self.hackeeg = None
 
-    def setup(self, samplesPerSecond=500):
-        if samplesPerSecond not in SPEEDS.keys():
+    def setup(self, samples_per_second=500):
+        if samples_per_second not in SPEEDS.keys():
             raise HackEegException("{} is not a valid speed; valid speeds are {}".format(
-                samplesPerSecond, sorted(SPEEDS.keys())))
-        self.hackeeg.jsonlines_mode()
-        # self.hackeeg.sdatac()
-        time.sleep(1)
-        # self.hackeeg.send("reset")
-        self.hackeeg.blink_board_led()
-        return
-
-    def _unused_setup(self):
-        # sampleMode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
-        self.hackeeg.wreg(ads1299.CONFIG1, sampleMode)
+                samples_per_second, sorted(SPEEDS.keys())))
+        sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
+        self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
         self.hackeeg.disable_channel(1)
         self.hackeeg.disable_channel(2)
         self.hackeeg.disable_channel(3)
@@ -56,18 +49,27 @@ class HackEegCommandLine:
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        # self.hackeeg.rdatac()
-        # self.hackeeg.start()
+        self.hackeeg.rdatac()
+        self.hackeeg.start()
+        return
+
+    def _unused_setup(self):
+        self.hackeeg.jsonlines_mode()
+        # self.hackeeg.sdatac()
+        time.sleep(1)
+        # self.hackeeg.send("reset")
+        self.hackeeg.blink_board_led()
         return
 
     def main(self):
         self.serialPortName = sys.argv[1]
-        self.hackeeg = HackEegBoard(self.serialPortName)
+        self.hackeeg = hackeeg.HackEEGBoard(self.serialPortName)
         self.setup()
+        self.hackeeg.text_mode()
         # while True:
-        #     sample = self.hackeeg.readSample()
+        #     sample = self.hackeeg.read_sample()
         #     print("{sample}")
 
 
 if __name__ == "__main__":
-    HackEegCommandLine().main()
+    HackEegTestApplication().main()

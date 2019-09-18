@@ -90,7 +90,18 @@ boolean is_rdatac = false;
 boolean base64_mode = true;
 
 char hexDigits[] = "0123456789ABCDEF";
+
+// microseconds timestamp
+#define TIMESTAMP_SIZE_IN_BYTES 4
+union {
+    char timestamp_bytes[TIMESTAMP_SIZE_IN_BYTES];
+    unsigned long timestamp;
+} timestamp_union;
+
+// SPI input buffer
 uint8_t serial_bytes[SERIAL_BUFFER_SIZE];
+
+// char buffer to send via USB
 char sample_buffer[SAMPLE_BUFFER_SIZE];
 
 const char *hardware_type = "unknown";
@@ -186,10 +197,12 @@ void setup() {
   json_command.addCommand("rdatac", rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
   json_command.addCommand("sdatac", sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
   json_command.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+  json_command.addCommand("text", text_command);                     // Sets the communication protocol to text
   json_command.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines
   json_command.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
   json_command.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
   json_command.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
+  json_command.addCommand("rdata", rdata_command);                   // Read one sample of data from each active channel
   json_command.setDefaultHandler(unrecognized_jsonlines);            // Handler for any command that isn't matched
 
   WiredSerial.println("Ready");
@@ -334,7 +347,7 @@ void nop_command(unsigned char unused1, unsigned char unused2) {
 void micros_command(unsigned char unused1, unsigned char unused2) {
   unsigned long microseconds = micros();
   if (protocol_mode == TEXT_MODE) {
-      WiredSerial.println("200 Ok");
+      send_response_ok();
       WiredSerial.println(microseconds);
       return;
   }
@@ -543,9 +556,7 @@ void rdata_command(unsigned char unused1, unsigned char unused2) {
   using namespace ADS129x;
   while (digitalRead(IPIN_DRDY) == HIGH);
   adc_send_command_leave_cs_active(RDATA);
-  WiredSerial.println("200 Ok ");
   send_sample();
-  WiredSerial.println();
 }
 
 void rdatac_command(unsigned char unused1, unsigned char unused2) {
@@ -614,29 +625,36 @@ inline void send_samples(void) {
 // Use SAM3X DMA
 inline void send_sample(void) {
   digitalWrite(PIN_CS, LOW);
-  register int num_serial_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
-  uint8_t returnCode = spiRec(serial_bytes, num_serial_bytes);
+  int num_serial_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
+  timestamp_union.timestamp = micros();
+  serial_bytes[0] = timestamp_union.timestamp_bytes[0];
+  serial_bytes[1] = timestamp_union.timestamp_bytes[1];
+  serial_bytes[2] = timestamp_union.timestamp_bytes[2];
+  serial_bytes[3] = timestamp_union.timestamp_bytes[3];
+  uint8_t returnCode = spiRec(serial_bytes + TIMESTAMP_SIZE_IN_BYTES, num_serial_bytes);
+  int num_timestamped_serial_bytes = num_serial_bytes + TIMESTAMP_SIZE_IN_BYTES;
   digitalWrite(PIN_CS, HIGH);
   register unsigned int count = 0;
   if (protocol_mode == TEXT_MODE) {
+      send_response_ok();
       if (base64_mode == true) {
-          base64_encode(sample_buffer, (char *) serial_bytes, num_serial_bytes);
+          base64_encode(sample_buffer, (char *) serial_bytes, num_timestamped_serial_bytes);
       } else {
-          encode_hex(sample_buffer, (char *) serial_bytes, num_serial_bytes);
+          encode_hex(sample_buffer, (char *) serial_bytes, num_timestamped_serial_bytes);
       }
       WiredSerial.println(sample_buffer);
   } else if (protocol_mode == JSONLINES_MODE || protocol_mode == MESSAGEPACK_MODE) {
-      send_sample_json(num_serial_bytes);
+      send_sample_json(num_timestamped_serial_bytes);
   }
 }
 
-inline void send_sample_json(int num_serial_bytes) {
+inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = STATUS_OK;
     root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
     JsonArray data = root.createNestedArray(DATA_KEY);
-
+    copyArray(serial_bytes, num_bytes, data);
     switch (protocol_mode) {
         case JSONLINES_MODE:
             json_command.send_jsonlines_doc_response(doc);

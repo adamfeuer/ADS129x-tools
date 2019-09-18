@@ -106,7 +106,7 @@ class HackEEGBoard:
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
 
-    def send_command(self, command, parameters):
+    def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
         new_command_obj = {self.Command: command, self.Parameters: parameters}
@@ -205,9 +205,6 @@ class HackEEGBoard:
         result = self.execute_command("rdatac")
         if self.ok(result):
             self.rdatac_mode = True
-            print("rdatac mode on.")
-        else:
-            print("rdatac failed to turn on.")
         return result
 
     def sdatac(self):

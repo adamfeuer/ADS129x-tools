@@ -95,8 +95,8 @@ class HackEEGShell(cmd.Cmd):
 
     def do_text(self, arg):
         """Sets driver communication protocol to text and exits the HackEEG command shell. 
-           Useful if you want to communicate directly with the driver using text mode. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+           Useful if you want to communicate directly with the driver using text mode."""
+        self._format_response(self.hackeeg.text_mode())
 
     def do_jsonlines(self, arg):
         """Sets driver communication protocol to jsonlines. (Not implemented yet.)"""
@@ -188,7 +188,12 @@ class HackEEGShell(cmd.Cmd):
 
     def do_rdatac(self, arg):
         """Sends the RDATAC command to the ADS1299."""
-        self._format_response(self.hackeeg.rdatac())
+        result = self.hackeeg.rdatac()
+        if self.hackeeg.ok(result):
+            print("rdatac mode on.")
+        else:
+            print("rdatac failed to turn on.")
+        self._format_response(result)
 
     def do_sdatac(self, arg):
         """Sends the SDATAC command to the ADS1299."""
