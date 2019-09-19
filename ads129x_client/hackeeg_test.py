@@ -7,10 +7,9 @@ from hackeeg import ads1299
 from hackeeg.driver import SPEEDS
 
 
-# TODO
-# - argparse commandline arguments
-
 class HackEegTestApplication:
+    """Basic commandline test application – sets a test waveform on Channel 7, enters RDATAC (read data continuous) mode,
+       and outputs the samples received."""
     def __init__(self):
         self.serial_port_name = None
         self.hackeeg = None
