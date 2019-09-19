@@ -1,10 +1,9 @@
 import sys
 import json
 import time
-from json import JSONDecodeError
+import types
 
 import serial
-import sh
 
 from . import ads1299
 
@@ -40,12 +39,13 @@ class HackEEGBoard:
     JsonLinesMode = 1
     MessagePackMode = 2
 
-    Command = "COMMAND"
-    Parameters = "PARAMETERS"
-    Headers = "HEADERS"
-    Data = "DATA"
-    StatusCode = "STATUS_CODE"
-    StatusText = "STATUS_TEXT"
+    CommandKey = "COMMAND"
+    ParametersKey = "PARAMETERS"
+    HeadersKey = "HEADERS"
+    DataKey = "DATA"
+    DecodedDataKey = "DECODED_DATA"
+    StatusCodeKey = "STATUS_CODE"
+    StatusTextKey = "STATUS_TEXT"
 
     MaxConnectionAttempts = 10
     ConnectionSleepTime = 0.1
@@ -92,6 +92,29 @@ class HackEEGBoard:
             print(f"line: {line}")
         return line
 
+    def _decode_data(self, response):
+        """decode ADS1299 sample status bits - datasheet, p36
+        The format is:
+        1100 + LOFF_STATP[0:7] + LOFF_STATN[0:7] + bits[4:7] of the GPIOregister"""
+        data = response.get(self.DataKey)
+        if data and type(data) is list:
+            timestamp = int.from_bytes(data[0:4], byteorder='little')
+            ads_status = int.from_bytes(data[4:7], byteorder='big')
+            ads_gpio = ads_status & 0x0f
+            loff_statn = (ads_status >> 4) & 0xff
+            loff_statp = (ads_status >> 12) & 0xff
+            extra = (ads_status >> 20) & 0xff
+
+            channel_data = []
+            for channel in range(0, 8):
+                channel_offset = 7 + (channel * 3)
+                sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
+                channel_data.append(sample)
+
+            decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
+            response[self.DecodedDataKey] = decoded_data
+        return response
+
     def set_debug(self, debug):
         self.debug = debug
 
@@ -103,7 +126,7 @@ class HackEEGBoard:
         if self.debug:
             print("json response:")
             print(self.format_json(response_obj))
-        return response_obj
+        return self._decode_data(response_obj)
 
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
@@ -111,7 +134,7 @@ class HackEEGBoard:
     def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
-        new_command_obj = {self.Command: command, self.Parameters: parameters}
+        new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
         new_command = json.dumps(new_command_obj)
         if self.debug:
             print("json command:")
@@ -131,7 +154,7 @@ class HackEEGBoard:
     def _sense_protocol_mode(self):
         try:
             result = self.execute_command("nop")
-            if result.get(self.StatusCode) == Status.Ok:
+            if result.get(self.StatusCodeKey) == Status.Ok:
                 return self.JsonLinesMode
         except Exception:
             # TODO: MessagePack mode
@@ -139,7 +162,7 @@ class HackEEGBoard:
             return self.TextMode
 
     def ok(self, response):
-        return response.get(self.StatusCode) == Status.Ok
+        return response.get(self.StatusCodeKey) == Status.Ok
 
     def wreg(self, register, value):
         command = "wreg"
