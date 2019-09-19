@@ -229,6 +229,14 @@ class HackEEGBoard:
         parameters = [ads1299.CHnSET + channel, ads1299.PDn]
         self.execute_command(command, parameters)
 
+    def enable_all_channels(self):
+        for channel in range(1, 9):
+            self.enable_channel(channel)
+
+    def disable_all_channels(self):
+        for channel in range(1, 9):
+            self.disable_channel(channel)
+
     def blink_board_led(self):
         self.execute_command("boardledon")
         time.sleep(0.3)
