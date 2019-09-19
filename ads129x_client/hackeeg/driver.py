@@ -77,6 +77,7 @@ class HackEEGBoard:
                     time.sleep(self.ConnectionSleepTime)
             if attempts > 0:
                 print()
+        self.sdatac()
 
     def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
