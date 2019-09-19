@@ -60,7 +60,6 @@ class HackEegTestApplication:
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
         self.setup()
-        #result = self.hackeeg.read_response()
         while True:
             result = self.hackeeg.read_response()
             status_code = result.get('STATUS_CODE')
