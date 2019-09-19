@@ -60,9 +60,32 @@ class HackEegTestApplication:
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
         self.setup()
+        #result = self.hackeeg.read_response()
         while True:
-            sample = self.hackeeg.read_response()
-            print(f"{sample}")
+            result = self.hackeeg.read_response()
+            status_code = result.get('STATUS_CODE')
+            status_text = result.get('STATUS_TEXT')
+            data = result.get('DATA')
+            # ADS1299 sample status bits - datasheet, p36
+            # 1100 + LOFF_STATP + LOFF_STATN + bits[4:7]of the GPIOregister)
+            if data:
+                timestamp = int.from_bytes(data[0:4], byteorder='little')
+                ads_status = int.from_bytes(data[4:7], byteorder='big')
+                ads_gpio = ads_status & 0x0f
+                loff_statn = (ads_status >> 4) & 0xff
+                loff_statp = (ads_status >> 12) & 0xff
+                extra = (ads_status >> 20) & 0xff
+
+                channel_samples = []
+                for channel in range(0, 8):
+                    channel_offset = 7 + (channel * 3)
+                    sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
+                    channel_samples.append(sample)
+
+                print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}", end='')
+                for channel_number, sample in enumerate(channel_samples):
+                    print(f"{channel_number+1}:{sample} ", end='')
+                print()
 
 
 if __name__ == "__main__":

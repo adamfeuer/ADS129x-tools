@@ -66,7 +66,7 @@ class HackEEGBoard:
                 try:
                     self.jsonlines_mode()
                     connected = True
-                    break;
+                    break
                 except JSONDecodeError:
                     if attempts == 0:
                         print("Connecting...", end='')
@@ -78,6 +78,7 @@ class HackEEGBoard:
             if attempts > 0:
                 print()
         self.sdatac()
+        self.serialPort.reset_input_buffer()
 
     def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
