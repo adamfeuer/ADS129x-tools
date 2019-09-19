@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import cmd
 import sys
 import time
@@ -46,6 +47,8 @@ class HackEEGShell(cmd.Cmd):
             print("Error")
 
     def _format_list(self, data):
+        if len(data) == 0:
+            return
         for item in data:
             self._format_int(data)
 
@@ -261,9 +264,8 @@ class HackEEGShell(cmd.Cmd):
         return
 
     def main(self):
-        import argparse
         parser = argparse.ArgumentParser()
-        parser.add_argument("serial_port", help="serial port device path",
+        parser.add_argument("--serial_port", "-p", help="serial port device path",
                             type=str)
         parser.add_argument("--debug", "-d", help="enable debugging output",
                             action="store_true")

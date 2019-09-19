@@ -17,5 +17,5 @@ while [ $((attempts < 10)) ]; do
   fi
 done
 
-./hackeeg_shell.py $PORT
+./hackeeg_shell.py --serial_port $PORT
 
