@@ -1,7 +1,7 @@
-import sys
 import json
+import sys
 import time
-import types
+from json import JSONDecodeError
 
 import serial
 
