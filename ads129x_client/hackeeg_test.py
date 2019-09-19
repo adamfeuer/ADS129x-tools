@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-import time
+import argparse
 
 import hackeeg
 from hackeeg import ads1299
@@ -10,42 +9,37 @@ from hackeeg.driver import SPEEDS
 
 # TODO
 # - argparse commandline arguments
-# - JSONLines, MessagePack
-
 
 class HackEegTestApplication:
     def __init__(self):
-        self.serialPortName = None
+        self.serial_port_name = None
         self.hackeeg = None
+        self.debug = False
 
     def setup(self, samples_per_second=500):
         if samples_per_second not in SPEEDS.keys():
             raise HackEegException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
+        self.hackeeg.sdatac()
+        self.hackeeg.reset()
+        self.hackeeg.blink_board_led()
+        self.hackeeg.disable_all_channels()
         sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
-        self.hackeeg.disable_channel(1)
-        self.hackeeg.disable_channel(2)
-        self.hackeeg.disable_channel(3)
-        self.hackeeg.disable_channel(4)
-        # self.hackeeg.disableChannel(5)
-        self.hackeeg.disable_channel(6)
-        # self.hackeeg.disableChannel(7)
-        self.hackeeg.disable_channel(8)
-        self.hackeeg.wreg(ads1299.CH5SET, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+        test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
+        self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
+        #self.hackeeg.enable_channel(5)
+        self.hackeeg.enable_channel(7)
+        #self.hackeeg.wreg(ads1299.CH5SET, ads1299.TEST_SIGNAL | ads1299.GAIN_8X)
+        #self.hackeeg.wreg(ads1299.CH5SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEMP | ads1299.GAIN_12X)
         self.hackeeg.rreg(ads1299.CH5SET)
-        # self.hackeeg.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        self.hackeeg.wreg(ads1299.CH7SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.hackeeg.rreg(ads1299.CH8SET)
-        # self.hackeeg.rreg(ads1299.CH2SET)
-        # command = "wreg %x %x" % (ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.hackeeg.send(command)
-        # command = "wreg %x %x" % (ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.hackeeg.send(command)
-        # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N
-        # inputs
+        #self.hackeeg.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        #self.hackeeg.wreg(ads1299.CH7SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        #self.hackeeg.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+
+        # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
@@ -53,22 +47,22 @@ class HackEegTestApplication:
         self.hackeeg.start()
         return
 
-    def _unused_setup(self):
-        self.hackeeg.jsonlines_mode()
-        # self.hackeeg.sdatac()
-        time.sleep(1)
-        # self.hackeeg.send("reset")
-        self.hackeeg.blink_board_led()
-        return
-
     def main(self):
-        self.serialPortName = sys.argv[1]
-        self.hackeeg = hackeeg.HackEEGBoard(self.serialPortName)
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--serial_port", "-p", help="serial port device path",
+                            type=str)
+        parser.add_argument("--debug", "-d", help="enable debugging output",
+                            action="store_true")
+        args = parser.parse_args()
+        if args.debug:
+            self.debug = True
+            print("debug mode on")
+        self.serial_port_name = args.serial_port
+        self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
         self.setup()
-        self.hackeeg.text_mode()
-        # while True:
-        #     sample = self.hackeeg.read_sample()
-        #     print("{sample}")
+        while True:
+            sample = self.hackeeg.read_response()
+            print(f"{sample}")
 
 
 if __name__ == "__main__":
