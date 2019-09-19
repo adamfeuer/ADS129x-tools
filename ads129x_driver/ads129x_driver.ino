@@ -583,9 +583,7 @@ void sdatac_command(unsigned char unused1, unsigned char unused2) {
   is_rdatac = false;
   adc_send_command(SDATAC);
   using namespace ADS129x;
-  WiredSerial.println("200 Ok");
-  WiredSerial.println("RDATAC mode off.");
-  WiredSerial.println();
+  send_response_ok();
 }
 
 // This gets set as the default handler, and gets called when no other command matches.
