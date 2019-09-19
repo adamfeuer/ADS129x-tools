@@ -41,10 +41,9 @@ The commands that are available are:
 * RREG – read register. Takes two hex digits as an argument (one byte, for example: FF). Argument 1 is the register to read.
 Returns a single hex-encoded byte (for example, 0E) that represents the contents of the register.
 * WREG – write register. Takes two hex-encoded bytes as arguments, separated by a space. Argument 1 is the register to write, argument 2 is the register value.
-* RDATA – read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64.
-* RDATAC – start read data continuous mode. Data is read into a circular buffer in the Arduino RAM, and read via GETDATA commands.
+* RDATA – read one sample of data from the ADS129x chip. Returns 3 bytes of header, plus 3 bytes x number of channels (8 for ADS1298 or ADS1299), encoded using base64 or packed hex in text mode, and JSON Lines byte array, or MessagePack byte array, depending on the protocol
+* RDATAC – start read data continuous mode. Data is read into a buffer in the Arduino RAM, and streamed to the client one sample at a time, either in packed base64 format or packed hex format in text, JSON Lines byte array, or MessagePack byte array, depending on the protocol.
 * SDATAC – stop read data continuous mode. 
-* GETDATA – return the contents of the data buffer at this time, and update the circular buffer pointers.
 * VERSION – reports the driver version
 * SERIALNUMBER – reports the HackEEG serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
 * LEDON – turns on the Arduino Due onboard LED.
@@ -87,11 +86,15 @@ while 1:
 
 ### Text mode
 
-The driver starts up in this mode. When the command TEXT is given, the driver communication protocol switches to text, and the response will be in text format.  Commands can be given in lower or upper case, parameters separated by a space. Responses are given on one line, starting with a status code (200 for OK, errors are in the 300s and 400s.)
+The driver starts up in this mode. This mode is easiest to use when quick communication with the board is needed without a client program. 
 
-### JSONLines mode
+When the command TEXT is given, the driver communication protocol switches to text, and the response will be in text format. Commands can be given in lower or upper case, parameters separated by a space. Responses are given on one line, starting with a status code (200 for OK, errors are in the 300s and 400s.) Commands can be given in upper or lower case.
 
-When the command JSONLINES is given, the driver communication protocol switches to [JSONLines](http://jsonlines.org/) format, and the response will be in JSONLines format. Commands and Responses are a single map, with keys and values determine the command and parameters. The format is as follows (on separate lines for readability; in use, the entire JSON blob would be on its own line):
+### JSON Lines mode
+
+Give the JSONLINES command to switch to this mode.
+
+When the command JSONLINES is given, the driver communication protocol switches to [JSON Lines](http://jsonlines.org/) format, and the response will be in JSON Lines format. Commands and Responses are a single map, with keys and values determine the command and parameters. The format is as follows (on separate lines for readability; in use, the entire JSON blob would be on its own line):
 
 #### Commands:
 
@@ -113,36 +116,7 @@ When the command JSONLINES is given, the driver communication protocol switches 
 }
 ```
 
-The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSONLines data.
-
-
-### MessagePack mode
-
-When the command JSONLINES is given, the driver communication protocol switches to [MessagePack](https://msgpack.org) format, and the response will be in MessagePack format. Command and response structure are virtually identical to the JSONLines mode, but the serialization format is MessagePack, and commands are given as integers rather than strings.
-
-The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
-
-#### Commands:
-
-```
-{
-    C: <command-number>,
-    P: [ <param1>, <param2>, ... ]
-}
-```
-
-#### Responses:
-
-```
-{
-    SC: <status-code>,
-    ST: "<status-text>",
-    H: ["header1", "header2", ... ],
-    D: [value1, value2, value3, ... ]
-}
-```
-
-The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
+The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
 
 ## Python Host Software
