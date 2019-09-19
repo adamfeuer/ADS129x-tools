@@ -19,8 +19,6 @@
 
 */
 
-
-
 #include <SPI.h>
 #include <stdlib.h>
 #include <ArduinoJson.h>
