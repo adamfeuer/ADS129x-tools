@@ -31,7 +31,7 @@ In text mode, samples are encoded using the [base64](http://en.wikipedia.org/wik
 
 ## Installing
 
-You must install the [ArduinoJson](https://arduinojson.org/v6/doc/installation/) and [RingBuffer](https://github.com/Locoduino/RingBuffer) libraries before compiling this driver.
+You must install the [ArduinoJson](https://arduinojson.org/v6/doc/installation/) library before compiling this driver.
 
 
 ## Using the Driver
