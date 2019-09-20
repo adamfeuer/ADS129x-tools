@@ -29,9 +29,9 @@ class HackEEGShell(cmd.Cmd):
     def _format_response(self, response):
         if self.debug:
             print(f"_format_response: {response}")
-        status_code = response.get(self.hackeeg.StatusCode)
-        status_text = response.get(self.hackeeg.StatusText)
-        data = response.get(self.hackeeg.Data)
+        status_code = response.get(self.hackeeg.StatusCodeKey)
+        status_text = response.get(self.hackeeg.StatusTextKey)
+        data = response.get(self.hackeeg.DataKey)
         if status_code and status_code == hackeeg.Status.Ok:
             print("Ok", end='')
             if data:
@@ -265,7 +265,7 @@ class HackEEGShell(cmd.Cmd):
 
     def main(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--serial_port", "-p", help="serial port device path",
+        parser.add_argument("serial_port", help="serial port device path",
                             type=str)
         parser.add_argument("--debug", "-d", help="enable debugging output",
                             action="store_true")

@@ -48,7 +48,7 @@ class HackEegTestApplication:
 
     def main(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--serial_port", "-p", help="serial port device path",
+        parser.add_argument("serial_port", help="serial port device path",
                             type=str)
         parser.add_argument("--debug", "-d", help="enable debugging output",
                             action="store_true")
