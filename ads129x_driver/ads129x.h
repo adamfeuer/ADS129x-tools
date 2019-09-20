@@ -17,7 +17,11 @@
 
 */
 
+/*
+    This file is mainly oriented on the ADS1299 and derivatives.
+    ADS1298-only constants are prefixed with ADS1298_
 
+ */
 
 #ifndef ADS129x_H
 #define ADS129x_H
@@ -223,13 +227,23 @@ enum CHnSET_bits {
 
     CHnSET_const = 0x00,
 
-    GAIN_1X = GAINn0,
-    GAIN_2X = GAINn1,
-    GAIN_3X = (GAINn1 | GAINn0),
-    GAIN_4X = GAINn2,
-    GAIN_6X = 0x00,
-    GAIN_8X = (GAINn2 | GAINn0),
-    GAIN_12X = (GAINn2 | GAINn1),
+    // ADS1299
+    GAIN_1X = 0x00,
+    GAIN_2X = GAINn0,
+    GAIN_4X = GAINn1,
+    GAIN_6X = (GAINn1 | GAINn0),
+    GAIN_8X = GAINn2,
+    GAIN_12X = (GAINn2 | GAINn0),
+    GAIN_24X = (GAINn2 | GAINn1),
+
+    // ADS1298
+    ADS1298_GAIN_1X = GAINn0,
+    ADS1298_GAIN_2X = GAINn1,
+    ADS1298_GAIN_3X = (GAINn1 | GAINn0),
+    ADS1298_GAIN_4X = GAINn2,
+    ADS1298_GAIN_6X = 0x00,
+    ADS1298_GAIN_8X = (GAINn2 | GAINn0),
+    ADS1298_GAIN_12X = (GAINn2 | GAINn1),
 
     ELECTRODE_INPUT = 0x00,
     SHORTED = MUXn0,

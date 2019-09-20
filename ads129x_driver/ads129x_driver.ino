@@ -1,6 +1,6 @@
 /*
-   Text-mode driver for ADS129x
-   for Arduino Due
+   Driver for TI ADS129x
+   for Arduino Due and Arduino Mega2560
 
    Copyright (c) 2013-2019 by Adam Feuer <adam@adamfeuer.com>
 
