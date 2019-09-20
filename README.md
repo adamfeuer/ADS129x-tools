@@ -116,6 +116,15 @@ When the command JSONLINES is given, the driver communication protocol switches 
 }
 ```
 
+Here is an example exchange:
+
+```
+{"COMMAND" : "boardledon"}
+{"STATUS_CODE" : 200, "STATUS_TEXT": "Ok" }
+
+```
+
+
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
 
@@ -140,16 +149,15 @@ might be useful. It is designed for the ADS1298, but should also work with the A
 
 This software would not be possible without the help of many people. The following people helped with this driver:
 
-* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver from the [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG)
+* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver, see [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG) for more info
 * Chris Rorden (some parts of the ADS1298 driver)
 * Stefan Rado (SerialCommand library)
 * Steven Cogswell (SerialCommand library)
-* Adam Rudd (Base64 library)
 * William Greiman (SPI DMA library)
 * Cristian Maglie (SPI DMA library)
 * Bill Porter (SPI DMA library)
+* Adam Rudd (Base64 library)
 * Benoît Blanchon ([ArduinoJson](https://arduinojson.org/) library)
-* [Locoduino](http://www.locoduino.org/) ([RingBuffer](https://github.com/Locoduino/RingBuffer) library)
 
 
 If I forgot to credit you, please let me know!
@@ -162,3 +170,4 @@ Adam Feuer <br>
 adam@starcat.io<br>
 [Starcat LLC](https://starcat.io)<br>
 Seattle, WA, USA <br>
+ q
