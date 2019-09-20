@@ -193,7 +193,7 @@ This software would not be possible without the help of many people:
 * William Greiman (SPI DMA library)
 * Cristian Maglie (SPI DMA library)
 * Bill Porter (SPI DMA library)
-* Adam Rudd (Base64 library)
+* Adam Rudd ([Base64](https://github.com/adamvr/arduino-base64) library)
 * Benoît Blanchon ([ArduinoJson](https://arduinojson.org/) library)
 
 
