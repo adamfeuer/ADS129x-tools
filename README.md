@@ -167,10 +167,22 @@ The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for 
 
 ## Python Host Software
 
-The Python host software is designed to run on a laptop computer. Right now it is a rudimentary performance testing script. Using Python 3.x on
-2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
+The Python host software is designed to run on a laptop computer or embedded computer like a Raspberry Pi. There is a command line client `hackeeg_shell` (which runs `hackeeg_shell.py`) that demonstrates how to use the API, and can be used for basic debugging. There is also an example script `hackeeg_test.py` that shows how to use the Python client library to Using Python 3.x on 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
 
-It requires the PySerial module.
+The Python software requires the PySerial module. Here's how to use it:
+
+```
+# install prerequisites
+pip install pyenv
+pyenv install 3.6.5
+pyenv local 3.6.5
+pipenv install
+pipenv shell
+
+# run the HackEEG command line client
+./hackeeg_shell
+
+```
 
 ## Hardware
 
