@@ -17,17 +17,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 #ifndef JSONCOMMAND_H
 #define JSONCOMMAND_H
 
 #if defined(WIRING) && WIRING >= 100
-  #include <Wiring.h>
+#include <Wiring.h>
 #elif defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
+#include <Arduino.h>
 #else
-  #include <WProgram.h>
+
+#include <WProgram.h>
+
 #endif
+
 #include <string.h>
 #include <ArduinoJson.h>
 
@@ -53,23 +56,25 @@ extern const char *DATA_KEY;
 typedef void (*command_func)(unsigned char, unsigned char);
 
 class JsonCommand {
-  public:
+public:
     JsonCommand();      // Constructor
-    void addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)); // Add a command to the processing dictionary.
+    void addCommand(const char *command, void (*func)(unsigned char register_number,
+                                                      unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
     void readSerial();      // Main entry point.
     void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    char *
+    next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
     void send_jsonlines_response(int status_code, char *status_text); // send a simple JSONLines response
     void send_jsonlines_doc_response(JsonDocument &doc); // send a JsonDocument as a JSONLines response
 
-  private:
+private:
     // Command/handler dictionary
     struct JsonCommandCallback {
-      char command[JSONCOMMAND_MAXCOMMANDLENGTH + 1];
-      command_func command_function;
+        char command[JSONCOMMAND_MAXCOMMANDLENGTH + 1];
+        command_func command_function;
     };                                    // Data structure to hold Command/Handler function key-value pairs
     JsonCommandCallback *commandList;   // Actual definition for command/handler array
     byte commandCount;

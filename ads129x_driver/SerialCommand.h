@@ -16,17 +16,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
 #ifndef SERIALCOMMAND_H
 #define SERIALCOMMAND_H
 
 #if defined(WIRING) && WIRING >= 100
-  #include <Wiring.h>
+#include <Wiring.h>
 #elif defined(ARDUINO) && ARDUINO >= 100
-  #include <Arduino.h>
+#include <Arduino.h>
 #else
-  #include <WProgram.h>
+
+#include <WProgram.h>
+
 #endif
+
 #include <string.h>
 
 // Size of the input buffer in bytes (maximum length of one command plus arguments)
@@ -40,21 +43,23 @@
 typedef void (*command_func)(unsigned char, unsigned char);
 
 class SerialCommand {
-  public:
+public:
     SerialCommand();      // Constructor
-    void addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)); // Add a command to the processing dictionary.
+    void addCommand(const char *command, void (*func)(unsigned char register_number,
+                                                      unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
     void readSerial();      // Main entry point.
     void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    char * next();          // Returns pointer to next token found in command buffer
+                            // (for getting arguments to commands).
 
-  private:
+private:
     // Command/handler dictionary
     struct SerialCommandCallback {
-      char command[SERIALCOMMAND_MAXCOMMANDLENGTH + 1];
-      command_func command_function;
+        char command[SERIALCOMMAND_MAXCOMMANDLENGTH + 1];
+        command_func command_function;
     };                                    // Data structure to hold Command/Handler function key-value pairs
     SerialCommandCallback *commandList;   // Actual definition for command/handler array
     byte commandCount;

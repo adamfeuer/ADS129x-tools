@@ -35,38 +35,38 @@
 }*/
 
 void adc_send_command(int cmd) {
-   digitalWrite(PIN_CS, LOW);
-   spiSend(cmd);
-   delayMicroseconds(1);
-   digitalWrite(PIN_CS, HIGH);
+    digitalWrite(PIN_CS, LOW);
+    spiSend(cmd);
+    delayMicroseconds(1);
+    digitalWrite(PIN_CS, HIGH);
 }
 
 void adc_send_command_leave_cs_active(int cmd) {
-   digitalWrite(PIN_CS, LOW);
-   spiSend(cmd);
+    digitalWrite(PIN_CS, LOW);
+    spiSend(cmd);
 }
 
 void adc_wreg(int reg, int val) {
-   //see pages 40,43 of datasheet - 
-   digitalWrite(PIN_CS, LOW);
-   spiSend(ADS129x::WREG | reg);
-   delayMicroseconds(2);
-   spiSend(0);	// number of registers to be read/written – 1
-   delayMicroseconds(2);
-   spiSend(val);
-   delayMicroseconds(1);
-   digitalWrite(PIN_CS, HIGH);
+    //see pages 40,43 of datasheet -
+    digitalWrite(PIN_CS, LOW);
+    spiSend(ADS129x::WREG | reg);
+    delayMicroseconds(2);
+    spiSend(0);    // number of registers to be read/written – 1
+    delayMicroseconds(2);
+    spiSend(val);
+    delayMicroseconds(1);
+    digitalWrite(PIN_CS, HIGH);
 }
 
-int adc_rreg(int reg){
-   uint8_t out = 0;
-   digitalWrite(PIN_CS, LOW);
-   spiSend(ADS129x::RREG | reg);
-   delayMicroseconds(2);
-   spiSend(0);	// number of registers to be read/written – 1
-   delayMicroseconds(2);
-   out = spiRec();
-   delayMicroseconds(1);
-   digitalWrite(PIN_CS, HIGH);
-   return((int)out);
+int adc_rreg(int reg) {
+    uint8_t out = 0;
+    digitalWrite(PIN_CS, LOW);
+    spiSend(ADS129x::RREG | reg);
+    delayMicroseconds(2);
+    spiSend(0);    // number of registers to be read/written – 1
+    delayMicroseconds(2);
+    out = spiRec();
+    delayMicroseconds(1);
+    digitalWrite(PIN_CS, HIGH);
+    return ((int) out);
 }

@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
- * Copyright (c) 2010 by Cristian Maglie <c.maglie@bug.st>
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -31,10 +30,15 @@
 //#define SPI_CLOCK_DIVIDER 10
 
 void spiBegin(uint8_t csPin);
+
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider);
+
 uint8_t spiRec();
-uint8_t spiRec(uint8_t* buf, size_t len);
+
+uint8_t spiRec(uint8_t *buf, size_t len);
+
 void spiSend(uint8_t b);
-void spiSend(const uint8_t* buf, size_t len);
+
+void spiSend(const uint8_t *buf, size_t len);
 
 #endif  // SPI_DMA_H

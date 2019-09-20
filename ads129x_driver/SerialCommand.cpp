@@ -23,14 +23,13 @@
  * Constructor makes sure some things are set.
  */
 SerialCommand::SerialCommand()
-  : commandList(NULL),
-    commandCount(0),
-    defaultHandler(NULL),
-    term('\n'),           // default terminator for commands, newline character
-    last(NULL)
-{
-  strcpy(delim, " "); // strtok_r needs a null-terminated string
-  clearBuffer();
+        : commandList(NULL),
+          commandCount(0),
+          defaultHandler(NULL),
+          term('\n'),           // default terminator for commands, newline character
+          last(NULL) {
+    strcpy(delim, " "); // strtok_r needs a null-terminated string
+    clearBuffer();
 }
 
 /**
@@ -38,18 +37,19 @@ SerialCommand::SerialCommand()
  * This is used for matching a found token in the buffer, and gives the pointer
  * to the handler function to deal with it.
  */
-void SerialCommand::addCommand(const char *command, void (*func)(unsigned char register_number, unsigned char register_value)) {
-  #ifdef SERIALCOMMAND_DEBUG
+void SerialCommand::addCommand(const char *command,
+                               void (*func)(unsigned char register_number, unsigned char register_value)) {
+#ifdef SERIALCOMMAND_DEBUG
     SerialUSB.print("Adding command (");
     SerialUSB.print(commandCount);
     SerialUSB.print("): ");
     SerialUSB.println(command);
-  #endif
+#endif
 
-  commandList = (SerialCommandCallback *) realloc(commandList, (commandCount + 1) * sizeof(SerialCommandCallback));
-  strncpy(commandList[commandCount].command, command, SERIALCOMMAND_MAXCOMMANDLENGTH);
-  commandList[commandCount].command_function = func;
-  commandCount++;
+    commandList = (SerialCommandCallback *) realloc(commandList, (commandCount + 1) * sizeof(SerialCommandCallback));
+    strncpy(commandList[commandCount].command, command, SERIALCOMMAND_MAXCOMMANDLENGTH);
+    commandList[commandCount].command_function = func;
+    commandCount++;
 }
 
 /**
@@ -57,7 +57,7 @@ void SerialCommand::addCommand(const char *command, void (*func)(unsigned char r
  * isn't in the list of commands.
  */
 void SerialCommand::setDefaultHandler(void (*function)(const char *)) {
-  defaultHandler = function;
+    defaultHandler = function;
 }
 
 
@@ -67,64 +67,63 @@ void SerialCommand::setDefaultHandler(void (*function)(const char *)) {
  * buffer for a prefix command, and calls handlers setup by addCommand() member
  */
 void SerialCommand::readSerial() {
-  while (SerialUSB.available() > 0) {
-    char inChar = SerialUSB.read();   // Read single available character, there may be more waiting
-    #ifdef SERIALCOMMAND_DEBUG
-      SerialUSB.print(inChar);   // Echo back to serial stream
-    #endif
-    
-    inChar = tolower(inChar);
-    if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
-      #ifdef SERIALCOMMAND_DEBUG
-        SerialUSB.print("Received: ");
-        SerialUSB.println(buffer);
-      #endif
+    while (SerialUSB.available() > 0) {
+        char inChar = SerialUSB.read();   // Read single available character, there may be more waiting
+#ifdef SERIALCOMMAND_DEBUG
+        SerialUSB.print(inChar);   // Echo back to serial stream
+#endif
 
-      char *command = strtok_r(buffer, delim, &last);   // Search for command at start of buffer
-      if (command != NULL) {
-        boolean matched = false;
+        inChar = tolower(inChar);
+        if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
+#ifdef SERIALCOMMAND_DEBUG
+            SerialUSB.print("Received: ");
+            SerialUSB.println(buffer);
+#endif
 
-        for (int i = 0; i < commandCount; i++) {
-          #ifdef SERIALCOMMAND_DEBUG
-            SerialUSB.print("Comparing [");
-            SerialUSB.print(command);
-            SerialUSB.print("] to [");
-            SerialUSB.print(commandList[i].command);
-            SerialUSB.println("]");
-          #endif
+            char *command = strtok_r(buffer, delim, &last);   // Search for command at start of buffer
+            if (command != NULL) {
+                boolean matched = false;
 
-          // Compare the found command against the list of known commands for a match
-          if (strncmp(command, commandList[i].command, SERIALCOMMAND_MAXCOMMANDLENGTH) == 0) {
-            #ifdef SERIALCOMMAND_DEBUG
-              SerialUSB.print("Matched Command: ");
-              SerialUSB.println(command);
-            #endif
+                for (int i = 0; i < commandCount; i++) {
+#ifdef SERIALCOMMAND_DEBUG
+                    SerialUSB.print("Comparing [");
+                    SerialUSB.print(command);
+                    SerialUSB.print("] to [");
+                    SerialUSB.print(commandList[i].command);
+                    SerialUSB.println("]");
+#endif
 
-            // Execute the stored handler function for the command
-            unsigned char unused1 = 0;
-            unsigned char unused2 = 0;
-            (*commandList[i].command_function)(unused1, unused2);
-            matched = true;
-            break;
-          }
+                    // Compare the found command against the list of known commands for a match
+                    if (strncmp(command, commandList[i].command, SERIALCOMMAND_MAXCOMMANDLENGTH) == 0) {
+#ifdef SERIALCOMMAND_DEBUG
+                        SerialUSB.print("Matched Command: ");
+                        SerialUSB.println(command);
+#endif
+
+                        // Execute the stored handler function for the command
+                        unsigned char unused1 = 0;
+                        unsigned char unused2 = 0;
+                        (*commandList[i].command_function)(unused1, unused2);
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched && (defaultHandler != NULL)) {
+                    (*defaultHandler)(command);
+                }
+            }
+            clearBuffer();
+        } else if (isprint(inChar)) {     // Only printable characters into the buffer
+            if (bufPos < SERIALCOMMAND_BUFFER) {
+                buffer[bufPos++] = inChar;  // Put character into buffer
+                buffer[bufPos] = '\0';      // Null terminate
+            } else {
+#ifdef SERIALCOMMAND_DEBUG
+                SerialUSB.println("Line buffer is full - increase SERIALCOMMAND_BUFFER");
+#endif
+            }
         }
-        if (!matched && (defaultHandler != NULL)) {
-          (*defaultHandler)(command);
-        }
-      }
-      clearBuffer();
     }
-    else if (isprint(inChar)) {     // Only printable characters into the buffer
-      if (bufPos < SERIALCOMMAND_BUFFER) {
-        buffer[bufPos++] = inChar;  // Put character into buffer
-        buffer[bufPos] = '\0';      // Null terminate
-      } else {
-        #ifdef SERIALCOMMAND_DEBUG
-          SerialUSB.println("Line buffer is full - increase SERIALCOMMAND_BUFFER");
-        #endif
-      }
-    }
-  }
 }
 
 
@@ -132,8 +131,8 @@ void SerialCommand::readSerial() {
  * Clear the input buffer.
  */
 void SerialCommand::clearBuffer() {
-  buffer[0] = '\0';
-  bufPos = 0;
+    buffer[0] = '\0';
+    bufPos = 0;
 }
 
 /**
@@ -141,15 +140,15 @@ void SerialCommand::clearBuffer() {
  * Returns NULL if no more tokens exist.
  */
 char *SerialCommand::next() {
-  return strtok_r(NULL, delim, &last);
+    return strtok_r(NULL, delim, &last);
 }
 
 /**
  * Print the list of commands.
  */
 
-void SerialCommand::printCommands() { 
-   for (int i = 0; i < commandCount; i++) {
-     SerialUSB.println(commandList[i].command);
-   }
+void SerialCommand::printCommands() {
+    for (int i = 0; i < commandCount; i++) {
+        SerialUSB.println(commandList[i].command);
+    }
 }

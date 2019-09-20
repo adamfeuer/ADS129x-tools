@@ -25,42 +25,43 @@
 
 
 #if USE_ARDUINO_SPI_LIBRARY
+
 #include <SPI.h>
 
 void spiBegin(uint8_t csPin) {
-  SPI.begin();
-  pinMode(csPin, OUTPUT);
+    SPI.begin();
+    pinMode(csPin, OUTPUT);
 }
 
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
-  SPI.setBitOrder((BitOrder)bitOrder);  // MSBFIRST or LSBFIRST
-  SPI.setDataMode(spiMode);             // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
-  SPI.setClockDivider(spiClockDivider); 
+    SPI.setBitOrder((BitOrder) bitOrder);  // MSBFIRST or LSBFIRST
+    SPI.setDataMode(spiMode);             // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
+    SPI.setClockDivider(spiClockDivider);
 }
 
 /** SPI receive a byte */
 uint8_t spiRec() {
-  return SPI.transfer(0XFF);
+    return SPI.transfer(0XFF);
 }
 
 /** SPI receive multiple bytes */
-uint8_t spiRec(uint8_t* buf, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    buf[i] = SPI.transfer(0XFF);
-  }
-  return 0;
+uint8_t spiRec(uint8_t *buf, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        buf[i] = SPI.transfer(0XFF);
+    }
+    return 0;
 }
 
 /** SPI send a byte */
 void spiSend(uint8_t b) {
-  SPI.transfer(b);
+    SPI.transfer(b);
 }
 
 /** SPI send multiple bytes */
-void spiSend(const uint8_t* buf, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    SPI.transfer(buf[i]);
-  }
+void spiSend(const uint8_t *buf, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        SPI.transfer(buf[i]);
+    }
 }
 
 #elif  USE_NATIVE_SAM3X_SPI
@@ -250,7 +251,7 @@ uint8_t spiRec(uint8_t* buf, size_t len) {
 
   if (bitOrder == LSBFIRST) {
     for (register int i=0; i<len; i++) {
-	buf[i] = __REV(__RBIT(buf[i]));
+    buf[i] = __REV(__RBIT(buf[i]));
     }
   }
   
