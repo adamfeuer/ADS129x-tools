@@ -109,7 +109,8 @@ while True:
             loff_statp = decoded_data.get('loff_statp')
             loff_statn = decoded_data.get('loff_statn')
             channel_data = decoded_data.get('channel_data')
-            print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn} |   ", end='')
+            print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn} |   ",
+                  end='')
             for channel_number, sample in enumerate(channel_data):
                 print(f"{channel_number + 1}:{sample} ", end='')
             print()
