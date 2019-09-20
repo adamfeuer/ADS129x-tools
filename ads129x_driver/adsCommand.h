@@ -2,8 +2,6 @@
  * adsCommand.h
  *
  * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
- * Copyright (c) 2012 by Chris Rorden
- * Copyright (c) 2012 by Steven Cogswell and Stefan Rado
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -19,6 +17,9 @@
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
+#ifndef _ADS_COMMAND_H
+#define _ADS_COMMAND_H
 
 #include "Arduino.h"
 
@@ -42,3 +43,5 @@ void adc_wreg(int reg, int val); //write register
 void adc_send_command(int cmd); 
 void adc_send_command_leave_cs_active(int cmd); 
 int adc_rreg(int reg); //read register
+
+#endif // _ADS_COMMAND_H

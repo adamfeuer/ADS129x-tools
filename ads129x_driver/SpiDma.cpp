@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
- * Copyright (c) 2010 by Cristian Maglie <c.maglie@bug.st>
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -24,26 +23,26 @@
 #define USE_ARDUINO_SPI_LIBRARY 1
 #define USE_NATIVE_SAM3X_SPI 0
 
-//==============================================================================
+
 #if USE_ARDUINO_SPI_LIBRARY
 #include <SPI.h>
-//------------------------------------------------------------------------------
+
 void spiBegin(uint8_t csPin) {
   SPI.begin();
   pinMode(csPin, OUTPUT);
 }
-//------------------------------------------------------------------------------
+
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
-  SPI.setBitOrder((BitOrder)bitOrder); // MSBFIRST or LSBFIRST 
-  SPI.setDataMode(spiMode);   // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
+  SPI.setBitOrder((BitOrder)bitOrder);  // MSBFIRST or LSBFIRST
+  SPI.setDataMode(spiMode);             // SPI_MODE0, SPI_MODE1; SPI_MODE2; SPI_MODE3
   SPI.setClockDivider(spiClockDivider); 
 }
-//------------------------------------------------------------------------------
+
 /** SPI receive a byte */
 uint8_t spiRec() {
   return SPI.transfer(0XFF);
 }
-//------------------------------------------------------------------------------
+
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t* buf, size_t len) {
   for (size_t i = 0; i < len; i++) {
@@ -51,19 +50,19 @@ uint8_t spiRec(uint8_t* buf, size_t len) {
   }
   return 0;
 }
-//------------------------------------------------------------------------------
+
 /** SPI send a byte */
 void spiSend(uint8_t b) {
   SPI.transfer(b);
 }
-//------------------------------------------------------------------------------
+
 /** SPI send multiple bytes */
 void spiSend(const uint8_t* buf, size_t len) {
   for (size_t i = 0; i < len; i++) {
     SPI.transfer(buf[i]);
   }
 }
-//==============================================================================
+
 #elif  USE_NATIVE_SAM3X_SPI
 #include <SPI.h>
 #include "variant.h"
@@ -85,7 +84,7 @@ void spiSend(const uint8_t* buf, size_t len) {
 #define SPI_RX_IDX  2
 
 uint8_t bitOrder = MSBFIRST;
-//------------------------------------------------------------------------------
+
 /** Disable DMA Controller. */
 static void dmac_disable() {
   DMAC->DMAC_EN &= (~DMAC_EN_ENABLE);
@@ -106,7 +105,7 @@ static void dmac_channel_enable(uint32_t ul_num) {
 static bool dmac_channel_transfer_done(uint32_t ul_num) {
   return (DMAC->DMAC_CHSR & (DMAC_CHSR_ENA0 << ul_num)) ? false : true;
 }
-//------------------------------------------------------------------------------
+
 void spiBegin(uint8_t csPin) {
   pinMode(csPin,OUTPUT);
   digitalWrite(csPin,HIGH);
@@ -141,7 +140,7 @@ void spiBegin(uint8_t csPin) {
 #endif  // USE_SAM3X_BUS_MATRIX_FIX
 #endif  // USE_SAM3X_DMAC
 }
-//------------------------------------------------------------------------------
+
 // start RX DMA
 void spiDmaRX(uint8_t* dst, uint16_t count) {
   dmac_channel_disable(SPI_DMAC_RX_CH);
@@ -157,7 +156,7 @@ void spiDmaRX(uint8_t* dst, uint16_t count) {
     DMAC_CFG_SRC_H2SEL | DMAC_CFG_SOD | DMAC_CFG_FIFOCFG_ASAP_CFG;
   dmac_channel_enable(SPI_DMAC_RX_CH);
 }
-//------------------------------------------------------------------------------
+
 // start TX DMA
 void spiDmaTX(const uint8_t* src, uint16_t count) {
   static uint8_t ff = 0XFF;
@@ -182,7 +181,7 @@ void spiDmaTX(const uint8_t* src, uint16_t count) {
 
   dmac_channel_enable(SPI_DMAC_TX_CH);
 }
-//------------------------------------------------------------------------------
+
 //  initialize SPI controller
 void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
   uint8_t scbr;
@@ -204,7 +203,7 @@ void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
   // enable SPI
   pSpi->SPI_CR |= SPI_CR_SPIEN;
 }
-//------------------------------------------------------------------------------
+
 inline uint8_t spiTransfer(uint8_t b) {
   Spi* pSpi = SPI0;
 
@@ -213,13 +212,13 @@ inline uint8_t spiTransfer(uint8_t b) {
   b = pSpi->SPI_RDR;
   return b;
 }
-//------------------------------------------------------------------------------
+
 /** SPI receive a byte */
 
 uint8_t spiRec() {
   return spiTransfer(0XFF);
 }
-//------------------------------------------------------------------------------
+
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t* buf, size_t len) {
   Spi* pSpi = SPI0;
@@ -257,12 +256,12 @@ uint8_t spiRec(uint8_t* buf, size_t len) {
   
   return rtn;
 }
-//------------------------------------------------------------------------------
+
 /** SPI send a byte */
 void spiSend(uint8_t b) {
   spiTransfer(b);
 }
-//------------------------------------------------------------------------------
+
 void spiSend(const uint8_t* buf, size_t len) {
   Spi* pSpi = SPI0;
 #if USE_SAM3X_DMAC
@@ -280,5 +279,5 @@ void spiSend(const uint8_t* buf, size_t len) {
   uint8_t b = pSpi->SPI_RDR;
 }
 #endif
-//==============================================================================
+
 

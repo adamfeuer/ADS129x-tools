@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# 
+#
 # Simple test program that reads data from the ADS1298 driver,
 # measures speed, and decodes some of the data to display
 #
@@ -14,7 +14,10 @@
 # ads1298_receive_test.py /dev/tty.usbmodem1d11421 115200
 #
 
-import sys, time, datetime, base64
+import sys
+import time
+import datetime
+import base64
 import serial
 NUMBER_OF_SAMPLES = 100000
 
@@ -118,7 +121,7 @@ TEST_FREQ1 = 0x02
 TEST_FREQ0 = 0x01
 
 CONFIG2_const = 0x00
-INT_TEST_4HZ = INT_TEST 
+INT_TEST_4HZ = INT_TEST
 INT_TEST_8HZ = (INT_TEST | TEST_FREQ0)
 INT_TEST_DC = (INT_TEST | TEST_FREQ1 | TEST_FREQ0)
 
@@ -464,67 +467,69 @@ WCTC_CH3N = (WCTC2 | WCTC0)
 WCTC_CH4P = (WCTC2 | WCTC1)
 WCTC_CH4N = (WCTC2 | WCTC1 | WCTC0)
 
+
 def send(ser, command):
-   #ser.write(bytes(command +'\n', 'utf-8'))
-   ser.write(bytes(command +'\n'))
-   time.sleep(0.5)
-   print(ser.readline())
+    #ser.write(bytes(command +'\n', 'utf-8'))
+    ser.write(bytes(command + '\n'))
+    time.sleep(0.5)
+    print(ser.readline())
 
 
 def main():
-   argsLen = len(sys.argv)
-   if argsLen < 2 or argsLen > 3:
-      print("Usage: send_test [serial device name] [baudrate]")
-      sys.exit
-   PORT = sys.argv[1]
-   BAUDRATE = sys.argv[2]
+    argsLen = len(sys.argv)
+    if argsLen < 2 or argsLen > 3:
+        print("Usage: send_test [serial device name] [baudrate]")
+        sys.exit
+    PORT = sys.argv[1]
+    BAUDRATE = sys.argv[2]
 
-   chars = ""
-   ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
+    chars = ""
+    ser = serial.serial_for_url(PORT, baudrate=BAUDRATE, timeout=0.1)
 
-   print("using device: %s" % ser.portstr)
+    print("using device: %s" % ser.portstr)
 
-   send(ser, "sdatac")
-   sampleMode = HIGH_RES_16k_SPS
-   #sampleMode = HIGH_RES_8k_SPS
-   sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
-   send(ser, sampleModeCommand)
-   send(ser, "rdatac")
-   line = ""
-   lines = []
-   count = 0
-   start = datetime.datetime.today()
-   #for outer in range(0, NUMBER_OF_SAMPLES):
-   #   line = ser.readline()
-      #lines.append(line)
-   #   count += 1
-   #[lines.append(ser.readline()) for i in range(0, NUMBER_OF_SAMPLES)]
-   buf = ser.read(NUMBER_OF_SAMPLES*28)
-   lines = buf.decode().split('\n')
-   count = len(lines)
-   end = datetime.datetime.today()
-   send(ser, "sdatac")
-   for i in range(0, 1000):
-      line = ser.readline()
-      if line.startswith("200"):
-         print(line)
-         break
-   delta = end - start
-   deltaSeconds = delta.total_seconds()
-   samplesPerSecond = count / deltaSeconds 
-   print("%d samples received in %f seconds." % (count, deltaSeconds))
-   print("samples per second: %f" % samplesPerSecond)
+    send(ser, "sdatac")
+    sampleMode = HIGH_RES_16k_SPS
+    #sampleMode = HIGH_RES_8k_SPS
+    sampleModeCommand = "wreg %x %x" % (CONFIG1, sampleMode)
+    send(ser, sampleModeCommand)
+    send(ser, "rdatac")
+    line = ""
+    lines = []
+    count = 0
+    start = datetime.datetime.today()
+    # for outer in range(0, NUMBER_OF_SAMPLES):
+    #   line = ser.readline()
+    # lines.append(line)
+    #   count += 1
+    #[lines.append(ser.readline()) for i in range(0, NUMBER_OF_SAMPLES)]
+    buf = ser.read(NUMBER_OF_SAMPLES * 28)
+    lines = buf.decode().split('\n')
+    count = len(lines)
+    end = datetime.datetime.today()
+    send(ser, "sdatac")
+    for i in range(0, 1000):
+        line = ser.readline()
+        if line.startswith("200"):
+            print(line)
+            break
+    delta = end - start
+    deltaSeconds = delta.total_seconds()
+    samplesPerSecond = count / deltaSeconds
+    print("%d samples received in %f seconds." % (count, deltaSeconds))
+    print("samples per second: %f" % samplesPerSecond)
 
-   print(lines[3:10])
-   print("")
-   for i in range(3, 10):
-      print(lines[i])
-      decoded = base64.b64decode(lines[i])
-      for char in decoded:
-         print(" {:02x} ".format(ord(char)) ),
-      print("")
-   
-   ser.close()
+    print(lines[3:10])
+    print("")
+    for i in range(3, 10):
+        print(lines[i])
+        decoded = base64.b64decode(lines[i])
+        for char in decoded:
+            print(" {:02x} ".format(ord(char))),
+        print("")
+
+    ser.close()
+
 
 if __name__ == "__main__":
-   main()
+    main()
