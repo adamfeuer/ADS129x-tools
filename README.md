@@ -53,7 +53,6 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * BASE64 – RDATA/RDATAC commands will encode data in base64.
 * TEXT – communication protocol switches to text. See the Communication Protocol section.
 * JSONLINES – communication protocol switches from text to [JSONLines](http://jsonlines.org/). This is a text-oriented serialization format with libraries in many languages. See the Communication Protocol section.
-* MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org). This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
 * HEX – RDATA commands will encode data in hex.
 * HELP – prints a list of available commands.
 
@@ -170,4 +169,3 @@ Adam Feuer <br>
 adam@starcat.io<br>
 [Starcat LLC](https://starcat.io)<br>
 Seattle, WA, USA <br>
- q
