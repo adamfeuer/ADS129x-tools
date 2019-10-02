@@ -53,7 +53,9 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * BASE64 – RDATA/RDATAC commands will encode data in base64.
 * TEXT – communication protocol switches to text. See the Communication Protocol section.
 * JSONLINES – communication protocol switches from text to [JSONLines](http://jsonlines.org/). This is a text-oriented serialization format with libraries in many languages. See the Communication Protocol section.
-* HEX – RDATA commands will encode data in hex.
+* MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org). This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
+* SYNC – Only available in JSON Lines mode or MessagePack mode. Returns a synchronization message that can be used to resynchronize message framing after errors.
+* HEX – RDATA commands will encode data in hexidecimal format.
 * HELP – prints a list of available commands.
 
 
@@ -165,10 +167,41 @@ Here is an example exchange:
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
 
+### MessagePack mode
+
+Give the MESSAGEPACK command to switch to this mode.
+
+When the command MESSAGEPACK is given, the driver communication protocol switches to [MessagePack](https://msgpack.org) concise binary format, and the response will also be in MessagePack format. Command and response structure are virtually identical to the JSONLines mode, but the serialization format is MessagePack, and commands are given as integers rather than strings.
+
+The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
+
+#### Commands:
+
+```
+{
+    C: <command-number>,
+    P: [ <param1>, <param2>, ... ]
+}
+```
+
+#### Responses:
+
+```
+{
+    C: <status-code>,
+    T: "<status-text>",
+    H: ["header1", "header2", ... ],
+    D: [value1, value2, value3, ... ]
+}
+```
+
+The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
+
+
+
 ## Python Host Software
 
-The Python host software is designed to run on a laptop computer. Right now it is a rudimentary performance testing script. Using Python 3.x on
-2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
+The Python host software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` and `hackeeg_shell.py`), and a demonstration performance testing script (`hackeeg_demo.py`). Using Python 3.6.5 on a 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
 
 It requires the PySerial module.
 
@@ -186,7 +219,7 @@ might be useful. It is designed for the ADS1298, but should also work with the A
 
 This software would not be possible without the help of many people:
 
-* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver, see [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG) for more info
+* Kendrick Shaw, Ace Medlock, and Eric Herman (parts of the ADS129x.h header file and some parts of the ADS129x driver, see [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG) for more info.
 * Chris Rorden (some parts of the ADS1298 driver)
 * Stefan Rado (SerialCommand library)
 * Steven Cogswell (SerialCommand library)
