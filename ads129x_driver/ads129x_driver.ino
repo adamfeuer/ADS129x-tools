@@ -189,12 +189,10 @@ void setup() {
 
     // Setup callbacks for SerialCommand commands
     serial_command.addCommand("nop", nop_command);                     // No operation (does nothing)
-    serial_command.addCommand("micros",
-                              micros_command);               // Returns number of microseconds since the program began executing
+    serial_command.addCommand("micros", micros_command);               // Returns number of microseconds since the program began executing
     serial_command.addCommand("version", version_command);             // Echos the driver version number
     serial_command.addCommand("status", status_command);               // Echos the driver status
-    serial_command.addCommand("serialnumber",
-                              serial_number_command);  // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+    serial_command.addCommand("serialnumber", serial_number_command);  // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
     serial_command.addCommand("text", text_command);                   // Sets the communication protocol to text
     serial_command.addCommand("jsonlines", jsonlines_command);         // Sets the communication protocol to JSONLines
     serial_command.addCommand("messagepack", messagepack_command);     // Sets the communication protocol to MessagePack
@@ -207,25 +205,20 @@ void setup() {
     serial_command.addCommand("reset", reset_command);                 // Reset the ADS1299
     serial_command.addCommand("start", start_command);                 // Send START command
     serial_command.addCommand("stop", stop_command);                   // Send STOP command
-    serial_command.addCommand("rdatac",
-                              rdatac_command);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    serial_command.addCommand("sdatac",
-                              sdatac_command);               // Stop read data continuous mode; ringbuffer data is still available
+    serial_command.addCommand("rdatac", rdatac_command);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    serial_command.addCommand("sdatac", sdatac_command);               // Stop read data continuous mode; ringbuffer data is still available
     serial_command.addCommand("getdata", getdata_command);             // Get data from the ringbuffer
-    serial_command.addCommand("rdata",
-                              rdata_command);                 // Read one sample of data from each active channel
-    serial_command.addCommand("rreg",
-                              read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
+    serial_command.addCommand("rdata", rdata_command);                 // Read one sample of data from each active channel
+    serial_command.addCommand("rreg", read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
     serial_command.addCommand("wreg", write_register_command);         // Write ADS129x register, arguments in hex
-    serial_command.addCommand("base64",
-                              base64_mode_on_command);       // RDATA commands send base64 encoded data - default
+    serial_command.addCommand("base64", base64_mode_on_command);       // RDATA commands send base64 encoded data - default
     serial_command.addCommand("hex", hex_mode_on_command);             // RDATA commands send hex encoded data
     serial_command.addCommand("help", help_command);                   // Print list of commands
     serial_command.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
     json_command.addCommand("nop", nop_command);                       // No operation (does nothing)
-    json_command.addCommand("micros",
-                            micros_command);                 // Returns number of microseconds since the program began executing
+    json_command.addCommand("sync", sync_command);                     // Returns a synchronization message (used for error recovery)
+    json_command.addCommand("micros", micros_command);                 // Returns number of microseconds since the program began executing
     json_command.addCommand("ledon", led_on_command);                  // Turns Arduino Due onboard LED on
     json_command.addCommand("ledoff", led_off_command);                // Turns Arduino Due onboard LED off
     json_command.addCommand("boardledoff", board_led_off_command);     // Turns HackEEG ADS1299 GPIO4 LED off
@@ -234,19 +227,15 @@ void setup() {
     json_command.addCommand("reset", reset_command);                   // Reset the ADS1299
     json_command.addCommand("start", start_command);                   // Send START command
     json_command.addCommand("stop", stop_command);                     // Send STOP command
-    json_command.addCommand("rdatac",
-                            rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    json_command.addCommand("sdatac",
-                            sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
-    json_command.addCommand("serialnumber",
-                            serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+    json_command.addCommand("rdatac", rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    json_command.addCommand("sdatac", sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
+    json_command.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
     json_command.addCommand("text", text_command);                     // Sets the communication protocol to text
     json_command.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines
     json_command.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
     json_command.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
     json_command.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
-    json_command.addCommand("rdata",
-                            rdata_command);                   // Read one sample of data from each active channel
+    json_command.addCommand("rdata", rdata_command);                   // Read one sample of data from each active channel
     json_command.setDefaultHandler(unrecognized_jsonlines);            // Handler for any command that isn't matched
 
     WiredSerial.println("Ready");
@@ -303,6 +292,11 @@ void send_response_ok() {
     send_response(RESPONSE_OK, STATUS_TEXT_OK);
 }
 
+void send_response_sync() {
+    // TODO: make this also send a data array [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    send_response(RESPONSE_OK, STATUS_TEXT_OK);
+}
+
 void send_response_error() {
     send_response(RESPONSE_ERROR, STATUS_TEXT_ERROR);
 }
@@ -315,10 +309,10 @@ void send_response(int status_code, const char *status_text) {
             WiredSerial.println(response);
             break;
         case JSONLINES_MODE:
-            json_command.send_jsonlines_response(status_code, (char *) status_text);
+            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
             break;
         case MESSAGEPACK_MODE:
-            // TODO: not implemented yet 
+            json_command.sendMessagePackResponse(status_code, (char *) status_text);
             break;
         default:
             // unknown protocol
@@ -373,7 +367,7 @@ void status_command(unsigned char unused1, unsigned char unused2) {
     status_info["active_channels"] = num_active_channels;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet 
@@ -386,6 +380,10 @@ void status_command(unsigned char unused1, unsigned char unused2) {
 
 void nop_command(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
+}
+
+void sync_command(unsigned char unused1, unsigned char unused2) {
+    send_response_sync();
 }
 
 void micros_command(unsigned char unused1, unsigned char unused2) {
@@ -402,7 +400,7 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
     root[DATA_KEY] = microseconds;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet 
@@ -516,7 +514,7 @@ void read_register_command_direct(unsigned char register_number, unsigned char u
         root[STATUS_CODE_KEY] = STATUS_OK;
         root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
         root[DATA_KEY] = result;
-        json_command.send_jsonlines_doc_response(doc);
+        json_command.sendJsonLinesDocResponse(doc);
     } else {
         send_response_error();
     }
@@ -633,7 +631,7 @@ void unrecognized_jsonlines(const char *command) {
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = UNRECOGNIZED_COMMAND;
     root[STATUS_TEXT_KEY] = "Unrecognized command";
-    json_command.send_jsonlines_doc_response(doc);
+    json_command.sendJsonLinesDocResponse(doc);
 }
 
 void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
@@ -698,7 +696,7 @@ inline void send_sample_json(int num_bytes) {
     copyArray(spi_bytes, num_bytes, data);
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet

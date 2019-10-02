@@ -62,13 +62,15 @@ public:
                                                       unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
-    void readSerial();      // Main entry point.
+    void readSerial();                           // Main entry point.
+    void readSerialMessagePackMessage();         // Entry point for MessagePack mode
     void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *
-    next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
-    void send_jsonlines_response(int status_code, char *status_text); // send a simple JSONLines response
-    void send_jsonlines_doc_response(JsonDocument &doc); // send a JsonDocument as a JSONLines response
+    char * next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    void sendJsonLinesResponse(int status_code, char *status_text);    // send a simple JSON Lines response
+    void sendJsonLinesDocResponse(JsonDocument &doc);                  // send a JsonDocument as a JSON Lines response
+    void sendMessagePackResponse(int status_code, char *status_text);  // send a simple MessagePack response
+    void sendMessagePackDocResponse(JsonDocument &doc);                // send a JsonDocument as a MessagePack response
 
 private:
     // Command/handler dictionary
@@ -90,6 +92,7 @@ private:
     char *last;                         // State variable used by strtok_r during processing
 
     int find_command(const char *command);
+    int mode;
 };
 
 #endif  // JSONCOMMAND_H

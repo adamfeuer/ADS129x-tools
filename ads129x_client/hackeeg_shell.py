@@ -29,9 +29,14 @@ class HackEEGShell(cmd.Cmd):
     def _format_response(self, response):
         if self.debug:
             print(f"_format_response: {response}")
-        status_code = response.get(self.hackeeg.StatusCodeKey)
-        status_text = response.get(self.hackeeg.StatusTextKey)
-        data = response.get(self.hackeeg.DataKey)
+        if self.hackeeg.mode == self.hackeeg.JsonLinesMode:
+            status_code = response.get(self.hackeeg.StatusCodeKey)
+            status_text = response.get(self.hackeeg.StatusTextKey)
+            data = response.get(self.hackeeg.DataKey)
+        elif self.hackeeg.mode == self.hackeeg.MessagePackMode:
+            status_code = response.get(self.hackeeg.MpStatusCodeKey)
+            status_text = response.get(self.hackeeg.MpStatusTextKey)
+            data = response.get(self.hackeeg.MpDataKey)
         if status_code and status_code == hackeeg.Status.Ok:
             print("Ok", end='')
             if data:
@@ -107,7 +112,7 @@ class HackEEGShell(cmd.Cmd):
 
     def do_messagepack(self, arg):
         """Sets driver communication protocol to MessagePack. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.messagepack())
+        self._format_response(self.hackeeg.messagepack_mode())
 
     def do_micros(self, arg):
         """Returns microseconds since the Arduino booted up."""

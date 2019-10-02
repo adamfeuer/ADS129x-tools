@@ -195,6 +195,9 @@ The format is as follows (on separate lines as JSON for readability, in use this
 }
 ```
 
+In MessagePack mode, status text is usually omitted except in the case of errors. Headers are optional and may or may not be provided.
+
+
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
 
 

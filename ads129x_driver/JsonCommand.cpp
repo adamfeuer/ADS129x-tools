@@ -32,6 +32,12 @@ const char *STATUS_TEXT_KEY = "STATUS_TEXT";
 const char *HEADERS_KEY = "HEADERS";
 const char *DATA_KEY = "DATA";
 
+const char *MP_COMMAND_KEY = "C";
+const char *MP_PARAMETERS_KEY = "P";
+const char *MP_STATUS_CODE_KEY = "C";
+const char *MP_STATUS_TEXT_KEY = "T";
+const char *MP_HEADERS_KEY = "H";
+const char *MP_DATA_KEY = "D";
 /**
  * Constructor makes sure some things are set.
  */
@@ -113,7 +119,7 @@ void JsonCommand::readSerial() {
                 Serial.println(error.c_str());
 #endif
                 clearBuffer();
-                send_jsonlines_response(400, "Bad Request");
+                sendJsonLinesResponse(400, "Bad Request");
                 return;
             }
 
@@ -184,7 +190,7 @@ int JsonCommand::find_command(const char *command) {
     return result;
 }
 
-void JsonCommand::send_jsonlines_response(int status_code, char *status_text) {
+void JsonCommand::sendJsonLinesResponse(int status_code, char *status_text) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = status_code;
@@ -194,9 +200,25 @@ void JsonCommand::send_jsonlines_response(int status_code, char *status_text) {
     doc.clear();
 }
 
-void JsonCommand::send_jsonlines_doc_response(JsonDocument &doc) {
+void JsonCommand::sendJsonLinesDocResponse(JsonDocument &doc) {
     serializeJson(doc, SerialUSB);
     SerialUSB.println();
+    doc.clear();
+}
+
+void JsonCommand::sendMessagePackResponse(int status_code, char *status_text) {
+    StaticJsonDocument<1024> doc;
+    JsonObject root = doc.to<JsonObject>();
+    root[MP_STATUS_CODE_KEY] = status_code;
+    if (!status_text) {
+        root[MP_STATUS_TEXT_KEY] = status_text;
+    }
+    serializeMsgPack(doc, SerialUSB);
+    doc.clear();
+}
+
+void JsonCommand::sendMessagePackDocResponse(JsonDocument &doc) {
+    serializeMsgPack(doc, SerialUSB);
     doc.clear();
 }
 
