@@ -315,7 +315,7 @@ void send_response(int status_code, const char *status_text) {
             WiredSerial.println(response);
             break;
         case JSONLINES_MODE:
-            json_command.send_jsonlines_response(status_code, (char *) status_text);
+            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet 
@@ -373,7 +373,7 @@ void status_command(unsigned char unused1, unsigned char unused2) {
     status_info["active_channels"] = num_active_channels;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet 
@@ -402,7 +402,7 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
     root[DATA_KEY] = microseconds;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet 
@@ -516,7 +516,7 @@ void read_register_command_direct(unsigned char register_number, unsigned char u
         root[STATUS_CODE_KEY] = STATUS_OK;
         root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
         root[DATA_KEY] = result;
-        json_command.send_jsonlines_doc_response(doc);
+        json_command.sendJsonLinesDocResponse(doc);
     } else {
         send_response_error();
     }
@@ -633,7 +633,7 @@ void unrecognized_jsonlines(const char *command) {
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = UNRECOGNIZED_COMMAND;
     root[STATUS_TEXT_KEY] = "Unrecognized command";
-    json_command.send_jsonlines_doc_response(doc);
+    json_command.sendJsonLinesDocResponse(doc);
 }
 
 void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
@@ -698,7 +698,7 @@ inline void send_sample_json(int num_bytes) {
     copyArray(spi_bytes, num_bytes, data);
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.send_jsonlines_doc_response(doc);
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         case MESSAGEPACK_MODE:
             // TODO: not implemented yet
