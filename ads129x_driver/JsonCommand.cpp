@@ -113,7 +113,7 @@ void JsonCommand::readSerial() {
                 Serial.println(error.c_str());
 #endif
                 clearBuffer();
-                send_jsonlines_response(400, "Bad Request");
+                sendJsonLinesResponse(400, "Bad Request");
                 return;
             }
 
@@ -128,7 +128,7 @@ void JsonCommand::readSerial() {
                 return;
             }
             const char *command = command_name_variant.as<const char *>();
-            int command_num = find_command(command);
+            int command_num = findCommand(command);
             if (command_num < 0) {
                 (*defaultHandler)(command);
                 clearBuffer();
@@ -173,7 +173,7 @@ void JsonCommand::readSerial() {
 }
 
 
-int JsonCommand::find_command(const char *command) {
+int JsonCommand::findCommand(const char *command) {
     int result = -1;
     for (int i = 0; i < commandCount; i++) {
         if (strcmp(command, commandList[i].command) == 0) {
@@ -184,7 +184,7 @@ int JsonCommand::find_command(const char *command) {
     return result;
 }
 
-void JsonCommand::send_jsonlines_response(int status_code, char *status_text) {
+void JsonCommand::sendJsonLinesResponse(int status_code, char *status_text) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = status_code;
@@ -194,7 +194,7 @@ void JsonCommand::send_jsonlines_response(int status_code, char *status_text) {
     doc.clear();
 }
 
-void JsonCommand::send_jsonlines_doc_response(JsonDocument &doc) {
+void JsonCommand::sendJsonLinesDocResponse(JsonDocument &doc) {
     serializeJson(doc, SerialUSB);
     SerialUSB.println();
     doc.clear();

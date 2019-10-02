@@ -67,8 +67,8 @@ public:
     void printCommands();   // Prints the list of commands.
     char *
     next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
-    void send_jsonlines_response(int status_code, char *status_text); // send a simple JSONLines response
-    void send_jsonlines_doc_response(JsonDocument &doc); // send a JsonDocument as a JSONLines response
+    void sendJsonLinesResponse(int status_code, char *status_text); // send a simple JSONLines response
+    void sendJsonLinesDocResponse(JsonDocument &doc); // send a JsonDocument as a JSONLines response
 
 private:
     // Command/handler dictionary
@@ -89,7 +89,7 @@ private:
     byte bufPos;                        // Current position in the buffer
     char *last;                         // State variable used by strtok_r during processing
 
-    int find_command(const char *command);
+    int findCommand(const char *command);
 };
 
 #endif  // JSONCOMMAND_H
