@@ -280,6 +280,7 @@ class HackEEGShell(cmd.Cmd):
             print("debug mode on")
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
+        self.hackeeg.connect()
         intro_message = "Welcome to the HackEEG shell. Type help or ? to list commands.\n"
         intro_message += self._hex_mode_string() + '\n'
         self.cmdloop(intro_message)

@@ -68,6 +68,9 @@ class HackEEGBoard:
         if serialPortPath:
             self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
             self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False)
+            self.serialPort.reset_input_buffer()
+
+    def connect(self):
         self.mode = self._sense_protocol_mode()
         if self.mode == self.TextMode:
             attempts = 0
@@ -87,8 +90,9 @@ class HackEEGBoard:
                     time.sleep(self.ConnectionSleepTime)
             if attempts > 0:
                 print()
+            if not connected:
+                raise HackEEGException("Can't connect to Arduino")
         self.sdatac()
-        self.serialPort.reset_input_buffer()
 
     def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
@@ -105,7 +109,7 @@ class HackEEGBoard:
     def _serial_read_messagepack_message(self):
         message = self.message_pack_unpacker.unpack()
         if self.debug:
-            print(f"line: {message}")
+            print(f"message: {message}")
         return message
 
     def _decode_data(self, response):
@@ -135,11 +139,9 @@ class HackEEGBoard:
         self.debug = debug
 
     def read_response(self):
-        if self.mode == self.MessagePackMode:
-            response_obj = self._serial_read_messagepack_message()
-        else:
-            message = self._serial_readline()
-            response_obj = json.loads(message)
+        """read a response from the Arduino– must be in JSON Lines mode"""
+        message = self._serial_readline()
+        response_obj = json.loads(message)
         if self.debug:
             print(f"read_response line: {message}")
         if self.debug:
@@ -147,26 +149,39 @@ class HackEEGBoard:
             print(self.format_json(response_obj))
         return self._decode_data(response_obj)
 
+    def read_rdatac_response(self):
+        """read a response from the Arduino– JSON Lines or MessagePack mode are ok"""
+        if self.mode == self.MessagePackMode:
+            response_obj = self._serial_read_messagepack_message()
+        else:
+            message = self._serial_readline()
+            response_obj = json.loads(message)
+        if self.debug:
+            print(f"read_response obj: {response_obj}")
+        result = None
+        try:
+            result = self._decode_data(response_obj)
+        except AttributeError:
+            pass
+        return result
+
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
 
     def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
-        if self.mode == self.JsonLinesMode:
+        if self.mode in (self.JsonLinesMode, self.MessagePackMode):
+            # commands are only sent in JSON Lines mode
             new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
             new_command = json.dumps(new_command_obj)
-        elif self.mode == self.MessagePackMode:
-            new_command_obj = {self.MpCommandKey: command, self.MpParametersKey: parameters}
-            new_command = msgpack.pack(new_command_obj)
         else:
             raise HackEEGException("Unknown mode")
         if self.debug:
             print("json command:")
             print(self.format_json(new_command_obj))
         self._serial_write(new_command)
-        if self.mode == self.JsonLinesMode:
-            self._serial_write('\n')
+        self._serial_write('\n')
 
     def send_text_command(self, command):
         self._serial_write(command + '\n')
@@ -181,11 +196,8 @@ class HackEEGBoard:
     def _sense_protocol_mode(self):
         try:
             result = self.execute_command("nop")
-            if result.get(self.StatusCodeKey) == Status.Ok:
-                return self.JsonLinesMode
+            return self.JsonLinesMode
         except Exception:
-            # TODO: MessagePack mode
-            #self._serial_readline()  # discard
             return self.TextMode
 
     def ok(self, response):

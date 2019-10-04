@@ -53,6 +53,13 @@ extern const char *STATUS_TEXT_KEY;
 extern const char *HEADERS_KEY;
 extern const char *DATA_KEY;
 
+extern const char *MP_COMMAND_KEY;
+extern const char *MP_PARAMETERS_KEY;
+extern const char *MP_STATUS_CODE_KEY;
+extern const char *MP_STATUS_TEXT_KEY;
+extern const char *MP_HEADERS_KEY;
+extern const char *MP_DATA_KEY;
+
 typedef void (*command_func)(unsigned char, unsigned char);
 
 class JsonCommand {

@@ -79,6 +79,7 @@ import hackeeg
 from hackeeg import ads1299
 
 hackeeg = hackeeg.HackEEGBoard(SERIAL_PORT_PATH)
+hackeeg.connect()
 hackeeg.sdatac()
 hackeeg.reset()
 hackeeg.blink_board_led()
@@ -171,18 +172,9 @@ The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for 
 
 Give the MESSAGEPACK command to switch to this mode.
 
-When the command MESSAGEPACK is given, the driver communication protocol switches to [MessagePack](https://msgpack.org) concise binary format, and the response will also be in MessagePack format. Command and response structure are virtually identical to the JSONLines mode, but the serialization format is MessagePack, and commands are given as integers rather than strings.
+When the command MESSAGEPACK is given, the driver communication protocol for `rdatac` responses ONLY switches to [MessagePack](https://msgpack.org) concise binary format. Commands are still given in JSON Lines format, and responses for all commands other than `rdatac` will be in JSON Lines. Responses for `rdatac` will be in MessagePack format. This mode is available to improve data transfer speed.
 
 The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
-
-#### Commands:
-
-```
-{
-    C: <command-number>,
-    P: [ <param1>, <param2>, ... ]
-}
-```
 
 #### Responses:
 

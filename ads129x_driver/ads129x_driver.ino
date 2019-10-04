@@ -247,10 +247,8 @@ void loop() {
             serial_command.readSerial();
             break;
         case JSONLINES_MODE:
-            json_command.readSerial();
-            break;
         case MESSAGEPACK_MODE:
-            // TODO: not implemented
+            json_command.readSerial();
             break;
         default:
             // do nothing 
@@ -309,10 +307,9 @@ void send_response(int status_code, const char *status_text) {
             WiredSerial.println(response);
             break;
         case JSONLINES_MODE:
-            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
-            break;
         case MESSAGEPACK_MODE:
-            json_command.sendMessagePackResponse(status_code, (char *) status_text);
+            // all responses are in JSON Lines, MessagePack mode is only for sending samples
+            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
             break;
         default:
             // unknown protocol
@@ -367,10 +364,8 @@ void status_command(unsigned char unused1, unsigned char unused2) {
     status_info["active_channels"] = num_active_channels;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.sendJsonLinesDocResponse(doc);
-            break;
         case MESSAGEPACK_MODE:
-            // TODO: not implemented yet 
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         default:
             // unknown protocol
@@ -400,10 +395,8 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
     root[DATA_KEY] = microseconds;
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            json_command.sendJsonLinesDocResponse(doc);
-            break;
         case MESSAGEPACK_MODE:
-            // TODO: not implemented yet 
+            json_command.sendJsonLinesDocResponse(doc);
             break;
         default:
             // unknown protocol
@@ -675,35 +668,34 @@ inline void receive_sample() {
 // Use SAM3X DMA
 inline void send_sample(void) {
     receive_sample();
-    if (protocol_mode == TEXT_MODE) {
-        if (base64_mode == true) {
-            base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-        } else {
-            encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-        }
-        WiredSerial.println(output_buffer);
-    } else if (protocol_mode == JSONLINES_MODE || protocol_mode == MESSAGEPACK_MODE) {
-        send_sample_json(num_timestamped_spi_bytes);
+    switch (protocol_mode) {
+        case TEXT_MODE:
+            if (base64_mode) {
+                base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            } else {
+                encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            }
+            WiredSerial.println(output_buffer);
+            break;
+        case JSONLINES_MODE:
+        case MESSAGEPACK_MODE:
+            send_sample_json(num_timestamped_spi_bytes);
+            break;
     }
 }
 
 inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
-    root[STATUS_CODE_KEY] = STATUS_OK;
-    root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
     JsonArray data = root.createNestedArray(DATA_KEY);
     copyArray(spi_bytes, num_bytes, data);
-    switch (protocol_mode) {
-        case JSONLINES_MODE:
-            json_command.sendJsonLinesDocResponse(doc);
-            break;
-        case MESSAGEPACK_MODE:
-            // TODO: not implemented yet
-            break;
-        default:
-            // unknown protocol
-            ;
+    if (protocol_mode == JSONLINES_MODE) {
+        root[STATUS_CODE_KEY] = STATUS_OK;
+        root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
+        json_command.sendJsonLinesDocResponse(doc);
+    } else if (protocol_mode == MESSAGEPACK_MODE) {
+        root[MP_STATUS_CODE_KEY] = STATUS_OK;
+        json_command.sendMessagePackDocResponse(doc);
     }
 }
 
