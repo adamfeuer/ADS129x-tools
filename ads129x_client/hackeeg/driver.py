@@ -8,7 +8,7 @@ import serial
 from . import ads1299
 
 # TODO
-# - MessagePack
+# jsonlines concise mode in data transfer only
 
 NUMBER_OF_SAMPLES = 10000
 DEFAULT_BAUDRATE = 115200
@@ -37,15 +37,20 @@ class HackEEGException(Exception):
 class HackEEGBoard:
     TextMode = 0
     JsonLinesMode = 1
-    MessagePackMode = 2
 
     CommandKey = "COMMAND"
+    ConciseCommandKey = "C"
     ParametersKey = "PARAMETERS"
+    ConciseParametersKey = "P"
     HeadersKey = "HEADERS"
+    ConciseHeadersKey = "H"
     DataKey = "DATA"
+    ConciseDataKey = "D"
     DecodedDataKey = "DECODED_DATA"
     StatusCodeKey = "STATUS_CODE"
+    ConciseStatusCodeKey = "S"
     StatusTextKey = "STATUS_TEXT"
+    ConciseStatusTextKey = "T"
 
     MaxConnectionAttempts = 10
     ConnectionSleepTime = 0.1
@@ -205,8 +210,17 @@ class HackEEGBoard:
     def stop(self):
         return self.execute_command("stop")
 
+    def conciseon(self):
+        return self.execute_command("conciseon")
+
+    def conciseoff(self):
+        return self.execute_command("conciseoff")
+
     def status(self):
         return self.execute_command("status")
+
+    def nop(self):
+        return self.execute_command("nop")
 
     def jsonlines_mode(self):
         old_mode = self.mode
@@ -216,15 +230,6 @@ class HackEEGBoard:
             return self.read_response()
         if old_mode == self.JsonLinesMode:
             self.execute_command("jsonlines")
-
-    def messagepack_mode(self):
-        pass
-        # TODO: implement MessagePack protocol
-        # self.protocol_mode = self.MessagePackMode
-        # if self.mode == self.TextMode:
-        #     return self.send_text_command("messagepack")
-        # if self.mode == self.JsonLinesMode:
-        #     return self.execute_command("messagepack")
 
     def rdatac(self):
         result = self.execute_command("rdatac")

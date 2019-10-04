@@ -35,34 +35,6 @@
 
 #define SPI_BUFFER_SIZE 200
 #define OUTPUT_BUFFER_SIZE 1000
-#define CIRCULAR_BUFFER_SIZE 10000
-
-#define NOP_COMMAND 0
-#define VERSION_COMMAND 1
-#define STATUS_COMMAND 2
-#define SERIALNUMBER_COMMAND 3
-#define TEXT_COMMAND 4
-#define JSONLINES_COMMAND 5
-#define MESSAGEPACK_COMMAND 6
-#define LEDON_COMMAND 7
-#define LEDOFF_COMMAND 8
-#define BOARDLEDOFF_COMMAND 9
-#define BOARDLEDON_COMMAND 10
-#define WAKEUP_COMMAND 11
-#define STANDBY_COMMAND 12
-#define RESET_COMMAND 13
-#define START_COMMAND 14
-#define STOP_COMMAND 15
-#define RDATAC_COMMAND 16
-#define SDATAC_COMMAND 17
-#define GETDATA_COMMAND 18
-#define RDATA_COMMAND 19
-#define RREG_COMMAND 20
-#define WREG_COMMAND 21
-#define BASE64_COMMAND 22
-#define HEX_COMMAND 23
-#define MICROS_COMMAND 24
-#define HELP_COMMAND 25
 
 #define TEXT_MODE 0
 #define JSONLINES_MODE 1
@@ -207,25 +179,19 @@ void setup() {
     serial_command.addCommand("reset", reset_command);                 // Reset the ADS1299
     serial_command.addCommand("start", start_command);                 // Send START command
     serial_command.addCommand("stop", stop_command);                   // Send STOP command
-    serial_command.addCommand("rdatac",
-                              rdatac_command);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    serial_command.addCommand("sdatac",
-                              sdatac_command);               // Stop read data continuous mode; ringbuffer data is still available
+    serial_command.addCommand("rdatac", rdatac_command);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    serial_command.addCommand("sdatac", sdatac_command);               // Stop read data continuous mode; ringbuffer data is still available
     serial_command.addCommand("getdata", getdata_command);             // Get data from the ringbuffer
-    serial_command.addCommand("rdata",
-                              rdata_command);                 // Read one sample of data from each active channel
-    serial_command.addCommand("rreg",
-                              read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
+    serial_command.addCommand("rdata", rdata_command);                 // Read one sample of data from each active channel
+    serial_command.addCommand("rreg", read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
     serial_command.addCommand("wreg", write_register_command);         // Write ADS129x register, arguments in hex
-    serial_command.addCommand("base64",
-                              base64_mode_on_command);       // RDATA commands send base64 encoded data - default
+    serial_command.addCommand("base64", base64_mode_on_command);       // RDATA commands send base64 encoded data - default
     serial_command.addCommand("hex", hex_mode_on_command);             // RDATA commands send hex encoded data
     serial_command.addCommand("help", help_command);                   // Print list of commands
     serial_command.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
 
     json_command.addCommand("nop", nop_command);                       // No operation (does nothing)
-    json_command.addCommand("micros",
-                            micros_command);                 // Returns number of microseconds since the program began executing
+    json_command.addCommand("micros", micros_command);                 // Returns number of microseconds since the program began executing
     json_command.addCommand("ledon", led_on_command);                  // Turns Arduino Due onboard LED on
     json_command.addCommand("ledoff", led_off_command);                // Turns Arduino Due onboard LED off
     json_command.addCommand("boardledoff", board_led_off_command);     // Turns HackEEG ADS1299 GPIO4 LED off
@@ -234,19 +200,17 @@ void setup() {
     json_command.addCommand("reset", reset_command);                   // Reset the ADS1299
     json_command.addCommand("start", start_command);                   // Send START command
     json_command.addCommand("stop", stop_command);                     // Send STOP command
-    json_command.addCommand("rdatac",
-                            rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    json_command.addCommand("sdatac",
-                            sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
-    json_command.addCommand("serialnumber",
-                            serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+    json_command.addCommand("conciseon", conciseon_command);           // Returns the driver status
+    json_command.addCommand("conciseoff", conciseoff_command);         // Returns the driver status
+    json_command.addCommand("rdatac", rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    json_command.addCommand("sdatac", sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
+    json_command.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
     json_command.addCommand("text", text_command);                     // Sets the communication protocol to text
     json_command.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines
     json_command.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
     json_command.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
     json_command.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
-    json_command.addCommand("rdata",
-                            rdata_command);                   // Read one sample of data from each active channel
+    json_command.addCommand("rdata", rdata_command);                   // Read one sample of data from each active channel
     json_command.setDefaultHandler(unrecognized_jsonlines);            // Handler for any command that isn't matched
 
     WiredSerial.println("Ready");
@@ -678,7 +642,7 @@ inline void receive_sample() {
 inline void send_sample(void) {
     receive_sample();
     if (protocol_mode == TEXT_MODE) {
-        if (base64_mode == true) {
+        if (base64_mode) {
             base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
         } else {
             encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
