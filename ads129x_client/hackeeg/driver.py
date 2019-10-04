@@ -99,8 +99,14 @@ class HackEEGBoard:
         self.serialPort.write(command_data)
 
     def _serial_readline(self):
-        line = self.serialPort.readline()
-        line = line.decode("utf-8")
+        line = None
+        while not line:
+            try:
+                line = self.serialPort.readline()
+                line = line.decode("utf-8")
+            except UnicodeDecodeError:
+                if self.debug:
+                    print("UnicodeDecodeError")
         line = line.strip()
         if self.debug:
             print(f"line: {line}")
@@ -116,23 +122,24 @@ class HackEEGBoard:
         """decode ADS1299 sample status bits - datasheet, p36
         The format is:
         1100 + LOFF_STATP[0:7] + LOFF_STATN[0:7] + bits[4:7] of the GPIOregister"""
-        data = response.get(self.DataKey)
-        if data and type(data) is list:
-            timestamp = int.from_bytes(data[0:4], byteorder='little')
-            ads_status = int.from_bytes(data[4:7], byteorder='big')
-            ads_gpio = ads_status & 0x0f
-            loff_statn = (ads_status >> 4) & 0xff
-            loff_statp = (ads_status >> 12) & 0xff
-            extra = (ads_status >> 20) & 0xff
+        if response:
+            data = response.get(self.DataKey)
+            if data and type(data) is list:
+                timestamp = int.from_bytes(data[0:4], byteorder='little')
+                ads_status = int.from_bytes(data[4:7], byteorder='big')
+                ads_gpio = ads_status & 0x0f
+                loff_statn = (ads_status >> 4) & 0xff
+                loff_statp = (ads_status >> 12) & 0xff
+                extra = (ads_status >> 20) & 0xff
 
-            channel_data = []
-            for channel in range(0, 8):
-                channel_offset = 7 + (channel * 3)
-                sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
-                channel_data.append(sample)
+                channel_data = []
+                for channel in range(0, 8):
+                    channel_offset = 7 + (channel * 3)
+                    sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
+                    channel_data.append(sample)
 
-            decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
-            response[self.DecodedDataKey] = decoded_data
+                decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
+                response[self.DecodedDataKey] = decoded_data
         return response
 
     def set_debug(self, debug):
@@ -141,7 +148,10 @@ class HackEEGBoard:
     def read_response(self):
         """read a response from the Arduino– must be in JSON Lines mode"""
         message = self._serial_readline()
-        response_obj = json.loads(message)
+        try:
+            response_obj = json.loads(message)
+        except UnicodeDecodeError:
+            response_obj = None
         if self.debug:
             print(f"read_response line: {message}")
         if self.debug:
