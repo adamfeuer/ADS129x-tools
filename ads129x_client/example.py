@@ -8,6 +8,7 @@ import hackeeg
 from hackeeg import ads1299
 
 hackeeg = hackeeg.HackEEGBoard(SERIAL_PORT_PATH)
+hackeeg.connect()
 hackeeg.sdatac()
 hackeeg.reset()
 hackeeg.blink_board_led()

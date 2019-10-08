@@ -4,11 +4,13 @@ import time
 from json import JSONDecodeError
 
 import serial
+import msgpack
 
 from . import ads1299
 
 # TODO
 # - MessagePack
+# - MessagePack / Json Lines testing convenience functions
 
 NUMBER_OF_SAMPLES = 10000
 DEFAULT_BAUDRATE = 115200
@@ -47,17 +49,28 @@ class HackEEGBoard:
     StatusCodeKey = "STATUS_CODE"
     StatusTextKey = "STATUS_TEXT"
 
+    MpCommandKey = "C"
+    MpParametersKey = "P"
+    MpHeadersKey = "H"
+    MpDataKey = "D"
+    MpStatusCodeKey = "C"
+    MpStatusTextKey = "T"
     MaxConnectionAttempts = 10
     ConnectionSleepTime = 0.1
 
     def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE, debug=False):
         self.mode = None
+        self.message_pack_unpacker = None
         self.debug = debug
         self.baudrate = baudrate
         self.rdatac_mode = False
         self.serialPortPath = serialPortPath
         if serialPortPath:
             self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
+            self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False)
+            self.serialPort.reset_input_buffer()
+
+    def connect(self):
         self.mode = self._sense_protocol_mode()
         if self.mode == self.TextMode:
             attempts = 0
@@ -77,56 +90,90 @@ class HackEEGBoard:
                     time.sleep(self.ConnectionSleepTime)
             if attempts > 0:
                 print()
+            if not connected:
+                raise HackEEGException("Can't connect to Arduino")
         self.sdatac()
-        self.serialPort.reset_input_buffer()
 
     def _serial_write(self, command):
         command_data = bytes(command, 'utf-8')
         self.serialPort.write(command_data)
 
     def _serial_readline(self):
-        line = self.serialPort.readline()
-        line = line.decode("utf-8")
+        line = None
+        while not line:
+            try:
+                line = self.serialPort.readline()
+                line = line.decode("utf-8")
+            except UnicodeDecodeError:
+                if self.debug:
+                    print("UnicodeDecodeError")
         line = line.strip()
         if self.debug:
             print(f"line: {line}")
         return line
 
+    def _serial_read_messagepack_message(self):
+        message = self.message_pack_unpacker.unpack()
+        if self.debug:
+            print(f"message: {message}")
+        return message
+
     def _decode_data(self, response):
         """decode ADS1299 sample status bits - datasheet, p36
         The format is:
         1100 + LOFF_STATP[0:7] + LOFF_STATN[0:7] + bits[4:7] of the GPIOregister"""
-        data = response.get(self.DataKey)
-        if data and type(data) is list:
-            timestamp = int.from_bytes(data[0:4], byteorder='little')
-            ads_status = int.from_bytes(data[4:7], byteorder='big')
-            ads_gpio = ads_status & 0x0f
-            loff_statn = (ads_status >> 4) & 0xff
-            loff_statp = (ads_status >> 12) & 0xff
-            extra = (ads_status >> 20) & 0xff
+        if response:
+            data = response.get(self.DataKey)
+            if data and type(data) is list:
+                timestamp = int.from_bytes(data[0:4], byteorder='little')
+                ads_status = int.from_bytes(data[4:7], byteorder='big')
+                ads_gpio = ads_status & 0x0f
+                loff_statn = (ads_status >> 4) & 0xff
+                loff_statp = (ads_status >> 12) & 0xff
+                extra = (ads_status >> 20) & 0xff
 
-            channel_data = []
-            for channel in range(0, 8):
-                channel_offset = 7 + (channel * 3)
-                sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
-                channel_data.append(sample)
+                channel_data = []
+                for channel in range(0, 8):
+                    channel_offset = 7 + (channel * 3)
+                    sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
+                    channel_data.append(sample)
 
-            decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
-            response[self.DecodedDataKey] = decoded_data
+                decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
+                response[self.DecodedDataKey] = decoded_data
         return response
 
     def set_debug(self, debug):
         self.debug = debug
 
     def read_response(self):
-        line = self._serial_readline()
+        """read a response from the Arduino– must be in JSON Lines mode"""
+        message = self._serial_readline()
+        try:
+            response_obj = json.loads(message)
+        except UnicodeDecodeError:
+            response_obj = None
         if self.debug:
-            print(f"read_response line: {line}")
-        response_obj = json.loads(line)
+            print(f"read_response line: {message}")
         if self.debug:
             print("json response:")
             print(self.format_json(response_obj))
         return self._decode_data(response_obj)
+
+    def read_rdatac_response(self):
+        """read a response from the Arduino– JSON Lines or MessagePack mode are ok"""
+        if self.mode == self.MessagePackMode:
+            response_obj = self._serial_read_messagepack_message()
+        else:
+            message = self._serial_readline()
+            response_obj = json.loads(message)
+        if self.debug:
+            print(f"read_response obj: {response_obj}")
+        result = None
+        try:
+            result = self._decode_data(response_obj)
+        except AttributeError:
+            pass
+        return result
 
     def format_json(self, json_obj):
         return json.dumps(json_obj, indent=4, sort_keys=True)
@@ -134,12 +181,17 @@ class HackEEGBoard:
     def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
-        new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
-        new_command = json.dumps(new_command_obj)
+        if self.mode in (self.JsonLinesMode, self.MessagePackMode):
+            # commands are only sent in JSON Lines mode
+            new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
+            new_command = json.dumps(new_command_obj)
+        else:
+            raise HackEEGException("Unknown mode")
         if self.debug:
             print("json command:")
             print(self.format_json(new_command_obj))
-        self._serial_write(new_command + '\n')
+        self._serial_write(new_command)
+        self._serial_write('\n')
 
     def send_text_command(self, command):
         self._serial_write(command + '\n')
@@ -154,11 +206,8 @@ class HackEEGBoard:
     def _sense_protocol_mode(self):
         try:
             result = self.execute_command("nop")
-            if result.get(self.StatusCodeKey) == Status.Ok:
-                return self.JsonLinesMode
+            return self.JsonLinesMode
         except Exception:
-            # TODO: MessagePack mode
-            #self._serial_readline()  # discard
             return self.TextMode
 
     def ok(self, response):
@@ -218,13 +267,16 @@ class HackEEGBoard:
             self.execute_command("jsonlines")
 
     def messagepack_mode(self):
-        pass
-        # TODO: implement MessagePack protocol
-        # self.protocol_mode = self.MessagePackMode
-        # if self.mode == self.TextMode:
-        #     return self.send_text_command("messagepack")
-        # if self.mode == self.JsonLinesMode:
-        #     return self.execute_command("messagepack")
+        old_mode = self.mode
+        self.mode = self.MessagePackMode
+        if old_mode == self.TextMode:
+            self.send_text_command("messagepack")
+            response = self._serial_read_messagepack_message()
+            return response
+        elif old_mode == self.JsonLinesMode:
+            self.send_command("messagepack")
+            response = self._serial_read_messagepack_message()
+            return response
 
     def rdatac(self):
         result = self.execute_command("rdatac")

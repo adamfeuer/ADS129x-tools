@@ -53,7 +53,9 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * BASE64 – RDATA/RDATAC commands will encode data in base64.
 * TEXT – communication protocol switches to text. See the Communication Protocol section.
 * JSONLINES – communication protocol switches from text to [JSONLines](http://jsonlines.org/). This is a text-oriented serialization format with libraries in many languages. See the Communication Protocol section.
-* HEX – RDATA commands will encode data in hex.
+* MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org). This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
+* SYNC – Only available in JSON Lines mode or MessagePack mode. Returns a synchronization message that can be used to resynchronize message framing after errors.
+* HEX – RDATA commands will encode data in hexidecimal format.
 * HELP – prints a list of available commands.
 
 
@@ -77,6 +79,7 @@ import hackeeg
 from hackeeg import ads1299
 
 hackeeg = hackeeg.HackEEGBoard(SERIAL_PORT_PATH)
+hackeeg.connect()
 hackeeg.sdatac()
 hackeeg.reset()
 hackeeg.blink_board_led()
@@ -165,6 +168,32 @@ Here is an example exchange:
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
 
+### MessagePack mode
+
+Give the MESSAGEPACK command to switch to this mode.
+
+When the command MESSAGEPACK is given, the driver communication protocol for `rdatac` responses ONLY switches to [MessagePack](https://msgpack.org) concise binary format. Commands are still given in JSON Lines format, and responses for all commands other than `rdatac` will be in JSON Lines. Responses for `rdatac` will be in MessagePack format. This mode is available to improve data transfer speed.
+
+The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
+
+#### Responses:
+
+```
+{
+    C: <status-code>,
+    T: "<status-text>",
+    H: ["header1", "header2", ... ],
+    D: [value1, value2, value3, ... ]
+}
+```
+
+In MessagePack mode, status text is usually omitted except in the case of errors. Headers are optional and may or may not be provided.
+
+
+The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
+
+
+
 ## Python Host Software
 
 The Python host software is designed to run on a laptop computer or embedded computer like a Raspberry Pi. There is a command line client `hackeeg_shell` (which runs `hackeeg_shell.py`) that demonstrates how to use the API, and can be used for basic debugging. There is also an example script `hackeeg_test.py` that shows how to use the Python client library to Using Python 3.x on 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
@@ -198,7 +227,7 @@ might be useful. It is designed for the ADS1298, but should also work with the A
 
 This software would not be possible without the help of many people:
 
-* Kendrick Shaw, Ace Medlock, and Eric Herman (ADS1298.h header file and some parts of the ADS1298 driver, see [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG) for more info
+* Kendrick Shaw, Ace Medlock, and Eric Herman (parts of the ADS129x.h header file and some parts of the ADS129x driver, see [OpenHardwareExG project](https://github.com/OpenElectronicsLab/OpenHardwareExG) for more info.
 * Chris Rorden (some parts of the ADS1298 driver)
 * Stefan Rado (SerialCommand library)
 * Steven Cogswell (SerialCommand library)

@@ -53,6 +53,13 @@ extern const char *STATUS_TEXT_KEY;
 extern const char *HEADERS_KEY;
 extern const char *DATA_KEY;
 
+extern const char *MP_COMMAND_KEY;
+extern const char *MP_PARAMETERS_KEY;
+extern const char *MP_STATUS_CODE_KEY;
+extern const char *MP_STATUS_TEXT_KEY;
+extern const char *MP_HEADERS_KEY;
+extern const char *MP_DATA_KEY;
+
 typedef void (*command_func)(unsigned char, unsigned char);
 
 class JsonCommand {
@@ -62,13 +69,15 @@ public:
                                                       unsigned char register_value)); // Add a command to the processing dictionary.
     void setDefaultHandler(void (*function)(const char *));   // A handler to call when no valid command received.
 
-    void readSerial();      // Main entry point.
+    void readSerial();                           // Main entry point.
+    void readSerialMessagePackMessage();         // Entry point for MessagePack mode
     void clearBuffer();     // Clears the input buffer.
     void printCommands();   // Prints the list of commands.
-    char *
-    next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
-    void sendJsonLinesResponse(int status_code, char *status_text); // send a simple JSONLines response
-    void sendJsonLinesDocResponse(JsonDocument &doc); // send a JsonDocument as a JSONLines response
+    char * next();           // Returns pointer to next token found in command buffer (for getting arguments to commands).
+    void sendJsonLinesResponse(int status_code, char *status_text);    // send a simple JSON Lines response
+    void sendJsonLinesDocResponse(JsonDocument &doc);                  // send a JsonDocument as a JSON Lines response
+    void sendMessagePackResponse(int status_code, char *status_text);  // send a simple MessagePack response
+    void sendMessagePackDocResponse(JsonDocument &doc);                // send a JsonDocument as a MessagePack response
 
 private:
     // Command/handler dictionary

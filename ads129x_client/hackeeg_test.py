@@ -4,7 +4,7 @@ import argparse
 
 import hackeeg
 from hackeeg import ads1299
-from hackeeg.driver import SPEEDS
+from hackeeg.driver import SPEEDS, Status
 
 
 class HackEegTestApplication:
@@ -14,11 +14,13 @@ class HackEegTestApplication:
         self.serial_port_name = None
         self.hackeeg = None
         self.debug = False
+        # self.debug = True
 
     def setup(self, samples_per_second=500):
         if samples_per_second not in SPEEDS.keys():
             raise HackEegException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
+        self.hackeeg.jsonlines_mode()
         self.hackeeg.sdatac()
         self.hackeeg.reset()
         self.hackeeg.blink_board_led()
@@ -42,6 +44,7 @@ class HackEegTestApplication:
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
+        self.hackeeg.messagepack_mode()
         self.hackeeg.rdatac()
         self.hackeeg.start()
         return
@@ -58,27 +61,33 @@ class HackEegTestApplication:
             print("debug mode on")
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
+        self.hackeeg.connect()
         self.setup()
         while True:
-            result = self.hackeeg.read_response()
-            status_code = result.get('STATUS_CODE')
-            status_text = result.get('STATUS_TEXT')
-            data = result.get(self.hackeeg.DataKey)
-            if data:
-                decoded_data = result.get(self.hackeeg.DecodedDataKey)
-                if decoded_data:
-                    timestamp = decoded_data.get('timestamp')
-                    ads_gpio = decoded_data.get('ads_gpio')
-                    loff_statp = decoded_data.get('loff_statp')
-                    loff_statn = decoded_data.get('loff_statn')
-                    channel_data = decoded_data.get('channel_data')
-                    print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
-                          end='')
-                    for channel_number, sample in enumerate(channel_data):
-                        print(f"{channel_number+1}:{sample} ", end='')
-                    print()
+            result = self.hackeeg.read_rdatac_response()
+            if result:
+                if self.hackeeg.mode == self.hackeeg.JsonLinesMode:
+                    status_code = result.get('STATUS_CODE')
                 else:
-                    print(data)
+                    status_code = result.get('C')
+                data = result.get(self.hackeeg.DataKey)
+                if status_code == Status.Ok and data:
+                    decoded_data = result.get(self.hackeeg.DecodedDataKey)
+                    if decoded_data:
+                        timestamp = decoded_data.get('timestamp')
+                        ads_gpio = decoded_data.get('ads_gpio')
+                        loff_statp = decoded_data.get('loff_statp')
+                        loff_statn = decoded_data.get('loff_statn')
+                        channel_data = decoded_data.get('channel_data')
+                        print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                              end='')
+                        for channel_number, sample in enumerate(channel_data):
+                            print(f"{channel_number+1}:{sample} ", end='')
+                        print()
+                    else:
+                        print(data)
+            else:
+                print("no data to decode")
 
 
 if __name__ == "__main__":
