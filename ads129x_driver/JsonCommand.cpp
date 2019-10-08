@@ -134,7 +134,7 @@ void JsonCommand::readSerial() {
                 return;
             }
             const char *command = command_name_variant.as<const char *>();
-            int command_num = find_command(command);
+            int command_num = findCommand(command);
             if (command_num < 0) {
                 (*defaultHandler)(command);
                 clearBuffer();
@@ -179,7 +179,7 @@ void JsonCommand::readSerial() {
 }
 
 
-int JsonCommand::find_command(const char *command) {
+int JsonCommand::findCommand(const char *command) {
     int result = -1;
     for (int i = 0; i < commandCount; i++) {
         if (strcmp(command, commandList[i].command) == 0) {

@@ -307,6 +307,8 @@ void send_response(int status_code, const char *status_text) {
             WiredSerial.println(response);
             break;
         case JSONLINES_MODE:
+            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
+            break;
         case MESSAGEPACK_MODE:
             // all responses are in JSON Lines, MessagePack mode is only for sending samples
             json_command.sendJsonLinesResponse(status_code, (char *) status_text);
