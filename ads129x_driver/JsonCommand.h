@@ -98,8 +98,7 @@ private:
     byte bufPos;                        // Current position in the buffer
     char *last;                         // State variable used by strtok_r during processing
 
-    int find_command(const char *command);
-    int mode;
+    int findCommand(const char *command);
 };
 
 #endif  // JSONCOMMAND_H
