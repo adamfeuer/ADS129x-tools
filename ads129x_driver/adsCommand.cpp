@@ -34,19 +34,19 @@
 	}
 }*/
 
-void adc_send_command(int cmd) {
+void adcSendCommand(int cmd) {
     digitalWrite(PIN_CS, LOW);
     spiSend(cmd);
     delayMicroseconds(1);
     digitalWrite(PIN_CS, HIGH);
 }
 
-void adc_send_command_leave_cs_active(int cmd) {
+void adcSendCommandLeaveCsActive(int cmd) {
     digitalWrite(PIN_CS, LOW);
     spiSend(cmd);
 }
 
-void adc_wreg(int reg, int val) {
+void adcWreg(int reg, int val) {
     //see pages 40,43 of datasheet -
     digitalWrite(PIN_CS, LOW);
     spiSend(ADS129x::WREG | reg);
@@ -58,7 +58,7 @@ void adc_wreg(int reg, int val) {
     digitalWrite(PIN_CS, HIGH);
 }
 
-int adc_rreg(int reg) {
+int adcRreg(int reg) {
     uint8_t out = 0;
     digitalWrite(PIN_CS, LOW);
     spiSend(ADS129x::RREG | reg);

@@ -35,34 +35,6 @@
 
 #define SPI_BUFFER_SIZE 200
 #define OUTPUT_BUFFER_SIZE 1000
-#define CIRCULAR_BUFFER_SIZE 10000
-
-#define NOP_COMMAND 0
-#define VERSION_COMMAND 1
-#define STATUS_COMMAND 2
-#define SERIALNUMBER_COMMAND 3
-#define TEXT_COMMAND 4
-#define JSONLINES_COMMAND 5
-#define MESSAGEPACK_COMMAND 6
-#define LEDON_COMMAND 7
-#define LEDOFF_COMMAND 8
-#define BOARDLEDOFF_COMMAND 9
-#define BOARDLEDON_COMMAND 10
-#define WAKEUP_COMMAND 11
-#define STANDBY_COMMAND 12
-#define RESET_COMMAND 13
-#define START_COMMAND 14
-#define STOP_COMMAND 15
-#define RDATAC_COMMAND 16
-#define SDATAC_COMMAND 17
-#define GETDATA_COMMAND 18
-#define RDATA_COMMAND 19
-#define RREG_COMMAND 20
-#define WREG_COMMAND 21
-#define BASE64_COMMAND 22
-#define HEX_COMMAND 23
-#define MICROS_COMMAND 24
-#define HELP_COMMAND 25
 
 #define TEXT_MODE 0
 #define JSONLINES_MODE 1
@@ -110,72 +82,41 @@ const char *board_name = "HackEEG";
 const char *maker_name = "Starcat LLC";
 const char *driver_version = "v0.3.0";
 
-SerialCommand serial_command;
-JsonCommand json_command;
+SerialCommand serialCommand;
+JsonCommand jsonCommand;
 
-void arduino_setup();
-
-void ads_setup();
-
-void detect_active_channels();
-
+void arduinoSetup();
+void adsSetup();
+void detectActiveChannels();
 void unrecognized(const char *);
+void unrecognizedJsonLines(const char *);
 
-void unrecognized_jsonlines(const char *);
-
-void nop_command(unsigned char unused1, unsigned char unused2);
-
-void version_command(unsigned char unused1, unsigned char unused2);
-
-void status_command(unsigned char unused1, unsigned char unused2);
-
-void serial_number_command(unsigned char unused1, unsigned char unused2);
-
-void text_command(unsigned char unused1, unsigned char unused2);
-
-void jsonlines_command(unsigned char unused1, unsigned char unused2);
-
-void messagepack_command(unsigned char unused1, unsigned char unused2);
-
-void led_on_command(unsigned char unused1, unsigned char unused2);
-
-void led_off_command(unsigned char unused1, unsigned char unused2);
-
-void board_led_off_command(unsigned char unused1, unsigned char unused2);
-
-void board_led_on_command(unsigned char unused1, unsigned char unused2);
-
-void wakeup_command(unsigned char unused1, unsigned char unused2);
-
-void standby_command(unsigned char unused1, unsigned char unused2);
-
-void reset_command(unsigned char unused1, unsigned char unused2);
-
-void start_command(unsigned char unused1, unsigned char unused2);
-
-void stop_command(unsigned char unused1, unsigned char unused2);
-
-void rdatac_command(unsigned char unused1, unsigned char unused2);
-
-void sdatac_command(unsigned char unused1, unsigned char unused2);
-
-void getdata_command(unsigned char unused1, unsigned char unused2);
-
-void rdata_command(unsigned char unused1, unsigned char unused2);
-
-void base64_mode_on(unsigned char unused1, unsigned char unused2);
-
-void hex_mode_on_command(unsigned char unused1, unsigned char unused2);
-
-void help_command(unsigned char unused1, unsigned char unused2);
-
-void read_register_command(unsigned char unused1, unsigned char unused2);
-
-void write_register_command(unsigned char unused1, unsigned char unused2);
-
-void read_register_command_direct(unsigned char register_number);
-
-void write_register_command_direct(unsigned char register_number, unsigned char register_value);
+void nopCommand(unsigned char unused1, unsigned char unused2);
+void versionCommand(unsigned char unused1, unsigned char unused2);
+void statusCommand(unsigned char unused1, unsigned char unused2);
+void serialNumberCommand(unsigned char unused1, unsigned char unused2);
+void textCommand(unsigned char unused1, unsigned char unused2);
+void jsonlinesCommand(unsigned char unused1, unsigned char unused2);
+void messagepackCommand(unsigned char unused1, unsigned char unused2);
+void ledOnCommand(unsigned char unused1, unsigned char unused2);
+void ledOffCommand(unsigned char unused1, unsigned char unused2);
+void boardLedOffCommand(unsigned char unused1, unsigned char unused2);
+void boardLedOnCommand(unsigned char unused1, unsigned char unused2);
+void wakeupCommand(unsigned char unused1, unsigned char unused2);
+void standbyCommand(unsigned char unused1, unsigned char unused2);
+void resetCommand(unsigned char unused1, unsigned char unused2);
+void startCommand(unsigned char unused1, unsigned char unused2);
+void stopCommand(unsigned char unused1, unsigned char unused2);
+void rdatacCommand(unsigned char unused1, unsigned char unused2);
+void sdatacCommand(unsigned char unused1, unsigned char unused2);
+void rdataCommand(unsigned char unused1, unsigned char unused2);
+void base64ModeOnCommand(unsigned char unused1, unsigned char unused2);
+void hexModeOnCommand(unsigned char unused1, unsigned char unused2);
+void helpCommand(unsigned char unused1, unsigned char unused2);
+void readRegisterCommand(unsigned char unused1, unsigned char unused2);
+void writeRegisterCommand(unsigned char unused1, unsigned char unused2);
+void readRegisterCommandDirect(unsigned char register_number);
+void writeRegisterCommandDirect(unsigned char register_number, unsigned char register_value);
 
 
 void setup() {
@@ -184,59 +125,59 @@ void setup() {
     digitalWrite(PIN_LED, LOW);   // default to LED off
 
     protocol_mode = TEXT_MODE;
-    arduino_setup();
-    ads_setup();
+    arduinoSetup();
+    adsSetup();
 
     // Setup callbacks for SerialCommand commands
-    serial_command.addCommand("nop", nop_command);                     // No operation (does nothing)
-    serial_command.addCommand("micros", micros_command);               // Returns number of microseconds since the program began executing
-    serial_command.addCommand("version", version_command);             // Echos the driver version number
-    serial_command.addCommand("status", status_command);               // Echos the driver status
-    serial_command.addCommand("serialnumber", serial_number_command);  // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
-    serial_command.addCommand("text", text_command);                   // Sets the communication protocol to text
-    serial_command.addCommand("jsonlines", jsonlines_command);         // Sets the communication protocol to JSONLines
-    serial_command.addCommand("messagepack", messagepack_command);     // Sets the communication protocol to MessagePack
-    serial_command.addCommand("ledon", led_on_command);                // Turns Arduino Due onboard LED on
-    serial_command.addCommand("ledoff", led_off_command);              // Turns Arduino Due onboard LED off
-    serial_command.addCommand("boardledoff", board_led_off_command);   // Turns HackEEG ADS1299 GPIO4 LED off
-    serial_command.addCommand("boardledon", board_led_on_command);     // Turns HackEEG ADS1299 GPIO4 LED on
-    serial_command.addCommand("wakeup", wakeup_command);               // Send the WAKEUP command
-    serial_command.addCommand("standby", standby_command);             // Send the STANDBY command
-    serial_command.addCommand("reset", reset_command);                 // Reset the ADS1299
-    serial_command.addCommand("start", start_command);                 // Send START command
-    serial_command.addCommand("stop", stop_command);                   // Send STOP command
-    serial_command.addCommand("rdatac", rdatac_command);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    serial_command.addCommand("sdatac", sdatac_command);               // Stop read data continuous mode; ringbuffer data is still available
-    serial_command.addCommand("getdata", getdata_command);             // Get data from the ringbuffer
-    serial_command.addCommand("rdata", rdata_command);                 // Read one sample of data from each active channel
-    serial_command.addCommand("rreg", read_register_command);          // Read ADS129x register, argument in hex, print contents in hex
-    serial_command.addCommand("wreg", write_register_command);         // Write ADS129x register, arguments in hex
-    serial_command.addCommand("base64", base64_mode_on_command);       // RDATA commands send base64 encoded data - default
-    serial_command.addCommand("hex", hex_mode_on_command);             // RDATA commands send hex encoded data
-    serial_command.addCommand("help", help_command);                   // Print list of commands
-    serial_command.setDefaultHandler(unrecognized);                    // Handler for any command that isn't matched
+    serialCommand.addCommand("nop", nopCommand);                     // No operation (does nothing)
+    serialCommand.addCommand("micros", microsCommand);               // Returns number of microseconds since the program began executing
+    serialCommand.addCommand("version", versionCommand);             // Echos the driver version number
+    serialCommand.addCommand("status", statusCommand);               // Echos the driver status
+    serialCommand.addCommand("serialnumber", serialNumberCommand);   // Echos the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+    serialCommand.addCommand("text", textCommand);                   // Sets the communication protocol to text
+    serialCommand.addCommand("jsonlines", jsonlinesCommand);         // Sets the communication protocol to JSONLines
+    serialCommand.addCommand("messagepack", messagepackCommand);     // Sets the communication protocol to MessagePack
+    serialCommand.addCommand("ledon", ledOnCommand);                 // Turns Arduino Due onboard LED on
+    serialCommand.addCommand("ledoff", ledOffCommand);               // Turns Arduino Due onboard LED off
+    serialCommand.addCommand("boardledoff", boardLedOffCommand);     // Turns HackEEG ADS1299 GPIO4 LED off
+    serialCommand.addCommand("boardledon", boardLedOnCommand);       // Turns HackEEG ADS1299 GPIO4 LED on
+    serialCommand.addCommand("wakeup", wakeupCommand);               // Send the WAKEUP command
+    serialCommand.addCommand("standby", standbyCommand);             // Send the STANDBY command
+    serialCommand.addCommand("reset", resetCommand);                 // Reset the ADS1299
+    serialCommand.addCommand("start", startCommand);                 // Send START command
+    serialCommand.addCommand("stop", stopCommand);                   // Send STOP command
+    serialCommand.addCommand("rdatac", rdatacCommand);               // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    serialCommand.addCommand("sdatac", sdatacCommand);               // Stop read data continuous mode; ringbuffer data is still available
+    serialCommand.addCommand("rdata", rdataCommand);                 // Read one sample of data from each active channel
+    serialCommand.addCommand("rreg", readRegisterCommand);           // Read ADS129x register, argument in hex, print contents in hex
+    serialCommand.addCommand("wreg", writeRegisterCommand);          // Write ADS129x register, arguments in hex
+    serialCommand.addCommand("base64", base64ModeOnCommand);         // RDATA commands send base64 encoded data - default
+    serialCommand.addCommand("hex", hexModeOnCommand);               // RDATA commands send hex encoded data
+    serialCommand.addCommand("help", helpCommand);                   // Print list of commands
+    serialCommand.setDefaultHandler(unrecognized);                   // Handler for any command that isn't matched
 
-    json_command.addCommand("nop", nop_command);                       // No operation (does nothing)
-    json_command.addCommand("sync", sync_command);                     // Returns a synchronization message (used for error recovery)
-    json_command.addCommand("micros", micros_command);                 // Returns number of microseconds since the program began executing
-    json_command.addCommand("ledon", led_on_command);                  // Turns Arduino Due onboard LED on
-    json_command.addCommand("ledoff", led_off_command);                // Turns Arduino Due onboard LED off
-    json_command.addCommand("boardledoff", board_led_off_command);     // Turns HackEEG ADS1299 GPIO4 LED off
-    json_command.addCommand("boardledon", board_led_on_command);       // Turns HackEEG ADS1299 GPIO4 LED on
-    json_command.addCommand("status", status_command);                 // Returns the driver status
-    json_command.addCommand("reset", reset_command);                   // Reset the ADS1299
-    json_command.addCommand("start", start_command);                   // Send START command
-    json_command.addCommand("stop", stop_command);                     // Send STOP command
-    json_command.addCommand("rdatac", rdatac_command);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
-    json_command.addCommand("sdatac", sdatac_command);                 // Stop read data continuous mode; ringbuffer data is still available
-    json_command.addCommand("serialnumber", serial_number_command);    // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
-    json_command.addCommand("text", text_command);                     // Sets the communication protocol to text
-    json_command.addCommand("jsonlines", jsonlines_command);           // Sets the communication protocol to JSONLines
-    json_command.addCommand("messagepack", messagepack_command);       // Sets the communication protocol to MessagePack
-    json_command.addCommand("rreg", read_register_command_direct);     // Read ADS129x register
-    json_command.addCommand("wreg", write_register_command_direct);    // Write ADS129x register
-    json_command.addCommand("rdata", rdata_command);                   // Read one sample of data from each active channel
-    json_command.setDefaultHandler(unrecognized_jsonlines);            // Handler for any command that isn't matched
+    // Setup callbacks for JsonCommand commands
+    jsonCommand.addCommand("nop", nopCommand);                       // No operation (does nothing)
+    jsonCommand.addCommand("sync", syncCommand);                     // Returns a synchronization message (used for error recovery)
+    jsonCommand.addCommand("micros", microsCommand);                 // Returns number of microseconds since the program began executing
+    jsonCommand.addCommand("ledon", ledOnCommand);                   // Turns Arduino Due onboard LED on
+    jsonCommand.addCommand("ledoff", ledOffCommand);                 // Turns Arduino Due onboard LED off
+    jsonCommand.addCommand("boardledoff", boardLedOffCommand);       // Turns HackEEG ADS1299 GPIO4 LED off
+    jsonCommand.addCommand("boardledon", boardLedOnCommand);         // Turns HackEEG ADS1299 GPIO4 LED on
+    jsonCommand.addCommand("status", statusCommand);                 // Returns the driver status
+    jsonCommand.addCommand("reset", resetCommand);                   // Reset the ADS1299
+    jsonCommand.addCommand("start", startCommand);                   // Send START command
+    jsonCommand.addCommand("stop", stopCommand);                     // Send STOP command
+    jsonCommand.addCommand("rdatac", rdatacCommand);                 // Enter read data continuous mode, clear the ringbuffer, and read new data into the ringbuffer
+    jsonCommand.addCommand("sdatac", sdatacCommand);                 // Stop read data continuous mode; ringbuffer data is still available
+    jsonCommand.addCommand("serialnumber", serialNumberCommand);     // Returns the board serial number (UUID from the onboard 24AA256UID-I/SN I2S EEPROM)
+    jsonCommand.addCommand("text", textCommand);                     // Sets the communication protocol to text
+    jsonCommand.addCommand("jsonlines", jsonlinesCommand);           // Sets the communication protocol to JSONLines
+    jsonCommand.addCommand("messagepack", messagepackCommand);       // Sets the communication protocol to MessagePack
+    jsonCommand.addCommand("rreg", readRegisterCommandDirect);       // Read ADS129x register
+    jsonCommand.addCommand("wreg", writeRegisterCommandDirect);      // Write ADS129x register
+    jsonCommand.addCommand("rdata", rdataCommand);                   // Read one sample of data from each active channel
+    jsonCommand.setDefaultHandler(unrecognizedJsonLines);            // Handler for any command that isn't matched
 
     WiredSerial.println("Ready");
 }
@@ -244,11 +185,11 @@ void setup() {
 void loop() {
     switch (protocol_mode) {
         case TEXT_MODE:
-            serial_command.readSerial();
+            serialCommand.readSerial();
             break;
         case JSONLINES_MODE:
         case MESSAGEPACK_MODE:
-            json_command.readSerial();
+            jsonCommand.readSerial();
             break;
         default:
             // do nothing 
@@ -307,11 +248,11 @@ void send_response(int status_code, const char *status_text) {
             WiredSerial.println(response);
             break;
         case JSONLINES_MODE:
-            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
+            jsonCommand.sendJsonLinesResponse(status_code, (char *) status_text);
             break;
         case MESSAGEPACK_MODE:
             // all responses are in JSON Lines, MessagePack mode is only for sending samples
-            json_command.sendJsonLinesResponse(status_code, (char *) status_text);
+            jsonCommand.sendJsonLinesResponse(status_code, (char *) status_text);
             break;
         default:
             // unknown protocol
@@ -330,12 +271,12 @@ void send_jsonlines_data(int status_code, char data, char *status_text) {
     doc.clear();
 }
 
-void version_command(unsigned char unused1, unsigned char unused2) {
+void versionCommand(unsigned char unused1, unsigned char unused2) {
     send_response(RESPONSE_OK, driver_version);
 }
 
-void status_command(unsigned char unused1, unsigned char unused2) {
-    detect_active_channels();
+void statusCommand(unsigned char unused1, unsigned char unused2) {
+    detectActiveChannels();
     if (protocol_mode == TEXT_MODE) {
         WiredSerial.println("200 Ok");
         WiredSerial.print("Driver version: ");
@@ -367,7 +308,7 @@ void status_command(unsigned char unused1, unsigned char unused2) {
     switch (protocol_mode) {
         case JSONLINES_MODE:
         case MESSAGEPACK_MODE:
-            json_command.sendJsonLinesDocResponse(doc);
+            jsonCommand.sendJsonLinesDocResponse(doc);
             break;
         default:
             // unknown protocol
@@ -375,15 +316,15 @@ void status_command(unsigned char unused1, unsigned char unused2) {
     }
 }
 
-void nop_command(unsigned char unused1, unsigned char unused2) {
+void nopCommand(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
 }
 
-void sync_command(unsigned char unused1, unsigned char unused2) {
+void syncCommand(unsigned char unused1, unsigned char unused2) {
     send_response_sync();
 }
 
-void micros_command(unsigned char unused1, unsigned char unused2) {
+void microsCommand(unsigned char unused1, unsigned char unused2) {
     unsigned long microseconds = micros();
     if (protocol_mode == TEXT_MODE) {
         send_response_ok();
@@ -398,7 +339,7 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
     switch (protocol_mode) {
         case JSONLINES_MODE:
         case MESSAGEPACK_MODE:
-            json_command.sendJsonLinesDocResponse(doc);
+            jsonCommand.sendJsonLinesDocResponse(doc);
             break;
         default:
             // unknown protocol
@@ -406,84 +347,84 @@ void micros_command(unsigned char unused1, unsigned char unused2) {
     }
 }
 
-void serial_number_command(unsigned char unused1, unsigned char unused2) {
+void serialNumberCommand(unsigned char unused1, unsigned char unused2) {
     send_response(RESPONSE_NOT_IMPLEMENTED, STATUS_TEXT_NOT_IMPLEMENTED);
 }
 
-void text_command(unsigned char unused1, unsigned char unused2) {
+void textCommand(unsigned char unused1, unsigned char unused2) {
     protocol_mode = TEXT_MODE;
     send_response_ok();
 }
 
-void jsonlines_command(unsigned char unused1, unsigned char unused2) {
+void jsonlinesCommand(unsigned char unused1, unsigned char unused2) {
     protocol_mode = JSONLINES_MODE;
     send_response_ok();
 }
 
-void messagepack_command(unsigned char unused1, unsigned char unused2) {
+void messagepackCommand(unsigned char unused1, unsigned char unused2) {
     protocol_mode = MESSAGEPACK_MODE;
     send_response_ok();
 }
 
-void getdata_command(unsigned char unused1, unsigned char unused2) {
+void getdataCommand(unsigned char unused1, unsigned char unused2) {
     WiredSerial.println("200 Ok");
     send_response(RESPONSE_NOT_IMPLEMENTED, STATUS_TEXT_NOT_IMPLEMENTED);
 }
 
-void led_on_command(unsigned char unused1, unsigned char unused2) {
+void ledOnCommand(unsigned char unused1, unsigned char unused2) {
     digitalWrite(PIN_LED, HIGH);
     send_response_ok();
 }
 
-void led_off_command(unsigned char unused1, unsigned char unused2) {
+void ledOffCommand(unsigned char unused1, unsigned char unused2) {
     digitalWrite(PIN_LED, LOW);
     send_response_ok();
 }
 
-void board_led_on_command(unsigned char unused1, unsigned char unused2) {
-    int state = adc_rreg(ADS129x::GPIO);
+void boardLedOnCommand(unsigned char unused1, unsigned char unused2) {
+    int state = adcRreg(ADS129x::GPIO);
     state = state & 0xF7;
     state = state | 0x80;
-    adc_wreg(ADS129x::GPIO, state);
+    adcWreg(ADS129x::GPIO, state);
     send_response_ok();
 }
 
-void board_led_off_command(unsigned char unused1, unsigned char unused2) {
-    int state = adc_rreg(ADS129x::GPIO);
+void boardLedOffCommand(unsigned char unused1, unsigned char unused2) {
+    int state = adcRreg(ADS129x::GPIO);
     state = state & 0x77;
-    adc_wreg(ADS129x::GPIO, state);
+    adcWreg(ADS129x::GPIO, state);
     send_response_ok();
 }
 
-void base64_mode_on_command(unsigned char unused1, unsigned char unused2) {
+void base64ModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = true;
     WiredSerial.println("200 Ok");
     WiredSerial.println("Base64 mode on - rdata command will respond with base64 encoded data.");
     WiredSerial.println();
 }
 
-void hex_mode_on_command(unsigned char unused1, unsigned char unused2) {
+void hexModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = false;
     WiredSerial.println("200 Ok");
     WiredSerial.println("Hex mode on - rdata command will respond with hex encoded data");
     WiredSerial.println();
 }
 
-void help_command(unsigned char unused1, unsigned char unused2) {
+void helpCommand(unsigned char unused1, unsigned char unused2) {
     WiredSerial.println("200 Ok");
     WiredSerial.println("Available commands: ");
-    serial_command.printCommands();
+    serialCommand.printCommands();
     WiredSerial.println();
 }
 
-void read_register_command(unsigned char unused1, unsigned char unused2) {
+void readRegisterCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     char *arg1;
-    arg1 = serial_command.next();
+    arg1 = serialCommand.next();
     if (arg1 != NULL) {
         long registerNumber = hex_to_long(arg1);
         if (registerNumber >= 0) {
-            int result = adc_rreg(registerNumber);
+            int result = adcRreg(registerNumber);
             WiredSerial.print("200 Ok");
             WiredSerial.print(" (Read Register ");
             output_hex_byte(registerNumber);
@@ -500,31 +441,31 @@ void read_register_command(unsigned char unused1, unsigned char unused2) {
     WiredSerial.println();
 }
 
-void read_register_command_direct(unsigned char register_number, unsigned char unused1) {
+void readRegisterCommandDirect(unsigned char register_number, unsigned char unused1) {
     using namespace ADS129x;
     if (register_number >= 0 and register_number <= 255) {
-        unsigned char result = adc_rreg(register_number);
+        unsigned char result = adcRreg(register_number);
         StaticJsonDocument<1024> doc;
         JsonObject root = doc.to<JsonObject>();
         root[STATUS_CODE_KEY] = STATUS_OK;
         root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
         root[DATA_KEY] = result;
-        json_command.sendJsonLinesDocResponse(doc);
+        jsonCommand.sendJsonLinesDocResponse(doc);
     } else {
         send_response_error();
     }
 }
 
-void write_register_command(unsigned char unused1, unsigned char unused2) {
+void writeRegisterCommand(unsigned char unused1, unsigned char unused2) {
     char *arg1, *arg2;
-    arg1 = serial_command.next();
-    arg2 = serial_command.next();
+    arg1 = serialCommand.next();
+    arg2 = serialCommand.next();
     if (arg1 != NULL) {
         if (arg2 != NULL) {
             long registerNumber = hex_to_long(arg1);
             long registerValue = hex_to_long(arg2);
             if (registerNumber >= 0 && registerValue >= 0) {
-                adc_wreg(registerNumber, registerValue);
+                adcWreg(registerNumber, registerValue);
                 WiredSerial.print("200 Ok");
                 WiredSerial.print(" (Write Register ");
                 output_hex_byte(registerNumber);
@@ -545,71 +486,71 @@ void write_register_command(unsigned char unused1, unsigned char unused2) {
 }
 
 
-void write_register_command_direct(unsigned char register_number, unsigned char register_value) {
+void writeRegisterCommandDirect(unsigned char register_number, unsigned char register_value) {
     if (register_number >= 0 && register_value >= 0) {
-        adc_wreg(register_number, register_value);
+        adcWreg(register_number, register_value);
         send_response_ok();
     } else {
         send_response_error();
     }
 }
 
-void wakeup_command(unsigned char unused1, unsigned char unused2) {
+void wakeupCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    adc_send_command(WAKEUP);
+    adcSendCommand(WAKEUP);
     send_response_ok();
 }
 
-void standby_command(unsigned char unused1, unsigned char unused2) {
+void standbyCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    adc_send_command(STANDBY);
+    adcSendCommand(STANDBY);
     send_response_ok();
 }
 
-void reset_command(unsigned char unused1, unsigned char unused2) {
+void resetCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    adc_send_command(RESET);
+    adcSendCommand(RESET);
     send_response_ok();
 }
 
-void start_command(unsigned char unused1, unsigned char unused2) {
+void startCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    adc_send_command(START);
+    adcSendCommand(START);
     send_response_ok();
 }
 
-void stop_command(unsigned char unused1, unsigned char unused2) {
+void stopCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    adc_send_command(STOP);
+    adcSendCommand(STOP);
     send_response_ok();
 }
 
-void rdata_command(unsigned char unused1, unsigned char unused2) {
+void rdataCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     while (digitalRead(IPIN_DRDY) == HIGH);
-    adc_send_command_leave_cs_active(RDATA);
+    adcSendCommandLeaveCsActive(RDATA);
     if (protocol_mode == TEXT_MODE) {
         send_response_ok();
     }
     send_sample();
 }
 
-void rdatac_command(unsigned char unused1, unsigned char unused2) {
+void rdatacCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
-    detect_active_channels();
+    detectActiveChannels();
     if (num_active_channels > 0) {
         is_rdatac = true;
-        adc_send_command(RDATAC);
+        adcSendCommand(RDATAC);
         send_response_ok();
     } else {
         send_response(RESPONSE_NO_ACTIVE_CHANNELS, STATUS_TEXT_NO_ACTIVE_CHANNELS);
     }
 }
 
-void sdatac_command(unsigned char unused1, unsigned char unused2) {
+void sdatacCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     is_rdatac = false;
-    adc_send_command(SDATAC);
+    adcSendCommand(SDATAC);
     using namespace ADS129x;
     send_response_ok();
 }
@@ -621,22 +562,22 @@ void unrecognized(const char *command) {
 }
 
 // This gets set as the default handler for jsonlines and messagepack, and gets called when no other command matches.
-void unrecognized_jsonlines(const char *command) {
+void unrecognizedJsonLines(const char *command) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
     root[STATUS_CODE_KEY] = UNRECOGNIZED_COMMAND;
     root[STATUS_TEXT_KEY] = "Unrecognized command";
-    json_command.sendJsonLinesDocResponse(doc);
+    jsonCommand.sendJsonLinesDocResponse(doc);
 }
 
-void detect_active_channels() {  //set device into RDATAC (continous) mode -it will stream data
+void detectActiveChannels() {  //set device into RDATAC (continous) mode -it will stream data
     if ((is_rdatac) || (max_channels < 1)) return; //we can not read registers when in RDATAC mode
     //Serial.println("Detect active channels: ");
     using namespace ADS129x;
     num_active_channels = 0;
     for (int i = 1; i <= max_channels; i++) {
         delayMicroseconds(1);
-        int chSet = adc_rreg(CHnSET + i);
+        int chSet = adcRreg(CHnSET + i);
         active_channels[i] = ((chSet & 7) != SHORTED);
         if ((chSet & 7) != SHORTED) num_active_channels++;
     }
@@ -694,22 +635,22 @@ inline void send_sample_json(int num_bytes) {
     if (protocol_mode == JSONLINES_MODE) {
         root[STATUS_CODE_KEY] = STATUS_OK;
         root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
-        json_command.sendJsonLinesDocResponse(doc);
+        jsonCommand.sendJsonLinesDocResponse(doc);
     } else if (protocol_mode == MESSAGEPACK_MODE) {
         root[MP_STATUS_CODE_KEY] = STATUS_OK;
-        json_command.sendMessagePackDocResponse(doc);
+        jsonCommand.sendMessagePackDocResponse(doc);
     }
 }
 
 
-void ads_setup() { //default settings for ADS1298 and compatible chips
+void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;
     // Send SDATAC Command (Stop Read Data Continuously mode)
     delay(1000); //pause to provide ads129n enough time to boot up...
-    adc_send_command(SDATAC);
+    adcSendCommand(SDATAC);
     // delayMicroseconds(2);
     delay(100);
-    int val = adc_rreg(ID);
+    int val = adcRreg(ID);
     switch (val & B00011111) { //least significant bits reports channels
         case B10000: //16
             hardware_type = "ADS1294";
@@ -742,7 +683,7 @@ void ads_setup() { //default settings for ADS1298 and compatible chips
     } //error mode
 }
 
-void arduino_setup() {
+void arduinoSetup() {
     pinMode(PIN_LED, OUTPUT);
     using namespace ADS129x;
     //prepare pins to be outputs or inputs

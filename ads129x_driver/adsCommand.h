@@ -39,11 +39,9 @@ const int PIN_CS = 4;
 //const int PIN_SCLK = 13;//SPI clock
 
 //function prototypes
-void adc_wreg(int reg, int val); //write register
-void adc_send_command(int cmd);
-
-void adc_send_command_leave_cs_active(int cmd);
-
-int adc_rreg(int reg); //read register
+void adcWreg(int reg, int val); //write register
+void adcSendCommand(int cmd);
+void adcSendCommandLeaveCsActive(int cmd);
+int adcRreg(int reg); //read register
 
 #endif // _ADS_COMMAND_H
