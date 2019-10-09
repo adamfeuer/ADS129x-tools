@@ -1,3 +1,4 @@
+import base64
 import json
 import sys
 import time
@@ -67,7 +68,7 @@ class HackEEGBoard:
         self.serialPortPath = serialPortPath
         if serialPortPath:
             self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
-            self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False)
+            self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False, use_list=False)
             self.serialPort.reset_input_buffer()
 
     def connect(self):
@@ -127,6 +128,8 @@ class HackEEGBoard:
             data = response.get(self.DataKey)
             if data is None:
                 data = response.get(self.MpDataKey)
+                if type(data) is str:
+                    data = base64.b64decode(data)
             if data and (type(data) is list or type(data) is bytes):
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
                 ads_status = int.from_bytes(data[4:7], byteorder='big')
