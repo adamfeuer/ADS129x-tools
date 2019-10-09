@@ -82,6 +82,20 @@ const char *board_name = "HackEEG";
 const char *maker_name = "Starcat LLC";
 const char *driver_version = "v0.3.0";
 
+
+// MessagePack array prelude
+//uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc };
+// MessagePack bin prelude - 8 bit size
+uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4};
+//unsigned char messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc, 0x00, 0x1f, 0xcc, 0x8a,
+//                                               0x74, 0x61, 0x04, 0xcc, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//                                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//                                               0x00, 0x4a, 0xcc, 0xfa, 0x5a, 0x00, 0x00, 0x01 };
+size_t messagepack_rdatac_prelude_size = sizeof(messagepack_rdatac_prelude);
+
+uint8_t messagepack_rdatac_short_array[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+size_t messagepack_rdatac_short_array_size = sizeof(messagepack_rdatac_short_array);
+
 SerialCommand serialCommand;
 JsonCommand jsonCommand;
 
@@ -192,7 +206,7 @@ void loop() {
             jsonCommand.readSerial();
             break;
         default:
-            // do nothing 
+            // do nothing
             ;
     }
     send_samples();
@@ -621,27 +635,42 @@ inline void send_sample(void) {
             WiredSerial.println(output_buffer);
             break;
         case JSONLINES_MODE:
-        case MESSAGEPACK_MODE:
             send_sample_json(num_timestamped_spi_bytes);
             break;
+        case MESSAGEPACK_MODE:
+            send_sample_messagepack(num_timestamped_spi_bytes);
+            break;
+
     }
 }
 
 inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
+    root[STATUS_CODE_KEY] = STATUS_OK;
+    root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
     JsonArray data = root.createNestedArray(DATA_KEY);
     copyArray(spi_bytes, num_bytes, data);
-    if (protocol_mode == JSONLINES_MODE) {
-        root[STATUS_CODE_KEY] = STATUS_OK;
-        root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
-        jsonCommand.sendJsonLinesDocResponse(doc);
-    } else if (protocol_mode == MESSAGEPACK_MODE) {
+    jsonCommand.sendJsonLinesDocResponse(doc);
+}
+
+
+inline void send_sample_messagepack(int num_bytes) {
+    int fast_mode = 1;
+//    int fast_mode = 0;
+    if (fast_mode) {
+        SerialUSB.write(messagepack_rdatac_prelude, messagepack_rdatac_prelude_size);
+        SerialUSB.write((uint8_t) num_bytes);
+        SerialUSB.write(spi_bytes, num_bytes);
+    } else {
+        StaticJsonDocument<1024> doc;
+        JsonObject root = doc.to<JsonObject>();
         root[MP_STATUS_CODE_KEY] = STATUS_OK;
+        JsonArray data = root.createNestedArray(MP_DATA_KEY);
+        copyArray(spi_bytes, num_bytes, data);
         jsonCommand.sendMessagePackDocResponse(doc);
     }
 }
-
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;

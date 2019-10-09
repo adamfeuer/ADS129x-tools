@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import sys
 
 import hackeeg
 from hackeeg import ads1299
@@ -45,8 +46,8 @@ class HackEegTestApplication:
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
         self.hackeeg.messagepack_mode()
-        self.hackeeg.rdatac()
         self.hackeeg.start()
+        self.hackeeg.rdatac()
         return
 
     def main(self):
@@ -67,10 +68,10 @@ class HackEegTestApplication:
             result = self.hackeeg.read_rdatac_response()
             if result:
                 if self.hackeeg.mode == self.hackeeg.JsonLinesMode:
-                    status_code = result.get('STATUS_CODE')
+                    status_code = result.get(self.hackeeg.StatusCodeKey)
                 else:
-                    status_code = result.get('C')
-                data = result.get(self.hackeeg.DataKey)
+                    status_code = result.get(self.hackeeg.MpStatusCodeKey)
+                data = result.get(self.hackeeg.MpDataKey)
                 if status_code == Status.Ok and data:
                     decoded_data = result.get(self.hackeeg.DecodedDataKey)
                     if decoded_data:

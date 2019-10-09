@@ -106,7 +106,8 @@ class HackEEGBoard:
                 line = line.decode("utf-8")
             except UnicodeDecodeError:
                 if self.debug:
-                    print("UnicodeDecodeError")
+                    print("UnicodeDecodeError: ", end='')
+                    print(line)
         line = line.strip()
         if self.debug:
             print(f"line: {line}")
@@ -124,7 +125,9 @@ class HackEEGBoard:
         1100 + LOFF_STATP[0:7] + LOFF_STATN[0:7] + bits[4:7] of the GPIOregister"""
         if response:
             data = response.get(self.DataKey)
-            if data and type(data) is list:
+            if data is None:
+                data = response.get(self.MpDataKey)
+            if data and (type(data) is list or type(data) is bytes):
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
                 ads_status = int.from_bytes(data[4:7], byteorder='big')
                 ads_gpio = ads_status & 0x0f
@@ -270,12 +273,12 @@ class HackEEGBoard:
         old_mode = self.mode
         self.mode = self.MessagePackMode
         if old_mode == self.TextMode:
-            self.send_text_command("messagepack")
-            response = self._serial_read_messagepack_message()
+            self.send_text_command("jsonlines")
+            response = self.read_response()
+            self.execute_command("messagepack")
             return response
         elif old_mode == self.JsonLinesMode:
-            self.send_command("messagepack")
-            response = self._serial_read_messagepack_message()
+            response = self.execute_command("messagepack")
             return response
 
     def rdatac(self):
