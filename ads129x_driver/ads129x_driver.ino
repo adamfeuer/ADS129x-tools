@@ -29,7 +29,8 @@
 #include "Base64.h"
 #include "SpiDma.h"
 
-#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+//#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+#define BAUD_RATE 2000000
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB // use Due's Native USB port
 
@@ -87,7 +88,7 @@ const char *driver_version = "v0.3.0";
 //uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc };
 // MessagePack bin prelude - 8 bit size
 uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4};
-//unsigned char messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc, 0x00, 0x1f, 0xcc, 0x8a,
+//unsigned char messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4, 0x22, 0xcc, 0x8a,
 //                                               0x74, 0x61, 0x04, 0xcc, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 //                                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 //                                               0x00, 0x4a, 0xcc, 0xfa, 0x5a, 0x00, 0x00, 0x01 };
@@ -622,9 +623,16 @@ inline void receive_sample() {
     digitalWrite(PIN_CS, HIGH);
 }
 
+const char *sample_data_json_header= "{\"C\":200,\"D\":\"";
+const char *sample_data_json_footer= "\"}";
+const char *fake_sample_data_base64 = "BOlUEcAAAAAAAAAAAAAAAAAAAAAAAAAAAEt7+gAAAA==";
+//const char *fake_sample_data_base64 = "";
+
+const char * fake_sample_data_line = "{\"C\":200,\"D\":\"BOlUEcAAAAAAAAAAAAAAAAAAAAAAAAAAAEt7+gAAAA==\"}";
+
 // Use SAM3X DMA
 inline void send_sample(void) {
-    receive_sample();
+//    receive_sample();
     switch (protocol_mode) {
         case TEXT_MODE:
             if (base64_mode) {
@@ -635,7 +643,27 @@ inline void send_sample(void) {
             WiredSerial.println(output_buffer);
             break;
         case JSONLINES_MODE:
-            send_sample_json(num_timestamped_spi_bytes);
+//            send_sample_json(num_timestamped_spi_bytes);
+
+            WiredSerial.write(sample_data_json_header);
+            base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            WiredSerial.write(output_buffer);
+            WiredSerial.write(sample_data_json_footer);
+            WiredSerial.write("\n");
+
+//            while (WiredSerial.availableForWrite() < 65 ) {
+//                // busy wait
+//            }
+
+            // this works
+            WiredSerial.write(sample_data_json_header);
+            WiredSerial.write(fake_sample_data_base64);
+            WiredSerial.write(sample_data_json_footer);
+            WiredSerial.write("\n");
+
+            // this works
+//            WiredSerial.write(fake_sample_data_line);
+//            WiredSerial.write("\n");
             break;
         case MESSAGEPACK_MODE:
             send_sample_messagepack(num_timestamped_spi_bytes);
