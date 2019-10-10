@@ -28,17 +28,21 @@ class HackEegTestApplication:
         self.hackeeg.blink_board_led()
         self.hackeeg.disable_all_channels()
         # sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
-        sample_mode = ads1299.HIGH_RES_16k_SPS | ads1299.CONFIG1_const
-        #sample_mode = ads1299.HIGH_RES_8k_SPS | ads1299.CONFIG1_const
+        # sample_mode = ads1299.HIGH_RES_16k_SPS | ads1299.CONFIG1_const
+        sample_mode = ads1299.HIGH_RES_8k_SPS | ads1299.CONFIG1_const
         #sample_mode = ads1299.HIGH_RES_4k_SPS | ads1299.CONFIG1_const
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
         test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
         #self.hackeeg.enable_channel(5)
-        self.hackeeg.enable_channel(7)
-        #self.hackeeg.wreg(ads1299.CH5SET, ads1299.TEST_SIGNAL | ads1299.GAIN_8X)
-        #self.hackeeg.wreg(ads1299.CH5SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
+        # self.hackeeg.enable_channel(7)
+
+        for channel in range(1, 9):
+            self.hackeeg.enable_channel(channel)
+            self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+
+        # self.hackeeg.wreg(ads1299.CH5SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
+        # self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEMP | ads1299.GAIN_12X)
         self.hackeeg.rreg(ads1299.CH5SET)
         #self.hackeeg.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
@@ -49,7 +53,7 @@ class HackEegTestApplication:
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        # self.hackeeg.messagepack_mode()
+        self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
@@ -87,11 +91,17 @@ class HackEegTestApplication:
                         loff_statp = decoded_data.get('loff_statp')
                         loff_statn = decoded_data.get('loff_statn')
                         channel_data = decoded_data.get('channel_data')
+                        # print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                        #       end='')
+                        # for channel_number, sample in enumerate(channel_data):
+                        #     print(f"{channel_number+1}:{sample} ", end='')
+                        # print()
             else:
                 print("no data to decode")
                 print(f"result: {result}")
         end_time = time.perf_counter()
         duration = end_time - start_time
+
         self.hackeeg.sdatac()
         self.hackeeg.stop()
         self.hackeeg.blink_board_led()

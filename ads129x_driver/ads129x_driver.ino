@@ -628,7 +628,7 @@ const char *sample_data_json_footer= "\"}";
 
 // Use SAM3X DMA
 inline void send_sample(void) {
-//    receive_sample();
+    receive_sample();
     switch (protocol_mode) {
         case JSONLINES_MODE:
 //            send_sample_json(num_timestamped_spi_bytes);
