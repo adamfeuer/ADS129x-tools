@@ -625,23 +625,11 @@ inline void receive_sample() {
 
 const char *sample_data_json_header= "{\"C\":200,\"D\":\"";
 const char *sample_data_json_footer= "\"}";
-const char *fake_sample_data_base64 = "BOlUEcAAAAAAAAAAAAAAAAAAAAAAAAAAAEt7+gAAAA==";
-//const char *fake_sample_data_base64 = "";
-
-const char * fake_sample_data_line = "{\"C\":200,\"D\":\"BOlUEcAAAAAAAAAAAAAAAAAAAAAAAAAAAEt7+gAAAA==\"}";
 
 // Use SAM3X DMA
 inline void send_sample(void) {
 //    receive_sample();
     switch (protocol_mode) {
-        case TEXT_MODE:
-            if (base64_mode) {
-                base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-            } else {
-                encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-            }
-            WiredSerial.println(output_buffer);
-            break;
         case JSONLINES_MODE:
 //            send_sample_json(num_timestamped_spi_bytes);
 
@@ -650,20 +638,14 @@ inline void send_sample(void) {
             WiredSerial.write(output_buffer);
             WiredSerial.write(sample_data_json_footer);
             WiredSerial.write("\n");
-
-//            while (WiredSerial.availableForWrite() < 65 ) {
-//                // busy wait
-//            }
-
-            // this works
-            WiredSerial.write(sample_data_json_header);
-            WiredSerial.write(fake_sample_data_base64);
-            WiredSerial.write(sample_data_json_footer);
-            WiredSerial.write("\n");
-
-            // this works
-//            WiredSerial.write(fake_sample_data_line);
-//            WiredSerial.write("\n");
+            break;
+        case TEXT_MODE:
+            if (base64_mode) {
+                base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            } else {
+                encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            }
+            WiredSerial.println(output_buffer);
             break;
         case MESSAGEPACK_MODE:
             send_sample_messagepack(num_timestamped_spi_bytes);
