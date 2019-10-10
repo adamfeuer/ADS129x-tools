@@ -49,7 +49,7 @@ class HackEEGShell(cmd.Cmd):
                     print(f"{data}", end='')
             print()
         else:
-            print("Error")
+            print(f"Error: {response}")
 
     def _format_list(self, data):
         if len(data) == 0:
@@ -188,7 +188,7 @@ class HackEEGShell(cmd.Cmd):
 
     def do_start(self, arg):
         """Sends the START command to the ADS1299. (Not implemented yet.)"""
-        self._format_response(self.hackeeg.nop())
+        self._format_response(self.hackeeg.start())
 
     def do_stop(self, arg):
         """Sends the STOP command to the ADS1299."""
@@ -200,7 +200,7 @@ class HackEEGShell(cmd.Cmd):
         if self.hackeeg.ok(result):
             print("rdatac mode on.")
         else:
-            print("rdatac failed to turn on.")
+            print(f"rdatac failed to turn on: {result}")
         self._format_response(result)
 
     def do_sdatac(self, arg):
