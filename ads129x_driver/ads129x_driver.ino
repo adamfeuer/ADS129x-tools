@@ -173,7 +173,6 @@ void setup() {
 
     // Setup callbacks for JsonCommand commands
     jsonCommand.addCommand("nop", nopCommand);                       // No operation (does nothing)
-    jsonCommand.addCommand("sync", syncCommand);                     // Returns a synchronization message (used for error recovery)
     jsonCommand.addCommand("micros", microsCommand);                 // Returns number of microseconds since the program began executing
     jsonCommand.addCommand("ledon", ledOnCommand);                   // Turns Arduino Due onboard LED on
     jsonCommand.addCommand("ledoff", ledOffCommand);                 // Turns Arduino Due onboard LED off
@@ -243,11 +242,6 @@ void encode_hex(char *output, char *input, int input_len) {
 }
 
 void send_response_ok() {
-    send_response(RESPONSE_OK, STATUS_TEXT_OK);
-}
-
-void send_response_sync() {
-    // TODO: make this also send a data array [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     send_response(RESPONSE_OK, STATUS_TEXT_OK);
 }
 
@@ -333,10 +327,6 @@ void statusCommand(unsigned char unused1, unsigned char unused2) {
 
 void nopCommand(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
-}
-
-void syncCommand(unsigned char unused1, unsigned char unused2) {
-    send_response_sync();
 }
 
 void microsCommand(unsigned char unused1, unsigned char unused2) {
