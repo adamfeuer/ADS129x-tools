@@ -626,13 +626,10 @@ inline void receive_sample() {
 const char *sample_data_json_header= "{\"C\":200,\"D\":\"";
 const char *sample_data_json_footer= "\"}";
 
-// Use SAM3X DMA
 inline void send_sample(void) {
     receive_sample();
     switch (protocol_mode) {
         case JSONLINES_MODE:
-//            send_sample_json(num_timestamped_spi_bytes);
-
             WiredSerial.write(sample_data_json_header);
             base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
             WiredSerial.write(output_buffer);
@@ -666,20 +663,9 @@ inline void send_sample_json(int num_bytes) {
 
 
 inline void send_sample_messagepack(int num_bytes) {
-    int fast_mode = 1;
-//    int fast_mode = 0;
-    if (fast_mode) {
-        SerialUSB.write(messagepack_rdatac_prelude, messagepack_rdatac_prelude_size);
-        SerialUSB.write((uint8_t) num_bytes);
-        SerialUSB.write(spi_bytes, num_bytes);
-    } else {
-        StaticJsonDocument<1024> doc;
-        JsonObject root = doc.to<JsonObject>();
-        root[MP_STATUS_CODE_KEY] = STATUS_OK;
-        JsonArray data = root.createNestedArray(MP_DATA_KEY);
-        copyArray(spi_bytes, num_bytes, data);
-        jsonCommand.sendMessagePackDocResponse(doc);
-    }
+    SerialUSB.write(messagepack_rdatac_prelude, messagepack_rdatac_prelude_size);
+    SerialUSB.write((uint8_t) num_bytes);
+    SerialUSB.write(spi_bytes, num_bytes);
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips

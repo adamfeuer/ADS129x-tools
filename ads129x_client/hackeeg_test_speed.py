@@ -9,6 +9,9 @@ from hackeeg import ads1299
 from hackeeg.driver import SPEEDS, Status
 
 
+DEFAULT_NUMBER_OF_SAMPLES_TO_CAPTURE = 50000
+
+
 class HackEegTestApplication:
     """Basic commandline test application – sets a test waveform on Channel 7, enters RDATAC (read data continuous) mode,
        and outputs the samples received."""
@@ -28,26 +31,17 @@ class HackEegTestApplication:
         self.hackeeg.blink_board_led()
         self.hackeeg.disable_all_channels()
         # sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
-        # sample_mode = ads1299.HIGH_RES_16k_SPS | ads1299.CONFIG1_const
-        sample_mode = ads1299.HIGH_RES_8k_SPS | ads1299.CONFIG1_const
-        #sample_mode = ads1299.HIGH_RES_4k_SPS | ads1299.CONFIG1_const
+        sample_mode = ads1299.HIGH_RES_16k_SPS | ads1299.CONFIG1_const
+        # sample_mode = ads1299.HIGH_RES_8k_SPS | ads1299.CONFIG1_const
+        # sample_mode = ads1299.HIGH_RES_4k_SPS | ads1299.CONFIG1_const
+
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
         test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
-        #self.hackeeg.enable_channel(5)
-        # self.hackeeg.enable_channel(7)
 
         for channel in range(1, 9):
             self.hackeeg.enable_channel(channel)
             self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-
-        # self.hackeeg.wreg(ads1299.CH5SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        # self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CH7SET, ads1299.TEMP | ads1299.GAIN_12X)
-        self.hackeeg.rreg(ads1299.CH5SET)
-        #self.hackeeg.wreg(ads1299.CH8SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
-        #self.hackeeg.wreg(ads1299.CH7SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        #self.hackeeg.wreg(ads1299.CH2SET, ads1299.ELECTRODE_INPUT | ads1299.GAIN_24X)
 
         # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
@@ -64,6 +58,8 @@ class HackEegTestApplication:
                             type=str)
         parser.add_argument("--debug", "-d", help="enable debugging output",
                             action="store_true")
+        parser.add_argument("--samples", "-s", help="how many samples to capture",
+                            default=DEFAULT_NUMBER_OF_SAMPLES_TO_CAPTURE, type=int)
         args = parser.parse_args()
         if args.debug:
             self.debug = True
@@ -72,9 +68,7 @@ class HackEegTestApplication:
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, baudrate=2000000, debug=self.debug)
         self.hackeeg.connect()
         self.setup()
-        # while True:
-        # max_samples = 480000
-        max_samples = 50000
+        max_samples = args.samples
         start_time = time.perf_counter()
         samples = 0
         while samples < max_samples:
@@ -91,19 +85,20 @@ class HackEegTestApplication:
                         loff_statp = decoded_data.get('loff_statp')
                         loff_statn = decoded_data.get('loff_statn')
                         channel_data = decoded_data.get('channel_data')
-                        # print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
-                        #       end='')
-                        # for channel_number, sample in enumerate(channel_data):
-                        #     print(f"{channel_number+1}:{sample} ", end='')
-                        # print()
             else:
                 print("no data to decode")
                 print(f"result: {result}")
         end_time = time.perf_counter()
         duration = end_time - start_time
 
-        self.hackeeg.sdatac()
-        self.hackeeg.stop()
+        self.hackeeg.send_command("stop")
+        self.hackeeg.send_command("sdatac")
+        self.hackeeg.send_command("nop")
+        try:
+            line = self.hackeeg.serial_port.read()
+        except UnicodeDecodeError:
+            line = self.hackeeg.raw_serial_port.read()
+
         self.hackeeg.blink_board_led()
         print(f"duration in seconds: {duration}")
         samples_per_second = max_samples/duration
