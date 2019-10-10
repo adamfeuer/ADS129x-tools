@@ -1,4 +1,6 @@
 import base64
+import binascii
+import io
 import json
 import sys
 import time
@@ -67,9 +69,11 @@ class HackEEGBoard:
         self.rdatac_mode = False
         self.serialPortPath = serialPortPath
         if serialPortPath:
-            self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
+            self.rawSerialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
+            self.rawSerialPort.reset_input_buffer()
+            # self.serialPort = self.rawSerialPort
+            self.serialPort = io.TextIOWrapper(io.BufferedRWPair(self.rawSerialPort, self.rawSerialPort))
             self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False, use_list=False)
-            self.serialPort.reset_input_buffer()
 
     def connect(self):
         self.mode = self._sense_protocol_mode()
@@ -96,10 +100,16 @@ class HackEEGBoard:
         self.sdatac()
 
     def _serial_write(self, command):
-        command_data = bytes(command, 'utf-8')
-        self.serialPort.write(command_data)
+        # command_data = bytes(command, 'utf-8')
+        # self.serialPort.write(command_data)
+        self.serialPort.write(command)
+        self.serialPort.flush()
 
     def _serial_readline(self):
+        line = self.serialPort.readline()
+        return line
+
+    def _old_serial_readline(self):
         line = None
         while not line:
             try:
@@ -129,7 +139,10 @@ class HackEEGBoard:
             if data is None:
                 data = response.get(self.MpDataKey)
                 if type(data) is str:
-                    data = base64.b64decode(data)
+                    try:
+                        data = base64.b64decode(data)
+                    except binascii.Error:
+                        print(f"incorrect padding: {data}")
             if data and (type(data) is list or type(data) is bytes):
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
                 ads_status = int.from_bytes(data[4:7], byteorder='big')
@@ -171,7 +184,12 @@ class HackEEGBoard:
             response_obj = self._serial_read_messagepack_message()
         else:
             message = self._serial_readline()
-            response_obj = json.loads(message)
+            try:
+                response_obj = json.loads(message)
+            except JSONDecodeError:
+                response_obj = {}
+                print()
+                print(f"json decode error: {message}")
         if self.debug:
             print(f"read_response obj: {response_obj}")
         result = None
@@ -187,12 +205,9 @@ class HackEEGBoard:
     def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
-        if self.mode in (self.JsonLinesMode, self.MessagePackMode):
-            # commands are only sent in JSON Lines mode
-            new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
-            new_command = json.dumps(new_command_obj)
-        else:
-            raise HackEEGException("Unknown mode")
+        # commands are only sent in JSON Lines mode
+        new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
+        new_command = json.dumps(new_command_obj)
         if self.debug:
             print("json command:")
             print(self.format_json(new_command_obj))

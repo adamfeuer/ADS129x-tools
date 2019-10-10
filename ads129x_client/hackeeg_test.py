@@ -45,7 +45,7 @@ class HackEegTestApplication:
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        self.hackeeg.messagepack_mode()
+        # self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
@@ -61,16 +61,13 @@ class HackEegTestApplication:
             self.debug = True
             print("debug mode on")
         self.serial_port_name = args.serial_port
-        self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, debug=self.debug)
+        self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, baudrate=2000000, debug=self.debug)
         self.hackeeg.connect()
         self.setup()
         while True:
             result = self.hackeeg.read_rdatac_response()
             if result:
-                if self.hackeeg.mode == self.hackeeg.JsonLinesMode:
-                    status_code = result.get(self.hackeeg.StatusCodeKey)
-                else:
-                    status_code = result.get(self.hackeeg.MpStatusCodeKey)
+                status_code = result.get(self.hackeeg.MpStatusCodeKey)
                 data = result.get(self.hackeeg.MpDataKey)
                 if status_code == Status.Ok and data:
                     decoded_data = result.get(self.hackeeg.DecodedDataKey)
@@ -85,10 +82,13 @@ class HackEegTestApplication:
                         for channel_number, sample in enumerate(channel_data):
                             print(f"{channel_number+1}:{sample} ", end='')
                         print()
+                        # print(".", end='')
                     else:
+                        # print()
                         print(data)
             else:
-                print("no data to decode")
+                #print("no data to decode")
+                pass
 
 
 if __name__ == "__main__":
