@@ -102,8 +102,6 @@ class HackEEGBoard:
         self.sdatac()
 
     def _serial_write(self, command):
-        # command_data = bytes(command, 'utf-8')
-        # self.serial_port.write(command_data)
         self.serial_port.write(command)
         self.serial_port.flush()
 
@@ -114,21 +112,6 @@ class HackEEGBoard:
             line = self.raw_serial_port.readline()
         else:
             raise HackEEGException('Unknown serial port designator; must be either None or "raw"')
-        return line
-
-    def _old_serial_readline(self):
-        line = None
-        while not line:
-            try:
-                line = self.serial_port.readline()
-                line = line.decode("utf-8")
-            except UnicodeDecodeError:
-                if self.debug:
-                    print("UnicodeDecodeError: ", end='')
-                    print(line)
-        line = line.strip()
-        if self.debug:
-            print(f"line: {line}")
         return line
 
     def _serial_read_messagepack_message(self):
