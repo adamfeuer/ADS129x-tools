@@ -300,11 +300,6 @@ class HackEEGBoard:
             result = self.execute_command("sdatac")
         else:
             self.send_command("sdatac")
-            # char = self.raw_serial_port.read(1)
-            # print(char, end="")
-            # while char != chr(10):
-            #     char = self.raw_serial_port.read(1)
-            # print()
             result = self.read_response(serial_port="raw")
         self.rdatac_mode = False
         return result
