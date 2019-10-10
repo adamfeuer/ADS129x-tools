@@ -29,7 +29,8 @@
 #include "Base64.h"
 #include "SpiDma.h"
 
-#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+//#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
+#define BAUD_RATE 2000000
 #define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
 #define WiredSerial SerialUSB // use Due's Native USB port
 
@@ -81,6 +82,20 @@ const char *hardware_type = "unknown";
 const char *board_name = "HackEEG";
 const char *maker_name = "Starcat LLC";
 const char *driver_version = "v0.3.0";
+
+
+// MessagePack array prelude
+//uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc };
+// MessagePack bin prelude - 8 bit size
+uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4};
+//unsigned char messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4, 0x22, 0xcc, 0x8a,
+//                                               0x74, 0x61, 0x04, 0xcc, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//                                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+//                                               0x00, 0x4a, 0xcc, 0xfa, 0x5a, 0x00, 0x00, 0x01 };
+size_t messagepack_rdatac_prelude_size = sizeof(messagepack_rdatac_prelude);
+
+uint8_t messagepack_rdatac_short_array[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+size_t messagepack_rdatac_short_array_size = sizeof(messagepack_rdatac_short_array);
 
 SerialCommand serialCommand;
 JsonCommand jsonCommand;
@@ -158,7 +173,6 @@ void setup() {
 
     // Setup callbacks for JsonCommand commands
     jsonCommand.addCommand("nop", nopCommand);                       // No operation (does nothing)
-    jsonCommand.addCommand("sync", syncCommand);                     // Returns a synchronization message (used for error recovery)
     jsonCommand.addCommand("micros", microsCommand);                 // Returns number of microseconds since the program began executing
     jsonCommand.addCommand("ledon", ledOnCommand);                   // Turns Arduino Due onboard LED on
     jsonCommand.addCommand("ledoff", ledOffCommand);                 // Turns Arduino Due onboard LED off
@@ -192,7 +206,7 @@ void loop() {
             jsonCommand.readSerial();
             break;
         default:
-            // do nothing 
+            // do nothing
             ;
     }
     send_samples();
@@ -228,11 +242,6 @@ void encode_hex(char *output, char *input, int input_len) {
 }
 
 void send_response_ok() {
-    send_response(RESPONSE_OK, STATUS_TEXT_OK);
-}
-
-void send_response_sync() {
-    // TODO: make this also send a data array [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     send_response(RESPONSE_OK, STATUS_TEXT_OK);
 }
 
@@ -318,10 +327,6 @@ void statusCommand(unsigned char unused1, unsigned char unused2) {
 
 void nopCommand(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
-}
-
-void syncCommand(unsigned char unused1, unsigned char unused2) {
-    send_response_sync();
 }
 
 void microsCommand(unsigned char unused1, unsigned char unused2) {
@@ -608,10 +613,19 @@ inline void receive_sample() {
     digitalWrite(PIN_CS, HIGH);
 }
 
-// Use SAM3X DMA
+const char *sample_data_json_header= "{\"C\":200,\"D\":\"";
+const char *sample_data_json_footer= "\"}";
+
 inline void send_sample(void) {
     receive_sample();
     switch (protocol_mode) {
+        case JSONLINES_MODE:
+            WiredSerial.write(sample_data_json_header);
+            base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+            WiredSerial.write(output_buffer);
+            WiredSerial.write(sample_data_json_footer);
+            WiredSerial.write("\n");
+            break;
         case TEXT_MODE:
             if (base64_mode) {
                 base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
@@ -620,28 +634,29 @@ inline void send_sample(void) {
             }
             WiredSerial.println(output_buffer);
             break;
-        case JSONLINES_MODE:
         case MESSAGEPACK_MODE:
-            send_sample_json(num_timestamped_spi_bytes);
+            send_sample_messagepack(num_timestamped_spi_bytes);
             break;
+
     }
 }
 
 inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
     JsonObject root = doc.to<JsonObject>();
+    root[STATUS_CODE_KEY] = STATUS_OK;
+    root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
     JsonArray data = root.createNestedArray(DATA_KEY);
     copyArray(spi_bytes, num_bytes, data);
-    if (protocol_mode == JSONLINES_MODE) {
-        root[STATUS_CODE_KEY] = STATUS_OK;
-        root[STATUS_TEXT_KEY] = STATUS_TEXT_OK;
-        jsonCommand.sendJsonLinesDocResponse(doc);
-    } else if (protocol_mode == MESSAGEPACK_MODE) {
-        root[MP_STATUS_CODE_KEY] = STATUS_OK;
-        jsonCommand.sendMessagePackDocResponse(doc);
-    }
+    jsonCommand.sendJsonLinesDocResponse(doc);
 }
 
+
+inline void send_sample_messagepack(int num_bytes) {
+    SerialUSB.write(messagepack_rdatac_prelude, messagepack_rdatac_prelude_size);
+    SerialUSB.write((uint8_t) num_bytes);
+    SerialUSB.write(spi_bytes, num_bytes);
+}
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;

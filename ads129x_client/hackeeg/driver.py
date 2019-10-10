@@ -1,3 +1,6 @@
+import base64
+import binascii
+import io
 import json
 import sys
 import time
@@ -58,17 +61,21 @@ class HackEEGBoard:
     MaxConnectionAttempts = 10
     ConnectionSleepTime = 0.1
 
-    def __init__(self, serialPortPath=None, baudrate=DEFAULT_BAUDRATE, debug=False):
+    def __init__(self, serial_port_path=None, baudrate=DEFAULT_BAUDRATE, debug=False):
         self.mode = None
         self.message_pack_unpacker = None
         self.debug = debug
         self.baudrate = baudrate
         self.rdatac_mode = False
-        self.serialPortPath = serialPortPath
-        if serialPortPath:
-            self.serialPort = serial.serial_for_url(serialPortPath, baudrate=self.baudrate, timeout=0.1)
-            self.message_pack_unpacker = msgpack.Unpacker(self.serialPort, raw=False)
-            self.serialPort.reset_input_buffer()
+        self.serial_port_path = serial_port_path
+        if serial_port_path:
+            self.raw_serial_port = serial.serial_for_url(serial_port_path, baudrate=self.baudrate, timeout=0.1)
+            self.raw_serial_port.reset_input_buffer()
+            # self.serial_port= self.raw_serial_port
+            self.serial_port = io.TextIOWrapper(io.BufferedRWPair(self.raw_serial_port, self.raw_serial_port))
+            # self.binaryBufferedSerialPort = io.BufferedReader(io.BufferedRWPair(self.raw_serial_port, self.raw_serial_port))
+            # self.message_pack_unpacker = msgpack.Unpacker(self.binaryBufferedSerialPort, raw=False, use_list=False)
+            self.message_pack_unpacker = msgpack.Unpacker(self.raw_serial_port, raw=False, use_list=False)
 
     def connect(self):
         self.mode = self._sense_protocol_mode()
@@ -95,21 +102,16 @@ class HackEEGBoard:
         self.sdatac()
 
     def _serial_write(self, command):
-        command_data = bytes(command, 'utf-8')
-        self.serialPort.write(command_data)
+        self.serial_port.write(command)
+        self.serial_port.flush()
 
-    def _serial_readline(self):
-        line = None
-        while not line:
-            try:
-                line = self.serialPort.readline()
-                line = line.decode("utf-8")
-            except UnicodeDecodeError:
-                if self.debug:
-                    print("UnicodeDecodeError")
-        line = line.strip()
-        if self.debug:
-            print(f"line: {line}")
+    def _serial_readline(self, serial_port=None):
+        if serial_port is None:
+            line = self.serial_port.readline()
+        elif serial_port == "raw":
+            line = self.raw_serial_port.readline()
+        else:
+            raise HackEEGException('Unknown serial port designator; must be either None or "raw"')
         return line
 
     def _serial_read_messagepack_message(self):
@@ -124,7 +126,14 @@ class HackEEGBoard:
         1100 + LOFF_STATP[0:7] + LOFF_STATN[0:7] + bits[4:7] of the GPIOregister"""
         if response:
             data = response.get(self.DataKey)
-            if data and type(data) is list:
+            if data is None:
+                data = response.get(self.MpDataKey)
+                if type(data) is str:
+                    try:
+                        data = base64.b64decode(data)
+                    except binascii.Error:
+                        print(f"incorrect padding: {data}")
+            if data and (type(data) is list or type(data) is bytes):
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
                 ads_status = int.from_bytes(data[4:7], byteorder='big')
                 ads_gpio = ads_status & 0x0f
@@ -145,9 +154,9 @@ class HackEEGBoard:
     def set_debug(self, debug):
         self.debug = debug
 
-    def read_response(self):
+    def read_response(self, serial_port=None):
         """read a response from the Arduino– must be in JSON Lines mode"""
-        message = self._serial_readline()
+        message = self._serial_readline(serial_port=serial_port)
         try:
             response_obj = json.loads(message)
         except UnicodeDecodeError:
@@ -165,7 +174,12 @@ class HackEEGBoard:
             response_obj = self._serial_read_messagepack_message()
         else:
             message = self._serial_readline()
-            response_obj = json.loads(message)
+            try:
+                response_obj = json.loads(message)
+            except JSONDecodeError:
+                response_obj = {}
+                print()
+                print(f"json decode error: {message}")
         if self.debug:
             print(f"read_response obj: {response_obj}")
         result = None
@@ -181,12 +195,9 @@ class HackEEGBoard:
     def send_command(self, command, parameters=None):
         if self.debug:
             print(f"command: {command}  parameters: {parameters}")
-        if self.mode in (self.JsonLinesMode, self.MessagePackMode):
-            # commands are only sent in JSON Lines mode
-            new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
-            new_command = json.dumps(new_command_obj)
-        else:
-            raise HackEEGException("Unknown mode")
+        # commands are only sent in JSON Lines mode
+        new_command_obj = {self.CommandKey: command, self.ParametersKey: parameters}
+        new_command = json.dumps(new_command_obj)
         if self.debug:
             print("json command:")
             print(self.format_json(new_command_obj))
@@ -196,11 +207,11 @@ class HackEEGBoard:
     def send_text_command(self, command):
         self._serial_write(command + '\n')
 
-    def execute_command(self, command, parameters=None):
+    def execute_command(self, command, parameters=None, serial_port=None):
         if parameters is None:
             parameters = []
         self.send_command(command, parameters)
-        response = self.read_response()
+        response = self.read_response(serial_port=serial_port)
         return response
 
     def _sense_protocol_mode(self):
@@ -270,22 +281,26 @@ class HackEEGBoard:
         old_mode = self.mode
         self.mode = self.MessagePackMode
         if old_mode == self.TextMode:
-            self.send_text_command("messagepack")
-            response = self._serial_read_messagepack_message()
+            self.send_text_command("jsonlines")
+            response = self.read_response()
+            self.execute_command("messagepack")
             return response
         elif old_mode == self.JsonLinesMode:
-            self.send_command("messagepack")
-            response = self._serial_read_messagepack_message()
+            response = self.execute_command("messagepack")
             return response
 
     def rdatac(self):
-        result = self.execute_command("rdatac")
+        result = self.execute_command("rdatac", serial_port="raw")
         if self.ok(result):
             self.rdatac_mode = True
         return result
 
     def sdatac(self):
-        result = self.execute_command("sdatac")
+        if self.mode == self.JsonLinesMode:
+            result = self.execute_command("sdatac")
+        else:
+            self.send_command("sdatac")
+            result = self.read_response(serial_port="raw")
         self.rdatac_mode = False
         return result
 

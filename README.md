@@ -22,9 +22,11 @@ These chips are ideally suited for digitizing biological signals.
 
 The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models. This driver has been tested on the Arduino Due and Mega2560, but should also work on other Arduinos. The DMA mode can only be used on the Arduino Due.
 
-The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. The driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection.
+The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. 
 
-It can be configured to use the Arduino library's software SPI (without DMA), and can do 8,000 samples per second in that configuration on the Arduino Due. Other Arduinos will have lower performance.
+In MessagePack mode, using the Arduino Due's native SPI DMA, driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection at the same rate. The driver by default uses the Arduino library's software SPI (without DMA), and can read and send 8,000 samples per second in that configuration on the Arduino Due, either in JSON Lines mode or MessagePack mode. Other Arduinos will have lower performance.
+
+When in MessagePack mode, MessagePack format is only used to transfer data in `rdata` and `rdatac` commands; all other communication takes place by JSON Lines.
 
 In text mode, samples are encoded using the [base64](http://en.wikipedia.org/wiki/Base64) encoding by default.
 
@@ -53,8 +55,7 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 * BASE64 – RDATA/RDATAC commands will encode data in base64.
 * TEXT – communication protocol switches to text. See the Communication Protocol section.
 * JSONLINES – communication protocol switches from text to [JSONLines](http://jsonlines.org/). This is a text-oriented serialization format with libraries in many languages. See the Communication Protocol section.
-* MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org). This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
-* SYNC – Only available in JSON Lines mode or MessagePack mode. Returns a synchronization message that can be used to resynchronize message framing after errors.
+* MESSAGEPACK – communication protocol switches from text to [MessagePack](https://msgpack.org) for `rdatac` data only. This is a concise binary serialization format with libraries in many languages. See the Communication Protocol section.
 * HEX – RDATA commands will encode data in hexidecimal format.
 * HELP – prints a list of available commands.
 
@@ -164,6 +165,18 @@ Here is an example exchange:
 
 ```
 
+#### `rdat` and `rdatc` repsonses
+
+For `rdata` and `rdatac` responses, in order to send data at high speeds, a special response format is used that is similar to the MessagePack format:
+
+```
+{
+    C: <status-code>,
+    D: "<base64-encoded byte-array>"
+}
+```
+
+#### Software library
 
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
@@ -190,28 +203,18 @@ The format is as follows (on separate lines as JSON for readability, in use this
 In MessagePack mode, status text is usually omitted except in the case of errors. Headers are optional and may or may not be provided.
 
 
+#### Software library
+
+
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
 
 
 
 ## Python Host Software
 
-The Python host software is designed to run on a laptop computer or embedded computer like a Raspberry Pi. There is a command line client `hackeeg_shell` (which runs `hackeeg_shell.py`) that demonstrates how to use the API, and can be used for basic debugging. There is also an example script `hackeeg_test.py` that shows how to use the Python client library to Using Python 3.x on 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
+The Python host software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` and `hackeeg_shell.py`), and a demonstration performance testing script (`hackeeg_demo.py`). Using Python 3.6.5 on a 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
 
-The Python software requires the PySerial module. Here's how to use it:
-
-```
-# install prerequisites
-pip install pyenv
-pyenv install 3.6.5
-pyenv local 3.6.5
-pipenv install
-pipenv shell
-
-# run the HackEEG command line client
-./hackeeg_shell
-
-```
+It requires the PySerial module.
 
 ## Hardware
 
