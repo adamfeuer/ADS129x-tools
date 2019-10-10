@@ -22,9 +22,11 @@ These chips are ideally suited for digitizing biological signals.
 
 The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ files that make up a driver for ADS129x chips. So far it has only been tested on the ADS1299 and ADS1298, but should work on the other models. This driver has been tested on the Arduino Due and Mega2560, but should also work on other Arduinos. The DMA mode can only be used on the Arduino Due.
 
-The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (baud rate 115200, line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. 
+The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. 
 
 In MessagePack mode, using the Arduino Due's native SPI DMA, driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection at the same rate. The driver by default uses the Arduino library's software SPI (without DMA), and can read and send 8,000 samples per second in that configuration on the Arduino Due, either in JSON Lines mode or MessagePack mode. Other Arduinos will have lower performance.
+
+When in MessagePack mode, MessagePack format is only used to transfer data in `rdata` and `rdatac` commands; all other communication takes place by JSON Lines.
 
 In text mode, samples are encoded using the [base64](http://en.wikipedia.org/wiki/Base64) encoding by default.
 
@@ -163,6 +165,18 @@ Here is an example exchange:
 
 ```
 
+#### `rdat` and `rdatc` repsonses
+
+For `rdata` and `rdatac` responses, in order to send data at high speeds, a special response format is used that is similar to the MessagePack format:
+
+```
+{
+    C: <status-code>,
+    D: "<base64-encoded byte-array>"
+}
+```
+
+#### Software library
 
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
 
@@ -187,6 +201,9 @@ The format is as follows (on separate lines as JSON for readability, in use this
 ```
 
 In MessagePack mode, status text is usually omitted except in the case of errors. Headers are optional and may or may not be provided.
+
+
+#### Software library
 
 
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
