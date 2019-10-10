@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# MacOS only for now
+port() {
+  PORT=$(ioreg -p IOUSB -w0 |grep 'Arduino Due@'|sed 's/^.*@//g'|sed 's/[0..9] .*<class.*$//g' | xargs -Ifoo find /dev -iname "cu.usbmodemfoo*" 2>/dev/null)
+  echo $PORT
+}
+
+PORT=$(port)
+attempts=$((0))
+while [ $((attempts < 10)) ]; do
+  attempts=$((attempts + 1))
+  sleep 0.1
+  PORT=$(port)
+  if [ -n "$PORT" ]; then
+    break
+  fi
+done
+
+./hackeeg_test.py $PORT "$@"
+
