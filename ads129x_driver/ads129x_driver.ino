@@ -72,6 +72,13 @@ union {
     unsigned long timestamp;
 } timestamp_union;
 
+// sample number counter
+#define SAMPLE_NUMBER_SIZE_IN_BYTES 4
+union {
+    char sample_number_bytes[SAMPLE_NUMBER_SIZE_IN_BYTES];
+    unsigned long sample_number = 0;
+} sample_number_union;
+
 // SPI input buffer
 uint8_t spi_bytes[SPI_BUFFER_SIZE];
 
@@ -84,18 +91,11 @@ const char *maker_name = "Starcat LLC";
 const char *driver_version = "v0.3.0";
 
 
-// MessagePack array prelude
-//uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xdc };
-// MessagePack bin prelude - 8 bit size
-uint8_t messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4};
-//unsigned char messagepack_rdatac_prelude[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4, 0x22, 0xcc, 0x8a,
-//                                               0x74, 0x61, 0x04, 0xcc, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-//                                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-//                                               0x00, 0x4a, 0xcc, 0xfa, 0x5a, 0x00, 0x00, 0x01 };
-size_t messagepack_rdatac_prelude_size = sizeof(messagepack_rdatac_prelude);
+const char *json_rdatac_header= "{\"C\":200,\"D\":\"";
+const char *json_rdatac_footer= "\"}";
 
-uint8_t messagepack_rdatac_short_array[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-size_t messagepack_rdatac_short_array_size = sizeof(messagepack_rdatac_short_array);
+uint8_t messagepack_rdatac_header[] = { 0x82, 0xa1, 0x43, 0xcc, 0xc8, 0xa1, 0x44, 0xc4};
+size_t messagepack_rdatac_header_size = sizeof(messagepack_rdatac_header);
 
 SerialCommand serialCommand;
 JsonCommand jsonCommand;
@@ -521,6 +521,7 @@ void resetCommand(unsigned char unused1, unsigned char unused2) {
 void startCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     adcSendCommand(START);
+    sample_number_union.sample_number = 0;
     send_response_ok();
 }
 
@@ -609,21 +610,23 @@ inline void receive_sample() {
     spi_bytes[1] = timestamp_union.timestamp_bytes[1];
     spi_bytes[2] = timestamp_union.timestamp_bytes[2];
     spi_bytes[3] = timestamp_union.timestamp_bytes[3];
-    uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES, num_spi_bytes);
+    spi_bytes[4] = sample_number_union.sample_number_bytes[0];
+    spi_bytes[5] = sample_number_union.sample_number_bytes[1];
+    spi_bytes[6] = sample_number_union.sample_number_bytes[2];
+    spi_bytes[7] = sample_number_union.sample_number_bytes[3];
+    uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES, num_spi_bytes);
     digitalWrite(PIN_CS, HIGH);
+    sample_number_union.sample_number++;
 }
-
-const char *sample_data_json_header= "{\"C\":200,\"D\":\"";
-const char *sample_data_json_footer= "\"}";
 
 inline void send_sample(void) {
     receive_sample();
     switch (protocol_mode) {
         case JSONLINES_MODE:
-            WiredSerial.write(sample_data_json_header);
+            WiredSerial.write(json_rdatac_header);
             base64_encode(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
             WiredSerial.write(output_buffer);
-            WiredSerial.write(sample_data_json_footer);
+            WiredSerial.write(json_rdatac_footer);
             WiredSerial.write("\n");
             break;
         case TEXT_MODE:
@@ -653,7 +656,7 @@ inline void send_sample_json(int num_bytes) {
 
 
 inline void send_sample_messagepack(int num_bytes) {
-    SerialUSB.write(messagepack_rdatac_prelude, messagepack_rdatac_prelude_size);
+    SerialUSB.write(messagepack_rdatac_header, messagepack_rdatac_header_size);
     SerialUSB.write((uint8_t) num_bytes);
     SerialUSB.write(spi_bytes, num_bytes);
 }
@@ -687,7 +690,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
             max_channels = 0;
     }
     num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
-    num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES;
+    num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES;
     if (max_channels == 0) { //error mode
         while (1) { //loop forever
             digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)

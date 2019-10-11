@@ -135,7 +135,8 @@ class HackEEGBoard:
                         print(f"incorrect padding: {data}")
             if data and (type(data) is list or type(data) is bytes):
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
-                ads_status = int.from_bytes(data[4:7], byteorder='big')
+                sample_number = int.from_bytes(data[4:8], byteorder='little')
+                ads_status = int.from_bytes(data[8:11], byteorder='big')
                 ads_gpio = ads_status & 0x0f
                 loff_statn = (ads_status >> 4) & 0xff
                 loff_statp = (ads_status >> 12) & 0xff
@@ -143,7 +144,7 @@ class HackEEGBoard:
 
                 channel_data = []
                 for channel in range(0, 8):
-                    channel_offset = 7 + (channel * 3)
+                    channel_offset = 11 + (channel * 3)
                     sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
                     channel_data.append(sample)
 

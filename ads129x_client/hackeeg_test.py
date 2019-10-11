@@ -28,7 +28,8 @@ class HackEegTestApplication:
         if samples_per_second not in SPEEDS.keys():
             raise HackEegTestApplicationException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
-        self.hackeeg.jsonlines_mode()
+        self.hackeeg.stop_and_sdatac_messagepack()
+        # self.hackeeg.jsonlines_mode()
         self.hackeeg.sdatac()
         self.hackeeg.reset()
         self.hackeeg.blink_board_led()
@@ -39,15 +40,17 @@ class HackEegTestApplication:
         test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
-        for channel in range(1, 9):
-            self.hackeeg.enable_channel(channel)
-            self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        self.hackeeg.disable_all_channels()
+        # for channel in range(1, 9):
+        # for channel in range(7, 7):
+        #     self.hackeeg.enable_channel(channel)
+        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
 
         # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        self.hackeeg.messagepack_mode()
+        # self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
