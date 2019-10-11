@@ -304,6 +304,17 @@ class HackEEGBoard:
         self.rdatac_mode = False
         return result
 
+    def stop_and_sdatac_messagepack(self):
+        """used to smoothly stop data transmission while in MessagePack mode–
+        mostly avoids exceptions and other hiccups"""
+        self.send_command("stop")
+        self.send_command("sdatac")
+        self.send_command("nop")
+        try:
+            line = self.serial_port.read()
+        except UnicodeDecodeError:
+            line = self.raw_serial_port.read()
+
     def enable_channel(self, channel, gain=None):
         if gain is None:
             gain = ads1299.GAIN_1X

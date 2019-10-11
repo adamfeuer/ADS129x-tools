@@ -107,14 +107,7 @@ class HackEegTestApplication:
                 print("no data to decode")
                 print(f"result: {result}")
         duration = end_time - start_time
-        self.hackeeg.send_command("stop")
-        self.hackeeg.send_command("sdatac")
-        self.hackeeg.send_command("nop")
-        try:
-            line = self.hackeeg.serial_port.read()
-        except UnicodeDecodeError:
-            line = self.hackeeg.raw_serial_port.read()
-
+        self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.blink_board_led()
         print(f"duration in seconds: {duration}")
         samples_per_second = max_samples / duration
