@@ -24,11 +24,23 @@ class HackEegTestApplication:
         self.quiet = False
         # self.debug = True
 
+    def find_dropped_samples(self, samples, number_of_samples):
+        sample_numbers = {self.get_sample_number(sample): 1 for sample in samples}
+        correct_sequence = {index: 1 for index in range(0, number_of_samples)}
+        missing_samples = [sample_number for sample_number in correct_sequence.keys()
+                           if sample_number not in sample_numbers]
+        return len(missing_samples)
+
+    def get_sample_number(self, sample):
+        decoded_data = sample.get(self.hackeeg.DecodedDataKey)
+        sample_number = decoded_data.get('sample_number', -1)
+        return sample_number
+
     def setup(self, samples_per_second=8192):
         if samples_per_second not in SPEEDS.keys():
             raise HackEegTestApplicationException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
-        self.hackeeg.jsonlines_mode()
+        self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.sdatac()
         self.hackeeg.reset()
         self.hackeeg.blink_board_led()
@@ -39,9 +51,13 @@ class HackEegTestApplication:
         test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
-        for channel in range(1, 9):
-            self.hackeeg.enable_channel(channel)
-            self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # one channel enabled
+        self.hackeeg.disable_all_channels()
+        self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+
+        # all channels enabled
+        # for channel in range(1, 9):
+        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
 
         # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
@@ -75,27 +91,30 @@ class HackEegTestApplication:
         self.hackeeg.connect()
         self.setup(samples_per_second=args.sps)
         max_samples = args.samples
-        start_time = time.perf_counter()
-        end_time = time.perf_counter()
-        samples = 0
         self.quiet = args.quiet
-        while samples < max_samples:
-            samples += 1
+        samples = []
+        sample_counter = 0
+        end_time = time.perf_counter()
+        start_time = time.perf_counter()
+        while sample_counter < max_samples:
             result = self.hackeeg.read_rdatac_response()
             end_time = time.perf_counter()
+            sample_counter += 1
             if result:
                 status_code = result.get(self.hackeeg.MpStatusCodeKey)
                 data = result.get(self.hackeeg.MpDataKey)
+                samples.append(result)
                 if status_code == Status.Ok and data:
                     decoded_data = result.get(self.hackeeg.DecodedDataKey)
                     if decoded_data:
                         timestamp = decoded_data.get('timestamp')
+                        sample_number = decoded_data.get('sample_number')
                         ads_gpio = decoded_data.get('ads_gpio')
                         loff_statp = decoded_data.get('loff_statp')
                         loff_statn = decoded_data.get('loff_statn')
                         channel_data = decoded_data.get('channel_data')
                         if not self.quiet:
-                            print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                            print(f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
                                   end='')
                             for channel_number, sample in enumerate(channel_data):
                                 print(f"{channel_number+1}:{sample} ", end='')
@@ -112,6 +131,8 @@ class HackEegTestApplication:
         print(f"duration in seconds: {duration}")
         samples_per_second = max_samples / duration
         print(f"samples per second: {samples_per_second}")
+        dropped_samples = self.find_dropped_samples(samples, max_samples)
+        print(f"dropped samples: {dropped_samples}")
 
 
 if __name__ == "__main__":
