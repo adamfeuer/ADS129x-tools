@@ -59,8 +59,9 @@ Returns a single hex-encoded byte (for example, 0E) that represents the contents
 
 The ADS129x chips are configured by reading and writing registers. See the chip datasheet for more information about configuring the ADS129x and reading data from it.
 
-If the host program (the program that reads data from the driver) does not pull data from the serial or USB interface fast enough, the driver
-will block on sending when the serial or USB buffers fill up. This will cause the driver to lose samples. 
+If the host program (the program that reads data from the driver) does not pull data from the serial or USB interface fast enough, the driver will block on sending when the serial or USB buffers fill up. This will cause the driver to lose samples. 
+
+The driver uses the Arduino Native port for serial communication, because it is capable of 2 megabits per second or more.
 
 
 In most applications, the Python 3 usage will go something like this:
@@ -121,7 +122,9 @@ while True:
 
 The driver running on the Arduino communicates with the ADS1299 chip via the SPI interface. For data rates from 250 to 8,192 samples per second, the driver can use the Arduino API's built in software SPI. This is simplest.
 
-To use the 16,384 samples per second data rate, or to reduce CPU load on the Arduino Due, the driver can use the Arduino Due's [Atmel SAM3X8E](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) CPU's built-in SPI DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)) controller. To enable this, change the following constants in `SpiDma.cpp` from this:
+To use the 16,384 samples per second data rate, or to reduce CPU load on the Arduino Due, the driver can use the Arduino Due's [Atmel SAM3X8E](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) CPU's built-in SPI DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)) controller. Using the SPI DMA offloads all SPI communication to the SAM3X8E DMA controller, freeing up the CPU to do other tasks like serial communication. 
+
+To enable this, change the following constants in `SpiDma.cpp` from this:
 
 Arduino software SPI:
 
@@ -137,7 +140,9 @@ To this (HackEEG SPI DMA):
 #define USE_NATIVE_SAM3X_SPI 1
 ```
 
-Using the SPI DMA offloads all SPI communication to the SAM3X8E DMA controller, freeing up the CPU to do other tasks like serial communication. 
+Then recompile and upload the driver sketch to the Arduino.
+
+
 
 ## Communication Protocol
 
@@ -181,7 +186,9 @@ Here is an example exchange:
 
 ```
 
-#### `rdat` and `rdatc` repsonses
+Headers are optional and may or may not be provided.
+
+#### JSON Lines concise mode for `rdata` and `rdatc` responses
 
 For `rdata` and `rdatac` responses, in order to send data at high speeds, a special response format is used that is similar to the MessagePack format:
 
@@ -192,16 +199,18 @@ For `rdata` and `rdatac` responses, in order to send data at high speeds, a spec
 }
 ```
 
+In concise JSON Lines mode, status text is omitted. The data is sent as a base64-encoded byte array to minimize transformation of the data into human-readable form. This allows faster transfer. See below for the format of the decoded data byte-array.
+
 #### Software library
 
-The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data.
+The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding JSON Lines data, except for `rdata` and `rdatac` messages– those use a custom, optimized sending routine.
 
 
 ### MessagePack mode
 
 Give the MESSAGEPACK command to switch to this mode.
 
-When the command MESSAGEPACK is given, the driver communication protocol for `rdatac` responses ONLY switches to [MessagePack](https://msgpack.org) concise binary format. Commands are still given in JSON Lines format, and responses for all commands other than `rdatac` will be in JSON Lines. Responses for `rdatac` will be in MessagePack format. This mode is available to improve data transfer speed.
+When the command MESSAGEPACK is given, the driver communication protocol for `rdata` and `rdatac` data packets ONLY switches to [MessagePack](https://msgpack.org) concise binary format. Commands are still given in JSON Lines format, and responses for all commands other than `rdata` and `rdatac` will be in JSON Lines. Responses for `rdata` and `rdatac` will be in MessagePack format. This mode is available to improve data transfer speed since the binary data from the SPI interface can be transferred as-is with no copying or transformation.
 
 The format is as follows (on separate lines as JSON for readability, in use this would be packed as a binary structure):
 
@@ -210,20 +219,17 @@ The format is as follows (on separate lines as JSON for readability, in use this
 ```
 {
     C: <status-code>,
-    T: "<status-text>",
-    H: ["header1", "header2", ... ],
-    D: [value1, value2, value3, ... ]
+    D: <byte-array>
 }
 ```
 
-In MessagePack mode, status text is usually omitted except in the case of errors. Headers are optional and may or may not be provided.
+In MessagePack mode, status text is omitted.
 
 
 #### Software library
 
 
-The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data.
-
+The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data, except for `rdata` and `rdatac` messages– those use a custom, optimized sending routine.
 
 
 ### Byte-array Format
@@ -263,22 +269,23 @@ The packed byte-array used for `rdata` and `rdatac` transfers has this format:
 
 
 
-## Python Host Software
+## Python Client Software
 
-The Python host software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` and `hackeeg_shell.py`), and a demonstration and performance testing script (`hackeeg_test.py`). 
+The Python client software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` wrapper and `hackeeg_shell.py` Python client), and a demonstration and performance testing script (`hackeeg_test.py`). 
 
-Using Python 3.6.5 on a 2017 Retina Macbook Pro, connected to an Arduino Due configured to use the SPI DMA included in the driver, the `hackeeg_test.py` program can read and transfer 8 channels of 24-bit resolution data at 16,384 samples per second, the maximum rate of the ADS1299 chip.
+The `hackeeg_shell.py` and `hackeeg_test.py` programs set the Arduino driver to JSON Lines mode, and communicate with it that way. They issue JSON Lines commands to the Arduino, and recieve JSON Lines or MessagePack data in response.
 
-It requires the [PySerial](https://github.com/pyserial/pyserial) module.
+Using Python 3.6.5 on a 2017 Retina Macbook Pro, connected to an Arduino Due configured to use the SPI DMA included in the driver, and using the MessagePack mode, the `hackeeg_test.py` program can read and transfer 8 channels of 24-bit resolution data at 16,384 samples per second, the maximum rate of the ADS1299 chip.
+
+The Python client software requires the [PySerial](https://github.com/pyserial/pyserial) module.
 
 ## Hardware
 
 If you are looking for a full Arduino shield with analog input capability, you might
 be interested in the [HackEEG Shield](https://github.com/adamfeuer/hackeeg-shield).
-The HackEEG shield is compatible with the ADS1298 or ADS1299.
+The HackEEG shield is designed for use with the ADS1299.
 
-For prototyping software, the [ADS1298 breakout board](https://github.com/adamfeuer/ADS1298-breakout)
-might be useful. It is designed for the ADS1298, but should also work with the ADS1294, ADS1296, or ADS1299.
+For prototyping software, the [ADS1298 breakout board](https://github.com/adamfeuer/ADS1298-breakout) might be useful. It is designed for the ADS1298, but should also work with the ADS1294, ADS1296, or ADS1299.
 
 
 ## Credits
