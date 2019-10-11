@@ -40,17 +40,19 @@ class HackEegTestApplication:
         test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
+        # one channel enabled
         self.hackeeg.disable_all_channels()
+        self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+
+        # all channels enabled
         # for channel in range(1, 9):
-        # for channel in range(7, 7):
-        #     self.hackeeg.enable_channel(channel)
-        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
+        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
 
         # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        # self.hackeeg.messagepack_mode()
+        self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
@@ -93,12 +95,13 @@ class HackEegTestApplication:
                     decoded_data = result.get(self.hackeeg.DecodedDataKey)
                     if decoded_data:
                         timestamp = decoded_data.get('timestamp')
+                        sample_number = decoded_data.get('sample_number')
                         ads_gpio = decoded_data.get('ads_gpio')
                         loff_statp = decoded_data.get('loff_statp')
                         loff_statn = decoded_data.get('loff_statn')
                         channel_data = decoded_data.get('channel_data')
                         if not self.quiet:
-                            print(f"timestamp:{timestamp} | gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                            print(f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
                                   end='')
                             for channel_number, sample in enumerate(channel_data):
                                 print(f"{channel_number+1}:{sample} ", end='')

@@ -148,7 +148,7 @@ class HackEEGBoard:
                     sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
                     channel_data.append(sample)
 
-                decoded_data = dict(timestamp=timestamp, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
+                decoded_data = dict(timestamp=timestamp, sample_number=sample_number, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
                 response[self.DecodedDataKey] = decoded_data
         return response
 
