@@ -29,10 +29,9 @@
 #include "Base64.h"
 #include "SpiDma.h"
 
-//#define BAUD_RATE  115200     // WiredSerial ignores this and uses the maximum rate
-#define BAUD_RATE 2000000
-#define txActiveChannelsOnly  // reduce bandwidth: only send data for active data channels
-#define WiredSerial SerialUSB // use Due's Native USB port
+
+#define BAUD_RATE 2000000     // WiredSerial ignores this and uses the maximum rate
+#define WiredSerial SerialUSB // use the Arduino Due's Native USB port
 
 #define SPI_BUFFER_SIZE 200
 #define OUTPUT_BUFFER_SIZE 1000
@@ -588,14 +587,6 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
         if ((chSet & 7) != SHORTED) num_active_channels++;
     }
 }
-
-//#define testSignal //use this to determine if your software is accurately measuring full range 24-bit signed data -8388608..8388607
-#ifdef testSignal
-int testInc = 1;
-int testPeriod = 100;
-byte testMSB, testLSB;
-#endif
-
 
 inline void send_samples(void) {
     if ((!is_rdatac) || (num_active_channels < 1)) return;
