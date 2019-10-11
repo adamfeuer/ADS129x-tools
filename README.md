@@ -228,7 +228,6 @@ In MessagePack mode, status text is omitted.
 
 #### Software library
 
-
 The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for encoding and decoding MessagePack data, except for `rdata` and `rdatac` messages– those use a custom, optimized sending routine.
 
 
@@ -236,37 +235,44 @@ The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for 
 
 The packed byte-array used for `rdata` and `rdatac` transfers has this format:
 
-| position | function  | byte |
-|----------|-----------|------|
-| 00       | timestamp |    0 |
-| 01       | timestamp |    1 |
-| 02       | timestamp |    2 |
-| 03       | timestamp |    3 |
-| 04       | channel 1 |    0 |
-| 05       | channel 1 |    1 |
-| 06       | channel 1 |    2 |
-| 07       | channel 2 |    0 |
-| 08       | channel 2 |    1 |
-| 09       | channel 2 |    2 |
-| 10       | channel 3 |    0 |
-| 11       | channel 3 |    1 |
-| 12       | channel 3 |    2 |
-| 13       | channel 4 |    0 |
-| 14       | channel 4 |    1 |
-| 15       | channel 4 |    2 |
-| 16       | channel 5 |    0 |
-| 17       | channel 5 |    1 |
-| 18       | channel 5 |    2 |
-| 19       | channel 6 |    0 |
-| 20       | channel 6 |    1 |
-| 21       | channel 6 |    2 |
-| 22       | channel 7 |    0 |
-| 23       | channel 7 |    1 |
-| 24       | channel 7 |    2 |
-| 25       | channel 8 |    0 |
-| 26       | channel 8 |    1 |
-| 27       | channel 8 |    2 |
+| position | function      | byte |
+|----------|---------------|------|
+| 00       | timestamp     |    0 |
+| 01       | timestamp     |    1 |
+| 02       | timestamp     |    2 |
+| 03       | timestamp     |    3 |
+| 04       | sample number |    0 |
+| 05       | sample number |    1 |
+| 06       | sample number |    2 |
+| 07       | sample number |    3 |
+| 08       | channel 1     |    0 |
+| 09       | channel 1     |    1 |
+| 10       | channel 1     |    2 |
+| 11       | channel 2     |    0 |
+| 12       | channel 2     |    1 |
+| 13       | channel 2     |    2 |
+| 14       | channel 3     |    0 |
+| 15       | channel 3     |    1 |
+| 16       | channel 3     |    2 |
+| 17       | channel 4     |    0 |
+| 18       | channel 4     |    1 |
+| 19       | channel 4     |    2 |
+| 20       | channel 5     |    0 |
+| 21       | channel 5     |    1 |
+| 22       | channel 5     |    2 |
+| 23       | channel 6     |    0 |
+| 24       | channel 6     |    1 |
+| 25       | channel 6     |    2 |
+| 26       | channel 7     |    0 |
+| 27       | channel 7     |    1 |
+| 28       | channel 7     |    2 |
+| 29       | channel 8     |    0 |
+| 30       | channel 8     |    1 |
+| 31       | channel 8     |    2 |
 
+* `timestamp` is an unsigned long, the result of calling the Arduino's `micros()` function right before the sample is taken.
+* `sample number` is an unsigned long, the value is incremented for every sample received by the driver. It is reset every time you issue the `start` command. You can analyze the sample number sequence on the client to see if your client code is dropping or missing samples.
+* For an example Python decoding function, see [`_decode_data()`](https://github.com/adamfeuer/ADS129x-tools/blob/master/ads129x_client/hackeeg/driver.py#L123-L152) in the file `hackeeg/driver.py`.
 
 
 ## Python Client Software
