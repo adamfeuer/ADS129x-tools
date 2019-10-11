@@ -3,20 +3,12 @@
 This is a collection of software for working with the TI ADS129x series of analog to digital
 converter chips.
 
-The ADS1299 is a 24-bit 8-channel ADC meant specifically for EEG, with a 24x programmable gain 
-amplifier and much of the analog circuitry needed for EEG. It is capable of digitizing 16,000 samples
-per second at 24 bit resolution. The ADS1299-4 is a 4-channel version of the ADS1299; the ADS1299-6 is a 6-channel version.
+The [TI ADS1299](http://www.ti.com/product/ads1299) is a 24-bit 8-channel ADC meant specifically for EEG, with 24x programmable gain amplifiers and much of the analog circuitry needed for EEG. It is capable of digitizing 16,000 samples per second at 24 bit resolution. The ADS1299-4 is a 4-channel version of the ADS1299; the ADS1299-6 is a 6-channel version.
 
-http://www.ti.com/product/ads1299
+The [TI ADS1298](http://www.ti.com/product/ads1298) is a 24-bit, 8-channel ADC chip with SPI interface, and 12x programmable gain amplifiers,
+meant for ECG and EEG. The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version. 
 
-The ADS1298 is a 24-bit, 8-channel ADC chip with SPI interface, and 12x programmable gain amplifiers,
-meant for ECG and EEG:
-
-http://www.ti.com/product/ads1298
-
-The ADS1294 is a 4-channel version; ADS1296 is a 6 channel version. 
-
-These chips are ideally suited for digitizing biological signals.
+The ADS1299 and ADS1298 family of chips are ideally suited for digitizing biological signals.
 
 ## Arduino drivers
 
@@ -24,7 +16,9 @@ The ads129x-driver/ directory contains an Arduino sketch and associated C/C++ fi
 
 The driver has a text-mode interface, so can be used without any client software – just open up a serial port to the SAM3X8E native USB port (line endings NL+CR). It also has a JSONLines mode for easy parsing by client programs and a MessagePack mode for efficient binary communication. 
 
-In MessagePack mode, using the Arduino Due's native SPI DMA, driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection at the same rate. The driver by default uses the Arduino library's software SPI (without DMA), and can read and send 8,000 samples per second in that configuration on the Arduino Due, either in JSON Lines mode or MessagePack mode. Other Arduinos will have lower performance.
+In MessagePack mode, using the Arduino Due's native SPI DMA, driver can read from the ADS1299 at 16,000 samples per second, and can send that data on to the host via the Arduino Due's USB 2.0 High Speed connection at the same rate. 
+
+By default the driver uses the Arduino library's software SPI (without DMA), and can read and send 8,000 samples per second in that configuration on the Arduino Due, either in JSON Lines mode or MessagePack mode. Other Arduinos will have lower performance.
 
 When in MessagePack mode, MessagePack format is only used to transfer data in `rdata` and `rdatac` commands; all other communication takes place by JSON Lines.
 
@@ -123,6 +117,28 @@ while True:
         sys.stdout.flush()
 ```
 
+## SPI DMA 
+
+The driver running on the Arduino communicates with the ADS1299 chip via the SPI interface. For data rates from 250 to 8,192 samples per second, the driver can use the Arduino API's built in software SPI. This is simplest.
+
+To use the 16,384 samples per second data rate, or to reduce CPU load on the Arduino Due, the driver can use the Arduino Due's [Atmel SAM3X8E](https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-11057-32-bit-Cortex-M3-Microcontroller-SAM3X-SAM3A_Datasheet.pdf) CPU's built-in SPI DMA ([Direct Memory Access](https://en.wikipedia.org/wiki/Direct_memory_access)) controller. To enable this, change the following constants in `SpiDma.cpp` from this:
+
+Arduino software SPI:
+
+```
+#define USE_ARDUINO_SPI_LIBRARY 1
+#define USE_NATIVE_SAM3X_SPI 0
+```
+
+To this (HackEEG SPI DMA):
+
+```
+#define USE_ARDUINO_SPI_LIBRARY 0
+#define USE_NATIVE_SAM3X_SPI 1
+```
+
+Using the SPI DMA offloads all SPI communication to the SAM3X8E DMA controller, freeing up the CPU to do other tasks like serial communication. 
+
 ## Communication Protocol
 
 ### Text mode
@@ -210,11 +226,50 @@ The Arduino driver uses the [ArduinoJson](https://arduinojson.org/) library for 
 
 
 
+### Byte-array Format
+
+The packed byte-array used for `rdata` and `rdatac` transfers has this format:
+
+| position | function  | byte |
+|----------|-----------|------|
+| 00       | timestamp |    0 |
+| 01       | timestamp |    1 |
+| 02       | timestamp |    2 |
+| 03       | timestamp |    3 |
+| 04       | channel 1 |    0 |
+| 05       | channel 1 |    1 |
+| 06       | channel 1 |    2 |
+| 07       | channel 2 |    0 |
+| 08       | channel 2 |    1 |
+| 09       | channel 2 |    2 |
+| 10       | channel 3 |    0 |
+| 11       | channel 3 |    1 |
+| 12       | channel 3 |    2 |
+| 13       | channel 4 |    0 |
+| 14       | channel 4 |    1 |
+| 15       | channel 4 |    2 |
+| 16       | channel 5 |    0 |
+| 17       | channel 5 |    1 |
+| 18       | channel 5 |    2 |
+| 19       | channel 6 |    0 |
+| 20       | channel 6 |    1 |
+| 21       | channel 6 |    2 |
+| 22       | channel 7 |    0 |
+| 23       | channel 7 |    1 |
+| 24       | channel 7 |    2 |
+| 25       | channel 8 |    0 |
+| 26       | channel 8 |    1 |
+| 27       | channel 8 |    2 |
+
+
+
 ## Python Host Software
 
-The Python host software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` and `hackeeg_shell.py`), and a demonstration performance testing script (`hackeeg_demo.py`). Using Python 3.6.5 on a 2012 Retina Macbook Pro, it can read 8,000 samples per second. Under PyPy, it can read 16,000 samples per second.
+The Python host software is designed to run on a laptop computer. There is a `hackeeg` driver Python module for communicating with the Arduino over the USB serial port, a command line client (`hackeeg_shell` and `hackeeg_shell.py`), and a demonstration and performance testing script (`hackeeg_test.py`). 
 
-It requires the PySerial module.
+Using Python 3.6.5 on a 2017 Retina Macbook Pro, connected to an Arduino Due configured to use the SPI DMA included in the driver, the `hackeeg_test.py` program can read and transfer 8 channels of 24-bit resolution data at 16,384 samples per second, the maximum rate of the ADS1299 chip.
+
+It requires the [PySerial](https://github.com/pyserial/pyserial) module.
 
 ## Hardware
 
@@ -245,9 +300,10 @@ If I forgot to credit you, please let me know!
 
 If you have questions, comments, or improvements, I would love to know them! Pull requests welcome!
 
-cheers <br>
-adam <br>
-Adam Feuer <br>
-adam@starcat.io<br>
-[Starcat LLC](https://starcat.io)<br>
-Seattle, WA, USA <br>
+cheers <br/>
+adam <br/>
+<br/>
+Adam Feuer <br/>
+adam@starcat.io<br/>
+[Starcat LLC](https://starcat.io)<br/>
+Seattle, WA, USA <br/>
