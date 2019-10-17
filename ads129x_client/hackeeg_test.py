@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import argparse
+import uuid
+
 import time
+from pylsl import StreamInfo, StreamOutlet
 
 import hackeeg
 from hackeeg import ads1299
@@ -22,6 +25,13 @@ class HackEegTestApplication:
         self.hackeeg = None
         self.debug = False
         self.quiet = False
+        self.channels = 8
+        self.samples_per_second = 500
+        self.lsl = False
+        self.lsl_info = None
+        self.lsl_outlet = None
+        self.lsl_stream_name = "HackEEG"
+        self.stream_id = str(uuid.uuid4())
         # self.debug = True
 
     def find_dropped_samples(self, samples, number_of_samples):
@@ -79,6 +89,12 @@ class HackEegTestApplication:
         parser.add_argument("--sps", "-s",
                             help=f"ADS1299 samples per second setting- must be one of {sorted(list(SPEEDS.keys()))}",
                             default=8192, type=int)
+        parser.add_argument("--lsl", "-L",
+                            help=f"Send samples to an LSL stream instead of terminal",
+                            action="store_true"),
+        parser.add_argument("--lsl-stream-name", "-N",
+                            help=f"Name of LSL stream to create",
+                            default=self.lsl_stream_name, type=str),
         parser.add_argument("--quiet", "-q",
                             help=f"quiet mode– do not print sample data (used for performance testing)",
                             action="store_true")
@@ -86,6 +102,14 @@ class HackEegTestApplication:
         if args.debug:
             self.debug = True
             print("debug mode on")
+        self.samples_per_second = args.sps
+        if args.lsl:
+            self.lsl = True
+            if args.lsl_stream_name:
+                self.lsl_stream_name = args.lsl_stream_name
+            self.lsl_info = StreamInfo(self.lsl_stream_name, 'EEG', self.channels, self.samples_per_second, 'int32', self.stream_id)
+            self.lsl_outlet = StreamOutlet(self.lsl_info)
+
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, baudrate=2000000, debug=self.debug)
         self.hackeeg.connect()
@@ -119,6 +143,8 @@ class HackEegTestApplication:
                             for channel_number, sample in enumerate(channel_data):
                                 print(f"{channel_number+1}:{sample} ", end='')
                             print()
+                        if self.lsl:
+                            self.lsl_outlet.push_sample(channel_data)
                     else:
                         if not self.quiet:
                             print(data)
