@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
 import argparse
+import threading
 import uuid
-
 import time
+import sys
+import select
+import tty
+import termios
+
 from pylsl import StreamInfo, StreamOutlet
 
 import hackeeg
@@ -15,6 +20,23 @@ DEFAULT_NUMBER_OF_SAMPLES_TO_CAPTURE = 50000
 
 class HackEegTestApplicationException(Exception):
     pass
+
+
+class NonBlockingConsole(object):
+
+    def __enter__(self):
+        self.old_settings = termios.tcgetattr(sys.stdin)
+        tty.setcbreak(sys.stdin.fileno())
+        return self
+
+    def __exit__(self, type, value, traceback):
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+
+
+    def get_data(self):
+        if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+            return sys.stdin.read(1)
+        return False
 
 
 class HackEegTestApplication:
@@ -32,6 +54,9 @@ class HackEegTestApplication:
         self.lsl_outlet = None
         self.lsl_stream_name = "HackEEG"
         self.stream_id = str(uuid.uuid4())
+        self.read_samples_continuously = True
+        self.continuous_mode = False
+        self.non_blocking_console = NonBlockingConsole()
         # self.debug = True
 
     def find_dropped_samples(self, samples, number_of_samples):
@@ -45,6 +70,11 @@ class HackEegTestApplication:
         decoded_data = sample.get(self.hackeeg.DecodedDataKey)
         sample_number = decoded_data.get('sample_number', -1)
         return sample_number
+
+    def read_keyboard_input(self):
+        char = self.non_blocking_console.get_data()
+        if char:
+            self.read_samples_continuously = False
 
     def setup(self, samples_per_second=8192):
         if samples_per_second not in SPEEDS.keys():
@@ -86,6 +116,8 @@ class HackEegTestApplication:
                             action="store_true")
         parser.add_argument("--samples", "-S", help="how many samples to capture",
                             default=DEFAULT_NUMBER_OF_SAMPLES_TO_CAPTURE, type=int)
+        parser.add_argument("--continuous", "-C", help="read data continuously (until <return> key is pressed)",
+                            action="store_true")
         parser.add_argument("--sps", "-s",
                             help=f"ADS1299 samples per second setting- must be one of {sorted(list(SPEEDS.keys()))}",
                             default=8192, type=int)
@@ -103,6 +135,10 @@ class HackEegTestApplication:
             self.debug = True
             print("debug mode on")
         self.samples_per_second = args.sps
+
+        if args.continuous:
+            self.continuous_mode = True
+
         if args.lsl:
             self.lsl = True
             if args.lsl_stream_name:
@@ -120,10 +156,11 @@ class HackEegTestApplication:
         sample_counter = 0
         end_time = time.perf_counter()
         start_time = time.perf_counter()
-        while sample_counter < max_samples:
+        while sample_counter < max_samples and self.read_samples_continuously:
             result = self.hackeeg.read_rdatac_response()
             end_time = time.perf_counter()
             sample_counter += 1
+            self.read_keyboard_input()
             if result:
                 status_code = result.get(self.hackeeg.MpStatusCodeKey)
                 data = result.get(self.hackeeg.MpDataKey)
@@ -154,6 +191,8 @@ class HackEegTestApplication:
         duration = end_time - start_time
         self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.blink_board_led()
+        if self.continuous_mode:
+            max_samples = sample_counter
         print(f"duration in seconds: {duration}")
         samples_per_second = max_samples / duration
         print(f"samples per second: {samples_per_second}")
