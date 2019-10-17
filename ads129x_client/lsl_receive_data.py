@@ -1,4 +1,6 @@
-"""Example program to show how to read a multi-channel time series from LSL."""
+#!/usr/bin/env python
+
+# Example program to show how to read a multi-channel time series from LSL.
 
 from pylsl import StreamInlet, resolve_stream
 
