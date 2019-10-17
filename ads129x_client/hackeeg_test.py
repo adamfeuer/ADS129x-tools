@@ -32,7 +32,6 @@ class NonBlockingConsole(object):
     def __exit__(self, type, value, traceback):
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
 
-
     def get_data(self):
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
             return sys.stdin.read(1)
@@ -143,7 +142,8 @@ class HackEegTestApplication:
             self.lsl = True
             if args.lsl_stream_name:
                 self.lsl_stream_name = args.lsl_stream_name
-            self.lsl_info = StreamInfo(self.lsl_stream_name, 'EEG', self.channels, self.samples_per_second, 'int32', self.stream_id)
+            self.lsl_info = StreamInfo(self.lsl_stream_name, 'EEG', self.channels, self.samples_per_second, 'int32',
+                                       self.stream_id)
             self.lsl_outlet = StreamOutlet(self.lsl_info)
 
         self.serial_port_name = args.serial_port
@@ -156,7 +156,8 @@ class HackEegTestApplication:
         sample_counter = 0
         end_time = time.perf_counter()
         start_time = time.perf_counter()
-        while sample_counter < max_samples and self.read_samples_continuously:
+        while ((sample_counter < max_samples and not self.continuous_mode) or \
+               (self.read_samples_continuously and self.continuous_mode)):
             result = self.hackeeg.read_rdatac_response()
             end_time = time.perf_counter()
             sample_counter += 1
@@ -175,10 +176,11 @@ class HackEegTestApplication:
                         loff_statn = decoded_data.get('loff_statn')
                         channel_data = decoded_data.get('channel_data')
                         if not self.quiet:
-                            print(f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
-                                  end='')
+                            print(
+                                f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                                end='')
                             for channel_number, sample in enumerate(channel_data):
-                                print(f"{channel_number+1}:{sample} ", end='')
+                                print(f"{channel_number + 1}:{sample} ", end='')
                             print()
                         if self.lsl:
                             self.lsl_outlet.push_sample(channel_data)
