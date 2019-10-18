@@ -48,6 +48,7 @@ class HackEegTestApplication:
         self.quiet = False
         self.channels = 8
         self.samples_per_second = 500
+        self.max_samples = 5000
         self.lsl = False
         self.lsl_info = None
         self.lsl_outlet = None
@@ -107,7 +108,8 @@ class HackEegTestApplication:
         self.hackeeg.rdatac()
         return
 
-    def main(self):
+
+    def parse_args(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("serial_port", help="serial port device path",
                             type=str)
@@ -150,55 +152,64 @@ class HackEegTestApplication:
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, baudrate=2000000, debug=self.debug)
         self.hackeeg.connect()
         self.setup(samples_per_second=args.sps)
-        max_samples = args.samples
+        self.max_samples = args.samples
         self.quiet = args.quiet
+
+    def process_sample(self, result, samples):
+        if result:
+            status_code = result.get(self.hackeeg.MpStatusCodeKey)
+            data = result.get(self.hackeeg.MpDataKey)
+            samples.append(result)
+            if status_code == Status.Ok and data:
+                decoded_data = result.get(self.hackeeg.DecodedDataKey)
+                if decoded_data:
+                    timestamp = decoded_data.get('timestamp')
+                    sample_number = decoded_data.get('sample_number')
+                    ads_gpio = decoded_data.get('ads_gpio')
+                    loff_statp = decoded_data.get('loff_statp')
+                    loff_statn = decoded_data.get('loff_statn')
+                    channel_data = decoded_data.get('channel_data')
+                    if not self.quiet:
+                        print(
+                            f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
+                            end='')
+                        for channel_number, sample in enumerate(channel_data):
+                            print(f"{channel_number + 1}:{sample} ", end='')
+                        print()
+                    if self.lsl:
+                        self.lsl_outlet.push_sample(channel_data)
+                else:
+                    if not self.quiet:
+                        print(data)
+        else:
+            print("no data to decode")
+            print(f"result: {result}")
+
+    def main(self):
+        self.parse_args()
+
         samples = []
         sample_counter = 0
+
         end_time = time.perf_counter()
         start_time = time.perf_counter()
-        while ((sample_counter < max_samples and not self.continuous_mode) or \
+        while ((sample_counter < self.max_samples and not self.continuous_mode) or \
                (self.read_samples_continuously and self.continuous_mode)):
             result = self.hackeeg.read_rdatac_response()
             end_time = time.perf_counter()
             sample_counter += 1
-            self.read_keyboard_input()
-            if result:
-                status_code = result.get(self.hackeeg.MpStatusCodeKey)
-                data = result.get(self.hackeeg.MpDataKey)
-                samples.append(result)
-                if status_code == Status.Ok and data:
-                    decoded_data = result.get(self.hackeeg.DecodedDataKey)
-                    if decoded_data:
-                        timestamp = decoded_data.get('timestamp')
-                        sample_number = decoded_data.get('sample_number')
-                        ads_gpio = decoded_data.get('ads_gpio')
-                        loff_statp = decoded_data.get('loff_statp')
-                        loff_statn = decoded_data.get('loff_statn')
-                        channel_data = decoded_data.get('channel_data')
-                        if not self.quiet:
-                            print(
-                                f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
-                                end='')
-                            for channel_number, sample in enumerate(channel_data):
-                                print(f"{channel_number + 1}:{sample} ", end='')
-                            print()
-                        if self.lsl:
-                            self.lsl_outlet.push_sample(channel_data)
-                    else:
-                        if not self.quiet:
-                            print(data)
-            else:
-                print("no data to decode")
-                print(f"result: {result}")
+            if self.continuous_mode:
+                self.read_keyboard_input()
+            self.process_sample(result, samples)
+
         duration = end_time - start_time
         self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.blink_board_led()
-        if self.continuous_mode:
-            max_samples = sample_counter
+
         print(f"duration in seconds: {duration}")
-        samples_per_second = max_samples / duration
+        samples_per_second = sample_counter / duration
         print(f"samples per second: {samples_per_second}")
-        dropped_samples = self.find_dropped_samples(samples, max_samples)
+        dropped_samples = self.find_dropped_samples(samples, sample_counter)
         print(f"dropped samples: {dropped_samples}")
 
 
