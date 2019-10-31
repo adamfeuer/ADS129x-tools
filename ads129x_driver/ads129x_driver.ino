@@ -30,6 +30,8 @@
 #include "SpiDma.h"
 
 
+#define DRIVER_DEBUG 1
+
 #define BAUD_RATE 2000000     // WiredSerial ignores this and uses the maximum rate
 #define WiredSerial SerialUSB // use the Arduino Due's Native USB port
 
@@ -596,6 +598,7 @@ inline void send_samples(void) {
 
 inline void receive_sample() {
     digitalWrite(PIN_CS, LOW);
+    memset(spi_bytes, 0, sizeof(spi_bytes));
     timestamp_union.timestamp = micros();
     spi_bytes[0] = timestamp_union.timestamp_bytes[0];
     spi_bytes[1] = timestamp_union.timestamp_bytes[1];
@@ -609,6 +612,17 @@ inline void receive_sample() {
     digitalWrite(PIN_CS, HIGH);
     sample_number_union.sample_number++;
 }
+
+//inline int array_has_nonzero_elements(char *array, int array_size) {
+//    int sum = 0;
+//    for (int i = 0; i++; i < array_size) {
+//        sum |= array[i];
+//    }
+//    if (sum != 0) {
+//        return 1;
+//    }
+//    return 0;
+//}
 
 inline void send_sample(void) {
     receive_sample();
@@ -631,9 +645,19 @@ inline void send_sample(void) {
         case MESSAGEPACK_MODE:
             send_sample_messagepack(num_timestamped_spi_bytes);
             break;
-
     }
+#ifdef DRIVER_DEBUG
+    encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+    Serial.print("spi_buffer: ");
+    Serial.println(output_buffer);
+//    if (array_has_nonzero_elements( (char *)(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES), num_spi_bytes)) {
+//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+//        Serial.print("spi_buffer: ");
+//        Serial.println(output_buffer);
+//    }
+#endif
 }
+
 
 inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
@@ -656,7 +680,6 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;
     // Send SDATAC Command (Stop Read Data Continuously mode)
     delay(1000); //pause to provide ads129n enough time to boot up...
-    adcSendCommand(SDATAC);
     // delayMicroseconds(2);
     delay(100);
     int val = adcRreg(ID);
@@ -677,6 +700,7 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
             hardware_type = "ADS1299";
             max_channels = 8;
             break;
+        // TODO: ADS1299-4 and ADS1299-6
         default:
             max_channels = 0;
     }
@@ -721,8 +745,3 @@ void arduinoSetup() {
     digitalWrite(IPIN_RESET, HIGH);
     delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisecond
 } 
-
-
-
-
-
