@@ -3,11 +3,11 @@ import binascii
 import io
 import json
 import sys
-import time
 from json import JSONDecodeError
 
-import serial
 import msgpack
+import serial
+import time
 
 from . import ads1299
 
@@ -134,6 +134,7 @@ class HackEEGBoard:
                     except binascii.Error:
                         print(f"incorrect padding: {data}")
             if data and (type(data) is list or type(data) is bytes):
+                data_hex = ":".join("{:02x}".format(c) for c in data)
                 timestamp = int.from_bytes(data[0:4], byteorder='little')
                 sample_number = int.from_bytes(data[4:8], byteorder='little')
                 ads_status = int.from_bytes(data[8:11], byteorder='big')
@@ -145,10 +146,13 @@ class HackEEGBoard:
                 channel_data = []
                 for channel in range(0, 8):
                     channel_offset = 11 + (channel * 3)
-                    sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little')
+                    # sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little', signed=True)
+                    sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='big', signed=True)
                     channel_data.append(sample)
 
-                decoded_data = dict(timestamp=timestamp, sample_number=sample_number, ads_status=ads_status, ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra, channel_data=channel_data)
+                decoded_data = dict(timestamp=timestamp, sample_number=sample_number, ads_status=ads_status,
+                                    ads_gpio=ads_gpio, loff_statn=loff_statn, loff_statp=loff_statp, extra=extra,
+                                    channel_data=channel_data, data_hex=data_hex, data_raw=data)
                 response[self.DecodedDataKey] = decoded_data
         return response
 
@@ -217,6 +221,8 @@ class HackEEGBoard:
 
     def _sense_protocol_mode(self):
         try:
+            self.send_command("stop")
+            self.send_command("sdatac")
             result = self.execute_command("nop")
             return self.JsonLinesMode
         except Exception:
@@ -265,6 +271,9 @@ class HackEEGBoard:
 
     def stop(self):
         return self.execute_command("stop")
+
+    def rdata(self):
+        return self.execute_command("rdata")
 
     def status(self):
         return self.execute_command("status")
@@ -330,7 +339,7 @@ class HackEEGBoard:
 
     def disable_channel(self, channel):
         command = "wreg"
-        parameters = [ads1299.CHnSET + channel, ads1299.PDn]
+        parameters = [ads1299.CHnSET + channel, ads1299.PDn | ads1299.SHORTED]
         self.execute_command(command, parameters)
 
     def enable_all_channels(self):
