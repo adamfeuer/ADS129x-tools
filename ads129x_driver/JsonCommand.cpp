@@ -108,6 +108,7 @@ void JsonCommand::readSerial() {
 
         if (inChar == term) {     // Check for the terminator (default '\r') meaning end of command
 #ifdef JSONCOMMAND_DEBUG
+            Serial.println();
             Serial.print("Received: ");
             Serial.println(buffer);
 #endif
@@ -238,12 +239,3 @@ char *JsonCommand::next() {
     return strtok_r(NULL, delim, &last);
 }
 
-/**
- * Print the list of commands.
- */
-
-void JsonCommand::printCommands() {
-    for (int i = 0; i < commandCount; i++) {
-        SerialUSB.println(commandList[i].command);
-    }
-}
