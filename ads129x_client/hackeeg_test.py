@@ -84,26 +84,42 @@ class HackEegTestApplication:
         self.hackeeg.sdatac()
         self.hackeeg.reset()
         self.hackeeg.blink_board_led()
-        self.hackeeg.disable_all_channels()
+
         sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
-
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
-        test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
-        self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
-        # one channel enabled
-        self.hackeeg.disable_all_channels()
-        self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+        # self.hackeeg.disable_all_channels()
+        self.hackeeg.disable_channel(1)
+        self.hackeeg.disable_channel(2)
+        self.hackeeg.disable_channel(3)
+        self.hackeeg.disable_channel(4)
+        self.hackeeg.disable_channel(5)
+        # self.hackeeg.disable_channel(6)
+        self.hackeeg.disable_channel(7)
+        self.hackeeg.disable_channel(8)
+        # test_signal_mode = ads1299.INT_TEST_DC | ads1299.CONFIG2_const
+        # test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
+        # self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
+
+        # channel config
+        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
 
         # all channels enabled
         # for channel in range(1, 9):
         #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
 
-        # Unipolar mode - setting SRB1 bit sends mid-supply voltage to the N inputs
+        # Single-ended mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
+        # Dual-ended mode
+        # self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
         # add channels into bias generation
-        self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        self.hackeeg.messagepack_mode()
+        # self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
+        # self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
@@ -169,6 +185,7 @@ class HackEegTestApplication:
                     loff_statp = decoded_data.get('loff_statp')
                     loff_statn = decoded_data.get('loff_statn')
                     channel_data = decoded_data.get('channel_data')
+                    data_hex = decoded_data.get('data_hex')
                     if not self.quiet:
                         print(
                             f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
@@ -176,6 +193,8 @@ class HackEegTestApplication:
                         for channel_number, sample in enumerate(channel_data):
                             print(f"{channel_number + 1}:{sample} ", end='')
                         print()
+                        print(data_hex)
+                        print(channel_data)
                     if self.lsl:
                         self.lsl_outlet.push_sample(channel_data)
                 else:
