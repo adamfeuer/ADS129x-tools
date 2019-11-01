@@ -679,6 +679,7 @@ inline void send_sample_messagepack(int num_bytes) {
 void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;
     // Send SDATAC Command (Stop Read Data Continuously mode)
+    adcSendCommand(SDATAC);
     delay(1000); //pause to provide ads129n enough time to boot up...
     // delayMicroseconds(2);
     delay(100);
