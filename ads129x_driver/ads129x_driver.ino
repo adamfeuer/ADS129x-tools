@@ -708,19 +708,24 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
     num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
     num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES;
     if (max_channels == 0) { //error mode
-        while (1) { //loop forever
-            digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-            delay(500);               // wait for a second`
-            digitalWrite(PIN_LED, LOW);    // turn the LED off by making the voltage LOW
+        while (1) {
+            digitalWrite(PIN_LED, HIGH);
             delay(500);
-        } //while forever
+            digitalWrite(PIN_LED, LOW);
+            delay(500);
+        }
     } //error mode
+
+    // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
+    adcWreg(GPIO, 0);
+    adcWreg(CONFIG3,PD_REFBUF | CONFIG3_const);
+    digitalWrite(PIN_START, HIGH);
 }
 
 void arduinoSetup() {
     pinMode(PIN_LED, OUTPUT);
     using namespace ADS129x;
-    //prepare pins to be outputs or inputs
+    // prepare pins to be outputs or inputs
     //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us
     //pinMode(PIN_DIN, OUTPUT); //optional - SPI library will do this for us
     //pinMode(PIN_DOUT, INPUT); //optional - SPI library will do this for us
@@ -740,9 +745,9 @@ void arduinoSetup() {
     delay(10); // wait for oscillator to wake up
     digitalWrite(IPIN_PWDN, HIGH); // *optional - turn off power down mode
     digitalWrite(IPIN_RESET, HIGH);
-    delay(1000);// *optional
+    delay(1000);
     digitalWrite(IPIN_RESET, LOW);
-    delay(1);// *optional
+    delay(1);
     digitalWrite(IPIN_RESET, HIGH);
     delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisecond
 } 

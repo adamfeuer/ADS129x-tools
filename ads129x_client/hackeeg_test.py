@@ -82,10 +82,10 @@ class HackEegTestApplication:
                 samples_per_second, sorted(SPEEDS.keys())))
         self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.sdatac()
-        self.hackeeg.reset()
         self.hackeeg.blink_board_led()
 
-        sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
+        # sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
+        sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
 
         # self.hackeeg.disable_all_channels()
@@ -106,6 +106,7 @@ class HackEegTestApplication:
         # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.SHORTED | ads1299.PDn | ads1299.GAIN_1X)
         self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
 
@@ -118,7 +119,7 @@ class HackEegTestApplication:
         # Dual-ended mode
         # self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
         # add channels into bias generation
-        # self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
+        self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
         # self.hackeeg.messagepack_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
