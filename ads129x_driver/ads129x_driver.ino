@@ -30,7 +30,7 @@
 #include "SpiDma.h"
 
 
-#define DRIVER_DEBUG 1
+//#define DRIVER_DEBUG 1
 
 #define BAUD_RATE 2000000     // WiredSerial ignores this and uses the maximum rate
 #define WiredSerial SerialUSB // use the Arduino Due's Native USB port
@@ -277,8 +277,8 @@ void send_jsonlines_data(int status_code, char data, char *status_text) {
     root[STATUS_CODE_KEY] = status_code;
     root[STATUS_TEXT_KEY] = status_text;
     root[DATA_KEY] = data;
-    serializeJson(doc, SerialUSB);
-    SerialUSB.println();
+    serializeJson(doc, WiredSerial);
+    WiredSerial.println();
     doc.clear();
 }
 
@@ -695,9 +695,9 @@ inline void send_sample_json(int num_bytes) {
 
 
 inline void send_sample_messagepack(int num_bytes) {
-    SerialUSB.write(messagepack_rdatac_header, messagepack_rdatac_header_size);
-    SerialUSB.write((uint8_t) num_bytes);
-    SerialUSB.write(spi_bytes, num_bytes);
+    WiredSerial.write(messagepack_rdatac_header, messagepack_rdatac_header_size);
+    WiredSerial.write((uint8_t) num_bytes);
+    WiredSerial.write(spi_bytes, num_bytes);
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
