@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
+ * Copyright (c) 2013-2019 by Adam Feuer <adam@adamfeuer.com>
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +20,8 @@
 #include <string.h>
 #include "Arduino.h"
 
-#define USE_ARDUINO_SPI_LIBRARY 0
-#define USE_NATIVE_SAM3X_SPI 1
+#define USE_ARDUINO_SPI_LIBRARY 1
+#define USE_NATIVE_SAM3X_SPI 0
 
 
 #if USE_ARDUINO_SPI_LIBRARY
@@ -41,7 +41,6 @@ void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
 
 /** SPI receive a byte */
 uint8_t spiRec() {
-//    return SPI.transfer(0XFF);
     noInterrupts();
     return SPI.transfer(0x00);
     interrupts();
@@ -49,10 +48,6 @@ uint8_t spiRec() {
 
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t *buf, size_t len) {
-//    for (size_t i = 0; i < len; i++) {
-////        buf[i] = SPI.transfer(0XFF);
-//        buf[i] = SPI.transfer(0x00);
-//    }
     memset(buf, 0, len);
     noInterrupts();
     SPI.transfer((void *)buf, len);
@@ -69,9 +64,6 @@ void spiSend(uint8_t b) {
 
 /** SPI send multiple bytes */
 void spiSend(const uint8_t *buf, size_t len) {
-//    for (size_t i = 0; i < len; i++) {
-//        SPI.transfer(buf[i]);
-//    }
     noInterrupts();
     SPI.transfer((void *)buf, len);
     interrupts();

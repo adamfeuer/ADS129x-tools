@@ -1,7 +1,7 @@
 /*
  * adsCommand.h
  *
- * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
+ * Copyright (c) 2013-2019 by Adam Feuer <adam@adamfeuer.com>
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@
 // constants define pins on Arduino 
 
 // Arduino Due
-// HackEEG Shield v1.3.1
+// HackEEG Shield v1.5.0
 const int IPIN_PWDN = 33;
 const int PIN_CLKSEL = 48;
 const int IPIN_RESET = 47;
@@ -34,14 +34,13 @@ const int IPIN_RESET = 47;
 const int PIN_START = 59;
 const int IPIN_DRDY = 25;
 const int PIN_CS = 4;
-//const int PIN_DOUT = 11;//SPI out
-//const int PIN_DIN = 12;//SPI in
-//const int PIN_SCLK = 13;//SPI clock
+//const int PIN_DOUT = 11;  //SPI out
+//const int PIN_DIN = 12;   //SPI in
+//const int PIN_SCLK = 13;  //SPI clock
 
-//function prototypes
-void adcWreg(int reg, int val); //write register
+void adcWreg(int reg, int val);
 void adcSendCommand(int cmd);
 void adcSendCommandLeaveCsActive(int cmd);
-int adcRreg(int reg); //read register
+int adcRreg(int reg);
 
 #endif // _ADS_COMMAND_H

@@ -30,8 +30,6 @@
 #include "SpiDma.h"
 
 
-//#define DRIVER_DEBUG 1
-
 #define BAUD_RATE 2000000     // WiredSerial ignores this and uses the maximum rate
 #define WiredSerial SerialUSB // use the Arduino Due's Native USB port
 
@@ -601,20 +599,6 @@ inline void send_samples(void) {
         spi_data_available = 0;
         receive_sample();
         send_sample();
-#ifdef DRIVER_DEBUG
-//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-//        Serial.print("spi_buffer: ");
-//        Serial.println(output_buffer);
-//    if (array_has_nonzero_elements( (char *)(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES + 8), num_spi_bytes - 8)) {
-//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-//        Serial.print("::: spi_buffer: ");
-//        Serial.println(output_buffer);
-//    } else {
-//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-//        Serial.print("spi_buffer: ");
-//        Serial.println(output_buffer);
-//    }
-#endif
     }
 }
 
@@ -631,22 +615,11 @@ inline void receive_sample() {
     spi_bytes[5] = sample_number_union.sample_number_bytes[1];
     spi_bytes[6] = sample_number_union.sample_number_bytes[2];
     spi_bytes[7] = sample_number_union.sample_number_bytes[3];
-//    noInterrupts();
+
     uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES, num_spi_bytes);
-//    interrupts();
+
     digitalWrite(PIN_CS, HIGH);
     sample_number_union.sample_number++;
-}
-
-inline int array_has_nonzero_elements(char *array, int array_size) {
-    int sum = 0;
-    for (int i = 0; i < array_size; i++) {
-        sum |= array[i];
-    }
-    if (sum != 0) {
-        return 1;
-    }
-    return 0;
 }
 
 inline void send_sample(void) {
@@ -670,16 +643,6 @@ inline void send_sample(void) {
             send_sample_messagepack(num_timestamped_spi_bytes);
             break;
     }
-#ifdef DRIVER_DEBUG
-//    encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-//    Serial.print("spi_buffer: ");
-//    Serial.println(output_buffer);
-//    if (array_has_nonzero_elements( (char *)(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES), num_spi_bytes)) {
-//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-//        Serial.print("spi_buffer: ");
-//        Serial.println(output_buffer);
-//    }
-#endif
 }
 
 
