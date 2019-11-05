@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# Notes:
+# To capture at 16,000 samples per second,
+# the Arduino Due driver's SPI DMA must be on,
+# and the driver communication mode must be set to MessagePack
+# (--messagepack option)
+
 import argparse
 import threading
 import uuid
@@ -39,13 +45,15 @@ class NonBlockingConsole(object):
 
 
 class HackEegTestApplication:
-    """HackEEG commandline test."""
+    """HackEEG commandline tool."""
 
     def __init__(self):
         self.serial_port_name = None
         self.hackeeg = None
         self.debug = False
         self.quiet = False
+        self.hex = False
+        self.messagepack = False
         self.channels = 8
         self.samples_per_second = 500
         self.max_samples = 5000
@@ -76,7 +84,7 @@ class HackEegTestApplication:
         if char:
             self.read_samples_continuously = False
 
-    def setup(self, samples_per_second=8192):
+    def setup(self, samples_per_second=500, messagepack=False):
         if samples_per_second not in SPEEDS.keys():
             raise HackEegTestApplicationException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
@@ -84,12 +92,11 @@ class HackEegTestApplication:
         self.hackeeg.sdatac()
         self.hackeeg.blink_board_led()
 
-        # sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
-        sample_mode = ads1299.HIGH_RES_250_SPS | ads1299.CONFIG1_const
+        sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
 
         # self.hackeeg.disable_all_channels()
-        self.hackeeg.disable_channel(1)
+        # self.hackeeg.disable_channel(1)
         self.hackeeg.disable_channel(2)
         self.hackeeg.disable_channel(3)
         self.hackeeg.disable_channel(4)
@@ -102,13 +109,14 @@ class HackEegTestApplication:
         # self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
         # channel config
-        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.SHORTED | ads1299.PDn | ads1299.GAIN_1X)
+        self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 2, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 3, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 4, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.SHORTED | ads1299.PDn | ads1299.GAIN_1X)
         self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
         # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 8, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
 
         # all channels enabled
         # for channel in range(1, 9):
@@ -120,7 +128,11 @@ class HackEegTestApplication:
         # self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
         # add channels into bias generation
         self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
-        # self.hackeeg.messagepack_mode()
+
+        if messagepack:
+            self.hackeeg.messagepack_mode()
+        else:
+            self.hackeeg.jsonlines_mode()
         self.hackeeg.start()
         self.hackeeg.rdatac()
         return
@@ -145,6 +157,12 @@ class HackEegTestApplication:
         parser.add_argument("--lsl-stream-name", "-N",
                             help=f"Name of LSL stream to create",
                             default=self.lsl_stream_name, type=str),
+        parser.add_argument("--messagepack", "-M",
+                            help=f"MessagePack mode– use MessagePack format to send sample data to the host, rather than JSON Lines",
+                            action="store_true")
+        parser.add_argument("--hex", "-H",
+                            help=f"hex mode– output sample data in hexidecimal format for debugging",
+                            action="store_true")
         parser.add_argument("--quiet", "-q",
                             help=f"quiet mode– do not print sample data (used for performance testing)",
                             action="store_true")
@@ -167,10 +185,12 @@ class HackEegTestApplication:
 
         self.serial_port_name = args.serial_port
         self.hackeeg = hackeeg.HackEEGBoard(self.serial_port_name, baudrate=2000000, debug=self.debug)
-        self.hackeeg.connect()
-        self.setup(samples_per_second=args.sps)
         self.max_samples = args.samples
         self.quiet = args.quiet
+        self.hex = args.hex
+        self.messagepack = args.messagepack
+        self.hackeeg.connect()
+        self.setup(samples_per_second=args.sps, messagepack=self.messagepack)
 
     def process_sample(self, result, samples):
         if result:
@@ -191,11 +211,12 @@ class HackEegTestApplication:
                         print(
                             f"timestamp:{timestamp} sample_number: {sample_number}| gpio:{ads_gpio} loff_statp:{loff_statp} loff_statn:{loff_statn}   ",
                             end='')
-                        for channel_number, sample in enumerate(channel_data):
-                            print(f"{channel_number + 1}:{sample} ", end='')
-                        print()
-                        print(data_hex)
-                        print(channel_data)
+                        if self.hex:
+                            print(data_hex)
+                        else:
+                            for channel_number, sample in enumerate(channel_data):
+                                print(f"{channel_number + 1}:{sample} ", end='')
+                            print()
                     if self.lsl:
                         self.lsl_outlet.push_sample(channel_data)
                 else:
