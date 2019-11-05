@@ -24,10 +24,10 @@
 // 5 = 16.8 Mhz
 // 4 = 21 Mhz
 
-// works at 10
+// works at 5 or 10
 // doesn't work at 9 or 6
+//#define SPI_CLOCK_DIVIDER 5
 #define SPI_CLOCK_DIVIDER 5
-//#define SPI_CLOCK_DIVIDER 10
 
 void spiBegin(uint8_t csPin);
 

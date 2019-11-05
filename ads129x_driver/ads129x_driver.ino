@@ -82,6 +82,7 @@ union {
 
 // SPI input buffer
 uint8_t spi_bytes[SPI_BUFFER_SIZE];
+uint8_t spi_data_available;
 
 // char buffer to send via USB
 char output_buffer[OUTPUT_BUFFER_SIZE];
@@ -590,14 +591,36 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
     }
 }
 
+void drdy_interrupt() {
+    spi_data_available = 1;
+}
+
 inline void send_samples(void) {
-    if ((!is_rdatac) || (num_active_channels < 1)) return;
-    if (digitalRead(IPIN_DRDY) == HIGH) return;
-    send_sample();
+    if (!is_rdatac) return;
+    if (spi_data_available) {
+        spi_data_available = 0;
+        receive_sample();
+        send_sample();
+#ifdef DRIVER_DEBUG
+//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+//        Serial.print("spi_buffer: ");
+//        Serial.println(output_buffer);
+//    if (array_has_nonzero_elements( (char *)(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES + 8), num_spi_bytes - 8)) {
+//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+//        Serial.print("::: spi_buffer: ");
+//        Serial.println(output_buffer);
+//    } else {
+//        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+//        Serial.print("spi_buffer: ");
+//        Serial.println(output_buffer);
+//    }
+#endif
+    }
 }
 
 inline void receive_sample() {
     digitalWrite(PIN_CS, LOW);
+    delayMicroseconds(10);
     memset(spi_bytes, 0, sizeof(spi_bytes));
     timestamp_union.timestamp = micros();
     spi_bytes[0] = timestamp_union.timestamp_bytes[0];
@@ -608,24 +631,25 @@ inline void receive_sample() {
     spi_bytes[5] = sample_number_union.sample_number_bytes[1];
     spi_bytes[6] = sample_number_union.sample_number_bytes[2];
     spi_bytes[7] = sample_number_union.sample_number_bytes[3];
+//    noInterrupts();
     uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES, num_spi_bytes);
+//    interrupts();
     digitalWrite(PIN_CS, HIGH);
     sample_number_union.sample_number++;
 }
 
-//inline int array_has_nonzero_elements(char *array, int array_size) {
-//    int sum = 0;
-//    for (int i = 0; i++; i < array_size) {
-//        sum |= array[i];
-//    }
-//    if (sum != 0) {
-//        return 1;
-//    }
-//    return 0;
-//}
+inline int array_has_nonzero_elements(char *array, int array_size) {
+    int sum = 0;
+    for (int i = 0; i < array_size; i++) {
+        sum |= array[i];
+    }
+    if (sum != 0) {
+        return 1;
+    }
+    return 0;
+}
 
 inline void send_sample(void) {
-    receive_sample();
     switch (protocol_mode) {
         case JSONLINES_MODE:
             WiredSerial.write(json_rdatac_header);
@@ -647,9 +671,9 @@ inline void send_sample(void) {
             break;
     }
 #ifdef DRIVER_DEBUG
-    encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
-    Serial.print("spi_buffer: ");
-    Serial.println(output_buffer);
+//    encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
+//    Serial.print("spi_buffer: ");
+//    Serial.println(output_buffer);
 //    if (array_has_nonzero_elements( (char *)(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES), num_spi_bytes)) {
 //        encode_hex(output_buffer, (char *) spi_bytes, num_timestamped_spi_bytes);
 //        Serial.print("spi_buffer: ");
@@ -679,29 +703,38 @@ inline void send_sample_messagepack(int num_bytes) {
 void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;
     // Send SDATAC Command (Stop Read Data Continuously mode)
+    spi_data_available = 0;
+    attachInterrupt(digitalPinToInterrupt(IPIN_DRDY), drdy_interrupt, FALLING);
     adcSendCommand(SDATAC);
     delay(1000); //pause to provide ads129n enough time to boot up...
     // delayMicroseconds(2);
     delay(100);
     int val = adcRreg(ID);
-    switch (val & B00011111) { //least significant bits reports channels
-        case B10000: //16
+    switch (val & B00011111) {
+        case B10000:
             hardware_type = "ADS1294";
             max_channels = 4;
             break;
-        case B10001: //17
+        case B10001:
             hardware_type = "ADS1296";
             max_channels = 6;
             break;
-        case B10010: //18
+        case B10010:
             hardware_type = "ADS1298";
             max_channels = 8;
             break;
-        case B11110: //30
+        case B11110:
             hardware_type = "ADS1299";
             max_channels = 8;
             break;
-        // TODO: ADS1299-4 and ADS1299-6
+        case B11100:
+            hardware_type = "ADS1299-4";
+            max_channels = 4;
+            break;
+        case B11101:
+            hardware_type = "ADS1299-6";
+            max_channels = 6;
+            break;
         default:
             max_channels = 0;
     }

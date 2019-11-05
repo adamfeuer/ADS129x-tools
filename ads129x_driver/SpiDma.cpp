@@ -20,8 +20,8 @@
 #include <string.h>
 #include "Arduino.h"
 
-#define USE_ARDUINO_SPI_LIBRARY 1
-#define USE_NATIVE_SAM3X_SPI 0
+#define USE_ARDUINO_SPI_LIBRARY 0
+#define USE_NATIVE_SAM3X_SPI 1
 
 
 #if USE_ARDUINO_SPI_LIBRARY
@@ -41,27 +41,40 @@ void spiInit(uint8_t bitOrder, uint8_t spiMode, uint8_t spiClockDivider) {
 
 /** SPI receive a byte */
 uint8_t spiRec() {
-    return SPI.transfer(0XFF);
+//    return SPI.transfer(0XFF);
+    noInterrupts();
+    return SPI.transfer(0x00);
+    interrupts();
 }
 
 /** SPI receive multiple bytes */
 uint8_t spiRec(uint8_t *buf, size_t len) {
-    for (size_t i = 0; i < len; i++) {
-        buf[i] = SPI.transfer(0XFF);
-    }
+//    for (size_t i = 0; i < len; i++) {
+////        buf[i] = SPI.transfer(0XFF);
+//        buf[i] = SPI.transfer(0x00);
+//    }
+    memset(buf, 0, len);
+    noInterrupts();
+    SPI.transfer((void *)buf, len);
+    interrupts();
     return 0;
 }
 
 /** SPI send a byte */
 void spiSend(uint8_t b) {
+    noInterrupts();
     SPI.transfer(b);
+    interrupts();
 }
 
 /** SPI send multiple bytes */
 void spiSend(const uint8_t *buf, size_t len) {
-    for (size_t i = 0; i < len; i++) {
-        SPI.transfer(buf[i]);
-    }
+//    for (size_t i = 0; i < len; i++) {
+//        SPI.transfer(buf[i]);
+//    }
+    noInterrupts();
+    SPI.transfer((void *)buf, len);
+    interrupts();
 }
 
 #elif  USE_NATIVE_SAM3X_SPI
@@ -160,10 +173,12 @@ void spiDmaRX(uint8_t* dst, uint16_t count) {
 
 // start TX DMA
 void spiDmaTX(const uint8_t* src, uint16_t count) {
-  static uint8_t ff = 0XFF;
+//  static uint8_t ff = 0XFF;
+  static uint8_t dummy_data = 0x00;
   uint32_t src_incr = DMAC_CTRLB_SRC_INCR_INCREMENTING;
   if (!src) {
-    src = &ff;
+    src = &dummy_data;
+//    src = &ff;
     src_incr = DMAC_CTRLB_SRC_INCR_FIXED;
   }
   dmac_channel_disable(SPI_DMAC_TX_CH);
@@ -217,7 +232,8 @@ inline uint8_t spiTransfer(uint8_t b) {
 /** SPI receive a byte */
 
 uint8_t spiRec() {
-  return spiTransfer(0XFF);
+//  return spiTransfer(0XFF);
+  return spiTransfer(0x00);
 }
 
 /** SPI receive multiple bytes */
@@ -243,7 +259,8 @@ uint8_t spiRec(uint8_t* buf, size_t len) {
   if (pSpi->SPI_SR & SPI_SR_OVRES) rtn |= 1;
 #else  // USE_SAM3X_DMAC
   for (size_t i = 0; i < len; i++) {
-    pSpi->SPI_TDR = 0XFF;
+//    pSpi->SPI_TDR = 0XFF;
+    pSpi->SPI_TDR = 0x00;
     while ((pSpi->SPI_SR & SPI_SR_RDRF) == 0) {}
     buf[i] = pSpi->SPI_RDR;
   }
