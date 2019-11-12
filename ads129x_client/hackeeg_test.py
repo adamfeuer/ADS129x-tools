@@ -93,8 +93,6 @@ class HackEegTestApplication:
             raise HackEegTestApplicationException("{} is not a valid gain; valid gains are {}".format(
                 gain, sorted(GAINS.keys())))
 
-        # self.hackeeg.reset()
-        # self.hackeeg.connect()
         self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.sdatac()
         self.hackeeg.blink_board_led()
