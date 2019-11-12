@@ -19,7 +19,7 @@ from pylsl import StreamInfo, StreamOutlet
 
 import hackeeg
 from hackeeg import ads1299
-from hackeeg.driver import SPEEDS, Status
+from hackeeg.driver import SPEEDS, GAINS, Status
 
 DEFAULT_NUMBER_OF_SAMPLES_TO_CAPTURE = 50000
 
@@ -56,6 +56,7 @@ class HackEegTestApplication:
         self.messagepack = False
         self.channels = 8
         self.samples_per_second = 500
+        self.gain = 1
         self.max_samples = 5000
         self.lsl = False
         self.lsl_info = None
@@ -84,46 +85,49 @@ class HackEegTestApplication:
         if char:
             self.read_samples_continuously = False
 
-    def setup(self, samples_per_second=500, messagepack=False):
+    def setup(self, samples_per_second=500, gain=1, messagepack=False):
         if samples_per_second not in SPEEDS.keys():
             raise HackEegTestApplicationException("{} is not a valid speed; valid speeds are {}".format(
                 samples_per_second, sorted(SPEEDS.keys())))
+        if gain not in GAINS.keys():
+            raise HackEegTestApplicationException("{} is not a valid gain; valid gains are {}".format(
+                gain, sorted(GAINS.keys())))
+
+        # self.hackeeg.reset()
+        # self.hackeeg.connect()
         self.hackeeg.stop_and_sdatac_messagepack()
         self.hackeeg.sdatac()
         self.hackeeg.blink_board_led()
-
         sample_mode = SPEEDS[samples_per_second] | ads1299.CONFIG1_const
         self.hackeeg.wreg(ads1299.CONFIG1, sample_mode)
 
-        # self.hackeeg.disable_all_channels()
-        # self.hackeeg.disable_channel(1)
-        self.hackeeg.disable_channel(2)
-        self.hackeeg.disable_channel(3)
-        self.hackeeg.disable_channel(4)
-        self.hackeeg.disable_channel(5)
-        # self.hackeeg.disable_channel(6)
-        self.hackeeg.disable_channel(7)
-        self.hackeeg.disable_channel(8)
+        gain_setting = GAINS[gain]
+
+        self.hackeeg.disable_all_channels()
         # test_signal_mode = ads1299.INT_TEST_DC | ads1299.CONFIG2_const
         # test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         # self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
         # channel config
-        self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 2, ads1299.TEST_SIGNAL | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 3, ads1299.INT_TEST_DC | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 4, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.SHORTED | ads1299.PDn | ads1299.GAIN_1X)
-        self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 8, ads1299.ELECTRODE_INPUT | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.INT_TEST_DC | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.ELECTRODE_INPUT | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 2, ads1299.TEST_SIGNAL | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 3, ads1299.INT_TEST_DC | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 4, ads1299.ELECTRODE_INPUT | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.SHORTED | ads1299.PDn | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.INT_TEST_DC | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.SHORTED | ads1299.GAIN_1X)
+        # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | gain_setting)
+        # self.hackeeg.wreg(ads1299.CHnSET + 8, ads1299.ELECTRODE_INPUT | gain_setting)
 
         # all channels enabled
         # for channel in range(1, 9):
-        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | ads1299.GAIN_2X)
+        #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | gain_setting )
 
         # Single-ended mode - setting SRB1 bit sends mid-supply voltage to the N inputs
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
+
         # Dual-ended mode
         # self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
         # add channels into bias generation
@@ -149,8 +153,11 @@ class HackEegTestApplication:
         parser.add_argument("--continuous", "-C", help="read data continuously (until <return> key is pressed)",
                             action="store_true")
         parser.add_argument("--sps", "-s",
-                            help=f"ADS1299 samples per second setting- must be one of {sorted(list(SPEEDS.keys()))}",
-                            default=8192, type=int)
+                            help=f"ADS1299 samples per second setting- must be one of {sorted(list(SPEEDS.keys()))}, default is {self.samples_per_second}",
+                            default=self.samples_per_second, type=int)
+        parser.add_argument("--gain", "-g",
+                            help=f"ADS1299 gain setting for all channels– must be one of {sorted(list(GAINS.keys()))}, default is {self.gain}",
+                            default=self.gain, type=int)
         parser.add_argument("--lsl", "-L",
                             help=f"Send samples to an LSL stream instead of terminal",
                             action="store_true"),
@@ -171,6 +178,7 @@ class HackEegTestApplication:
             self.debug = True
             print("debug mode on")
         self.samples_per_second = args.sps
+        self.gain = args.gain
 
         if args.continuous:
             self.continuous_mode = True
@@ -190,7 +198,7 @@ class HackEegTestApplication:
         self.hex = args.hex
         self.messagepack = args.messagepack
         self.hackeeg.connect()
-        self.setup(samples_per_second=args.sps, messagepack=self.messagepack)
+        self.setup(samples_per_second=self.samples_per_second, gain=self.gain, messagepack=self.messagepack)
 
     def process_sample(self, result, samples):
         if result:

@@ -19,13 +19,6 @@ NUMBER_OF_SAMPLES = 10000
 DEFAULT_BAUDRATE = 115200
 SAMPLE_LENGTH_IN_BYTES = 38  # 216 bits encoded with base64 + '\r\n\'
 
-
-class Status:
-    Ok = 200
-    BadRequest = 400
-    Error = 500
-
-
 SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           500: ads1299.HIGH_RES_500_SPS,
           1024: ads1299.HIGH_RES_1k_SPS,
@@ -33,6 +26,20 @@ SPEEDS = {250: ads1299.HIGH_RES_250_SPS,
           4096: ads1299.HIGH_RES_4k_SPS,
           8192: ads1299.HIGH_RES_8k_SPS,
           16384: ads1299.HIGH_RES_16k_SPS}
+
+GAINS = {1: ads1299.GAIN_1X,
+         2: ads1299.GAIN_2X,
+         4: ads1299.GAIN_4X,
+         6: ads1299.GAIN_6X,
+         8: ads1299.GAIN_8X,
+         12: ads1299.GAIN_12X,
+         24: ads1299.GAIN_24X}
+
+
+class Status:
+    Ok = 200
+    BadRequest = 400
+    Error = 500
 
 
 class HackEEGException(Exception):
@@ -166,6 +173,8 @@ class HackEEGBoard:
             response_obj = json.loads(message)
         except UnicodeDecodeError:
             response_obj = None
+        # except JSONDecodeError:
+        #     response_obj = None
         if self.debug:
             print(f"read_response line: {message}")
         if self.debug:
