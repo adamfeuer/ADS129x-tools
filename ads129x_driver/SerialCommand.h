@@ -20,6 +20,10 @@
 #ifndef SERIALCOMMAND_H
 #define SERIALCOMMAND_H
 
+// uncomment for debugging on Serial interface (programming port)
+// you must connect to Serial port first, then SerialUSB, since Serial will reset the Arduino Due
+//#define SERIALCOMMAND_DEBUG 1
+
 #if defined(WIRING) && WIRING >= 100
 #include <Wiring.h>
 #elif defined(ARDUINO) && ARDUINO >= 100
@@ -36,9 +40,6 @@
 #define SERIALCOMMAND_BUFFER 128
 // Maximum length of a command excluding the terminating null
 #define SERIALCOMMAND_MAXCOMMANDLENGTH 32
-
-// Uncomment the next line to run the library in debug mode (verbose messages)
-//#define SERIALCOMMAND_DEBUG
 
 typedef void (*command_func)(unsigned char, unsigned char);
 

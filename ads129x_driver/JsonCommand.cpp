@@ -21,7 +21,7 @@
 
 // uncomment for debugging on Serial interface (programming port)
 // you must connect to Serial port first, then SerialUSB, since Serial will reset the Arduino Due
-#define JSONCOMMAND_DEBUG 1
+//#define JSONCOMMAND_DEBUG 1
 
 #include "JsonCommand.h"
 
@@ -147,7 +147,6 @@ void JsonCommand::readSerial() {
             JsonVariant parameters_variant = json_command.getMember(PARAMETERS_KEY);
             unsigned char register_number = 0;
             unsigned char register_value = 0;
-#ifdef JSONCOMMAND_DEBUG
             if (!parameters_variant.isNull()) {
                 JsonArray params_array = parameters_variant.as<JsonArray>();
                 size_t number_of_params = params_array.size();
