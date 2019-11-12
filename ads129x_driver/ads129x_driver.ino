@@ -371,11 +371,6 @@ void messagepackCommand(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
 }
 
-void getdataCommand(unsigned char unused1, unsigned char unused2) {
-    WiredSerial.println("200 Ok");
-    send_response(RESPONSE_NOT_IMPLEMENTED, STATUS_TEXT_NOT_IMPLEMENTED);
-}
-
 void ledOnCommand(unsigned char unused1, unsigned char unused2) {
     digitalWrite(PIN_LED, HIGH);
     send_response_ok();
@@ -403,23 +398,23 @@ void boardLedOffCommand(unsigned char unused1, unsigned char unused2) {
 
 void base64ModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = true;
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Base64 mode on - rdata command will respond with base64 encoded data.");
-    WiredSerial.println();
+    send_response(RESPONSE_OK, "Base64 mode on - rdata command will respond with base64 encoded data.");
 }
 
 void hexModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = false;
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Hex mode on - rdata command will respond with hex encoded data");
-    WiredSerial.println();
+    send_response(RESPONSE_OK, "Hex mode on - rdata command will respond with hex encoded data");
 }
 
 void helpCommand(unsigned char unused1, unsigned char unused2) {
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Available commands: ");
-    serialCommand.printCommands();
-    WiredSerial.println();
+    if (protocol_mode == JSONLINES_MODE ||  protocol_mode == MESSAGEPACK_MODE) {
+        send_response(RESPONSE_OK, "Help not available in JSON Lines or MessagePack modes.");
+    } else {
+        WiredSerial.println("200 Ok");
+        WiredSerial.println("Available commands: ");
+        serialCommand.printCommands();
+        WiredSerial.println();
+    }
 }
 
 void readRegisterCommand(unsigned char unused1, unsigned char unused2) {
@@ -515,6 +510,7 @@ void standbyCommand(unsigned char unused1, unsigned char unused2) {
 void resetCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     adcSendCommand(RESET);
+    adsSetup();
     send_response_ok();
 }
 
