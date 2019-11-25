@@ -106,30 +106,33 @@ class HackEegTestApplication:
         # test_signal_mode = ads1299.INT_TEST_4HZ | ads1299.CONFIG2_const
         # self.hackeeg.wreg(ads1299.CONFIG2, test_signal_mode)
 
+
         # channel config
         # self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.INT_TEST_DC | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.ELECTRODE_INPUT | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 2, ads1299.TEST_SIGNAL | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 3, ads1299.INT_TEST_DC | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 4, ads1299.ELECTRODE_INPUT | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.SHORTED | ads1299.PDn | gain_setting)
-        self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | gain_setting)
         # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.INT_TEST_DC | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.SHORTED | ads1299.GAIN_1X)
-        # self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | gain_setting)
-        # self.hackeeg.wreg(ads1299.CHnSET + 8, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 1, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 2, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 3, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 4, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 5, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 6, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 7, ads1299.ELECTRODE_INPUT | gain_setting)
+        self.hackeeg.wreg(ads1299.CHnSET + 8, ads1299.ELECTRODE_INPUT | gain_setting)
 
         # all channels enabled
         # for channel in range(1, 9):
         #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | gain_setting )
 
+        # Route reference electrode to SRB1: JP8:1-2, JP7:NC (not connected)
+        self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1 | ads1299.MISC1_const)
+
         # Single-ended mode - setting SRB1 bit sends mid-supply voltage to the N inputs
-        self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
+        # self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
 
         # Dual-ended mode
-        # self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
+        self.hackeeg.wreg(ads1299.MISC1, ads1299.MISC1_const)
         # add channels into bias generation
-        self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
+        # self.hackeeg.wreg(ads1299.BIAS_SENSP, ads1299.BIAS8P)
 
         if messagepack:
             self.hackeeg.messagepack_mode()
