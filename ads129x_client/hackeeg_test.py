@@ -124,9 +124,11 @@ class HackEegTestApplication:
         #     self.hackeeg.wreg(ads1299.CHnSET + channel, ads1299.TEST_SIGNAL | gain_setting )
 
         # Route reference electrode to SRB1: JP8:1-2, JP7:NC (not connected)
+        # use this with humans to reduce noise
         self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1 | ads1299.MISC1_const)
 
         # Single-ended mode - setting SRB1 bit sends mid-supply voltage to the N inputs
+        # use this with a signal generator
         # self.hackeeg.wreg(ads1299.MISC1, ads1299.SRB1)
 
         # Dual-ended mode
