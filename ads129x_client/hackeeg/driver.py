@@ -153,7 +153,6 @@ class HackEEGBoard:
                 channel_data = []
                 for channel in range(0, 8):
                     channel_offset = 11 + (channel * 3)
-                    # sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='little', signed=True)
                     sample = int.from_bytes(data[channel_offset:channel_offset + 3], byteorder='big', signed=True)
                     channel_data.append(sample)
 
