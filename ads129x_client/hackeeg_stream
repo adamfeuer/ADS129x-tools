@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# MacOS only for now
+port() {
+  OS="$(uname)"
+  case $OS in
+    'Linux')
+      # TODO: port detection in Linux
+      ;;
+    'Darwin')
+      export NATIVE_PORT=$(ioreg -p IOUSB -w0 |grep 'Arduino Due@'|sed 's/^.*@//g'|sed -E 's/(^[1-9]*)0+ .*/\1/g'|xargs -Ifoo find /dev  -iname "cu.usbmodemfoo*" 2>/dev/null)
+      ;;
+  esac
+  echo $NATIVE_PORT
+}
+
+PORT=$(port)
+attempts=$((0))
+while [ $((attempts < 10)) ]; do
+  attempts=$((attempts + 1))
+  sleep 0.1
+  PORT=$(port)
+  if [ -n "$PORT" ]; then
+    break
+  fi
+done
+
+./hackeeg_test.py $PORT "$@"
+

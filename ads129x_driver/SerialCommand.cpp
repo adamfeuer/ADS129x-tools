@@ -119,7 +119,7 @@ void SerialCommand::readSerial() {
                 buffer[bufPos] = '\0';      // Null terminate
             } else {
 #ifdef SERIALCOMMAND_DEBUG
-                SerialUSB.println("Line buffer is full - increase SERIALCOMMAND_BUFFER");
+                Serial.println("Line buffer is full - increase SERIALCOMMAND_BUFFER");
 #endif
             }
         }

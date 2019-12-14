@@ -14,6 +14,9 @@ msgpack = "*"
 ipython = "*"
 autopep8 = "*"
 gnureadline = "*"
+pylsl = "*"
+pyqt5 = "*" 
+pyqtgraph = "*"
 
 [requires]
 python_version = "3.6"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 by Adam Feuer <adam@adamfeuer.com>
+ * Copyright (c) 2013-2019 by Adam Feuer <adam@adamfeuer.com>
  *
  * This library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -23,11 +23,9 @@
 // 6 = 14 Mhz
 // 5 = 16.8 Mhz
 // 4 = 21 Mhz
+// ADS1299 needs the SPI clock to be 20Mhz or less
 
-// works at 10
-// doesn't work at 9 or 6
 #define SPI_CLOCK_DIVIDER 5
-//#define SPI_CLOCK_DIVIDER 10
 
 void spiBegin(uint8_t csPin);
 

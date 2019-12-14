@@ -80,6 +80,7 @@ union {
 
 // SPI input buffer
 uint8_t spi_bytes[SPI_BUFFER_SIZE];
+uint8_t spi_data_available;
 
 // char buffer to send via USB
 char output_buffer[OUTPUT_BUFFER_SIZE];
@@ -274,8 +275,8 @@ void send_jsonlines_data(int status_code, char data, char *status_text) {
     root[STATUS_CODE_KEY] = status_code;
     root[STATUS_TEXT_KEY] = status_text;
     root[DATA_KEY] = data;
-    serializeJson(doc, SerialUSB);
-    SerialUSB.println();
+    serializeJson(doc, WiredSerial);
+    WiredSerial.println();
     doc.clear();
 }
 
@@ -370,11 +371,6 @@ void messagepackCommand(unsigned char unused1, unsigned char unused2) {
     send_response_ok();
 }
 
-void getdataCommand(unsigned char unused1, unsigned char unused2) {
-    WiredSerial.println("200 Ok");
-    send_response(RESPONSE_NOT_IMPLEMENTED, STATUS_TEXT_NOT_IMPLEMENTED);
-}
-
 void ledOnCommand(unsigned char unused1, unsigned char unused2) {
     digitalWrite(PIN_LED, HIGH);
     send_response_ok();
@@ -402,23 +398,23 @@ void boardLedOffCommand(unsigned char unused1, unsigned char unused2) {
 
 void base64ModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = true;
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Base64 mode on - rdata command will respond with base64 encoded data.");
-    WiredSerial.println();
+    send_response(RESPONSE_OK, "Base64 mode on - rdata command will respond with base64 encoded data.");
 }
 
 void hexModeOnCommand(unsigned char unused1, unsigned char unused2) {
     base64_mode = false;
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Hex mode on - rdata command will respond with hex encoded data");
-    WiredSerial.println();
+    send_response(RESPONSE_OK, "Hex mode on - rdata command will respond with hex encoded data");
 }
 
 void helpCommand(unsigned char unused1, unsigned char unused2) {
-    WiredSerial.println("200 Ok");
-    WiredSerial.println("Available commands: ");
-    serialCommand.printCommands();
-    WiredSerial.println();
+    if (protocol_mode == JSONLINES_MODE ||  protocol_mode == MESSAGEPACK_MODE) {
+        send_response(RESPONSE_OK, "Help not available in JSON Lines or MessagePack modes.");
+    } else {
+        WiredSerial.println("200 Ok");
+        WiredSerial.println("Available commands: ");
+        serialCommand.printCommands();
+        WiredSerial.println();
+    }
 }
 
 void readRegisterCommand(unsigned char unused1, unsigned char unused2) {
@@ -514,6 +510,7 @@ void standbyCommand(unsigned char unused1, unsigned char unused2) {
 void resetCommand(unsigned char unused1, unsigned char unused2) {
     using namespace ADS129x;
     adcSendCommand(RESET);
+    adsSetup();
     send_response_ok();
 }
 
@@ -588,14 +585,23 @@ void detectActiveChannels() {  //set device into RDATAC (continous) mode -it wil
     }
 }
 
+void drdy_interrupt() {
+    spi_data_available = 1;
+}
+
 inline void send_samples(void) {
-    if ((!is_rdatac) || (num_active_channels < 1)) return;
-    if (digitalRead(IPIN_DRDY) == HIGH) return;
-    send_sample();
+    if (!is_rdatac) return;
+    if (spi_data_available) {
+        spi_data_available = 0;
+        receive_sample();
+        send_sample();
+    }
 }
 
 inline void receive_sample() {
     digitalWrite(PIN_CS, LOW);
+    delayMicroseconds(10);
+    memset(spi_bytes, 0, sizeof(spi_bytes));
     timestamp_union.timestamp = micros();
     spi_bytes[0] = timestamp_union.timestamp_bytes[0];
     spi_bytes[1] = timestamp_union.timestamp_bytes[1];
@@ -605,13 +611,14 @@ inline void receive_sample() {
     spi_bytes[5] = sample_number_union.sample_number_bytes[1];
     spi_bytes[6] = sample_number_union.sample_number_bytes[2];
     spi_bytes[7] = sample_number_union.sample_number_bytes[3];
+
     uint8_t returnCode = spiRec(spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES, num_spi_bytes);
+
     digitalWrite(PIN_CS, HIGH);
     sample_number_union.sample_number++;
 }
 
 inline void send_sample(void) {
-    receive_sample();
     switch (protocol_mode) {
         case JSONLINES_MODE:
             WiredSerial.write(json_rdatac_header);
@@ -631,9 +638,9 @@ inline void send_sample(void) {
         case MESSAGEPACK_MODE:
             send_sample_messagepack(num_timestamped_spi_bytes);
             break;
-
     }
 }
+
 
 inline void send_sample_json(int num_bytes) {
     StaticJsonDocument<1024> doc;
@@ -647,35 +654,45 @@ inline void send_sample_json(int num_bytes) {
 
 
 inline void send_sample_messagepack(int num_bytes) {
-    SerialUSB.write(messagepack_rdatac_header, messagepack_rdatac_header_size);
-    SerialUSB.write((uint8_t) num_bytes);
-    SerialUSB.write(spi_bytes, num_bytes);
+    WiredSerial.write(messagepack_rdatac_header, messagepack_rdatac_header_size);
+    WiredSerial.write((uint8_t) num_bytes);
+    WiredSerial.write(spi_bytes, num_bytes);
 }
 
 void adsSetup() { //default settings for ADS1298 and compatible chips
     using namespace ADS129x;
     // Send SDATAC Command (Stop Read Data Continuously mode)
-    delay(1000); //pause to provide ads129n enough time to boot up...
+    spi_data_available = 0;
+    attachInterrupt(digitalPinToInterrupt(IPIN_DRDY), drdy_interrupt, FALLING);
     adcSendCommand(SDATAC);
+    delay(1000); //pause to provide ads129n enough time to boot up...
     // delayMicroseconds(2);
     delay(100);
     int val = adcRreg(ID);
-    switch (val & B00011111) { //least significant bits reports channels
-        case B10000: //16
+    switch (val & B00011111) {
+        case B10000:
             hardware_type = "ADS1294";
             max_channels = 4;
             break;
-        case B10001: //17
+        case B10001:
             hardware_type = "ADS1296";
             max_channels = 6;
             break;
-        case B10010: //18
+        case B10010:
             hardware_type = "ADS1298";
             max_channels = 8;
             break;
-        case B11110: //30
+        case B11110:
             hardware_type = "ADS1299";
             max_channels = 8;
+            break;
+        case B11100:
+            hardware_type = "ADS1299-4";
+            max_channels = 4;
+            break;
+        case B11101:
+            hardware_type = "ADS1299-6";
+            max_channels = 6;
             break;
         default:
             max_channels = 0;
@@ -683,19 +700,24 @@ void adsSetup() { //default settings for ADS1298 and compatible chips
     num_spi_bytes = (3 * (max_channels + 1)); //24-bits header plus 24-bits per channel
     num_timestamped_spi_bytes = num_spi_bytes + TIMESTAMP_SIZE_IN_BYTES + SAMPLE_NUMBER_SIZE_IN_BYTES;
     if (max_channels == 0) { //error mode
-        while (1) { //loop forever
-            digitalWrite(PIN_LED, HIGH);   // turn the LED on (HIGH is the voltage level)
-            delay(500);               // wait for a second`
-            digitalWrite(PIN_LED, LOW);    // turn the LED off by making the voltage LOW
+        while (1) {
+            digitalWrite(PIN_LED, HIGH);
             delay(500);
-        } //while forever
+            digitalWrite(PIN_LED, LOW);
+            delay(500);
+        }
     } //error mode
+
+    // All GPIO set to output 0x0000: (floating CMOS inputs can flicker on and off, creating noise)
+    adcWreg(GPIO, 0);
+    adcWreg(CONFIG3,PD_REFBUF | CONFIG3_const);
+    digitalWrite(PIN_START, HIGH);
 }
 
 void arduinoSetup() {
     pinMode(PIN_LED, OUTPUT);
     using namespace ADS129x;
-    //prepare pins to be outputs or inputs
+    // prepare pins to be outputs or inputs
     //pinMode(PIN_SCLK, OUTPUT); //optional - SPI library will do this for us
     //pinMode(PIN_DIN, OUTPUT); //optional - SPI library will do this for us
     //pinMode(PIN_DOUT, INPUT); //optional - SPI library will do this for us
@@ -715,14 +737,9 @@ void arduinoSetup() {
     delay(10); // wait for oscillator to wake up
     digitalWrite(IPIN_PWDN, HIGH); // *optional - turn off power down mode
     digitalWrite(IPIN_RESET, HIGH);
-    delay(1000);// *optional
+    delay(1000);
     digitalWrite(IPIN_RESET, LOW);
-    delay(1);// *optional
+    delay(1);
     digitalWrite(IPIN_RESET, HIGH);
     delay(1);  // *optional Wait for 18 tCLKs AKA 9 microseconds, we use 1 millisecond
 } 
-
-
-
-
-
