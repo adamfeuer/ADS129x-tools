@@ -1,8 +1,5 @@
 .idea/
 
-# 範例
-MATLAB\ Introduction\ to\ Programming\ Using/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -107,3 +104,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# swap
+[._]*.s[a-w][a-z]
+# auto-generated tag files
+tags
