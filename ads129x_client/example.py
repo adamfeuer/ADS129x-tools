@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # This is the example used in the documentation.
 
-SERIAL_PORT_PATH="/dev/cu.usbmodem14434401"  # your actual path to the Arduino Native serial port device goes here
 import sys
-
 import hackeeg
 from hackeeg import ads1299
+SERIAL_PORT_PATH = "/dev/cu.usbmodem14434401"  # your actual path to the Arduino Native serial port device goes here
+
 
 hackeeg = hackeeg.HackEEGBoard(SERIAL_PORT_PATH)
 hackeeg.connect()
@@ -49,4 +49,3 @@ while True:
         else:
             print(data)
         sys.stdout.flush()
-
