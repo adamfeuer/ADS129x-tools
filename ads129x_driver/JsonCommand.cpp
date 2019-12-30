@@ -160,7 +160,6 @@ void JsonCommand::readSerial() {
                     register_value = params_array[1];
                 }
             }
-#endif
             // Execute the stored handler function for the command
             (*commandList[command_num].command_function)(register_number, register_value);
             clearBuffer();
